@@ -1,11 +1,11 @@
 import { GoogleGenAI, Type, Chat } from '@google/genai';
 import type { Message, Files, FileAttachment, Change, ApiResponse } from '../types';
 
-// The API key must be obtained exclusively from the environment variable `process.env.API_KEY`.
-const API_KEY = process.env.API_KEY;
+// The API key must be obtained exclusively from the environment variable `process.env.GEMINI_API_KEY`.
+const API_KEY = process.env.GEMINI_API_KEY;
 
 if (!API_KEY) {
-    console.error("API key not found. Please ensure API_KEY is set in your environment variables.");
+    console.error("API key not found. Please ensure GEMINI_API_KEY is set in your environment variables.");
 }
 
 const ai = new GoogleGenAI({ apiKey: API_KEY as string });
