@@ -1,13 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Icon } from './Icon';
 import ResizablePanel from './ResizablePanel';
-import DevToolsPanel, { ConsoleMessage } from './DevToolsPanel';
+import DevToolsPanel from './DevToolsPanel';
+import type { ConsoleMessage } from '../types';
 
 interface LivePreviewProps {
   htmlContent: string;
   isFullscreen?: boolean;
   onExitFullscreen?: () => void;
   onToggleFullscreen?: () => void;
+  logs: ConsoleMessage[];
+  onNewLog: (log: ConsoleMessage) => void;
+  onClearLogs: () => void;
 }
 
 type Device = 'desktop' | 'tablet' | 'mobile';
@@ -79,9 +83,16 @@ const decodeHtmlEntities = (text: string): string => {
     return textarea.value;
 };
 
-const LivePreview: React.FC<LivePreviewProps> = ({ htmlContent, isFullscreen = false, onExitFullscreen, onToggleFullscreen }) => {
+const LivePreview: React.FC<LivePreviewProps> = ({ 
+  htmlContent, 
+  isFullscreen = false, 
+  onExitFullscreen, 
+  onToggleFullscreen,
+  logs,
+  onNewLog,
+  onClearLogs
+}) => {
   const [device, setDevice] = useState<Device>('desktop');
-  const [consoleLogs, setConsoleLogs] = useState<ConsoleMessage[]>([]);
 
   const decodedContent = useMemo(() => decodeHtmlEntities(htmlContent), [htmlContent]);
   const isPlaceholder = !decodedContent.trim();
@@ -89,16 +100,12 @@ const LivePreview: React.FC<LivePreviewProps> = ({ htmlContent, isFullscreen = f
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data && event.data.source === 'mominai-preview-console') {
-        setConsoleLogs(prev => [...prev, { level: event.data.level, payload: event.data.payload }]);
+        onNewLog({ level: event.data.level, payload: event.data.payload });
       }
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
-
-  useEffect(() => {
-    setConsoleLogs([]);
-  }, [htmlContent]);
+  }, [onNewLog]);
 
   const srcDoc = isPlaceholder ? '' : `<script>${consoleInterceptorScript}</script>${decodedContent}`;
 
@@ -109,14 +116,14 @@ const LivePreview: React.FC<LivePreviewProps> = ({ htmlContent, isFullscreen = f
   ];
   
   const containerClasses = isFullscreen
-    ? "flex flex-col h-full bg-black relative"
-    : "flex flex-col h-full bg-black/20 backdrop-blur-lg border border-white/10 rounded-2xl overflow-hidden";
+    ? "flex flex-col h-full bg-white relative"
+    : "flex flex-col h-full bg-transparent overflow-hidden";
 
   if (isPlaceholder) {
     return (
       <div className={containerClasses}>
-        <div className="flex flex-col items-center justify-center h-full text-gray-500">
-          <Icon name="eye" className="w-16 h-16 text-gray-600" />
+        <div className="flex flex-col items-center justify-center h-full text-gray-600">
+          <Icon name="eye" className="w-16 h-16 text-gray-500" />
           <h3 className="text-xl font-semibold mt-4">Live Preview</h3>
           <p>Your generated project preview will appear here.</p>
         </div>
@@ -129,7 +136,7 @@ const LivePreview: React.FC<LivePreviewProps> = ({ htmlContent, isFullscreen = f
       {isFullscreen && (
         <button
           onClick={onExitFullscreen}
-          className="absolute top-4 right-4 z-50 flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg bg-black/50 hover:bg-black/80 text-white backdrop-blur-md border border-white/20 transition-colors"
+          className="absolute top-4 right-4 z-50 flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg bg-white/50 hover:bg-white/80 text-gray-800 backdrop-blur-md border border-black/10 transition-colors"
           aria-label="Exit fullscreen"
         >
           <Icon name="fullscreen-exit" className="w-4 h-4" />
@@ -137,15 +144,15 @@ const LivePreview: React.FC<LivePreviewProps> = ({ htmlContent, isFullscreen = f
         </button>
       )}
 
-      {!isFullscreen && (
-        <div className="flex-shrink-0 flex items-center justify-between p-1.5 bg-black/20 border-b border-white/10">
+      {!isFullscreen && onToggleFullscreen && (
+        <div className="flex-shrink-0 flex items-center justify-between p-1.5 bg-black/5 border-b border-black/10">
           <div className='flex items-center gap-2'>
             {deviceButtons.map(({ name, icon }) => (
               <button
                 key={name}
                 onClick={() => setDevice(name)}
                 className={`p-2 rounded-lg transition-colors ${
-                  device === name ? 'bg-purple-600 text-white' : 'text-gray-400 hover:bg-white/10 hover:text-white'
+                  device === name ? 'bg-purple-600 text-white' : 'text-gray-600 hover:bg-black/10 hover:text-black'
                 }`}
                 aria-label={`Switch to ${name} view`}
                 aria-pressed={device === name}
@@ -154,11 +161,9 @@ const LivePreview: React.FC<LivePreviewProps> = ({ htmlContent, isFullscreen = f
               </button>
             ))}
           </div>
-          {onToggleFullscreen && (
-            <button onClick={onToggleFullscreen} className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10" aria-label="Toggle fullscreen">
-              <Icon name="fullscreen" className="w-5 h-5" />
-            </button>
-          )}
+          <button onClick={onToggleFullscreen} className="p-2 rounded-lg text-gray-600 hover:text-black hover:bg-black/10" aria-label="Toggle fullscreen">
+            <Icon name="fullscreen" className="w-5 h-5" />
+          </button>
         </div>
       )}
       
@@ -174,7 +179,7 @@ const LivePreview: React.FC<LivePreviewProps> = ({ htmlContent, isFullscreen = f
         </div>
       ) : (
         <ResizablePanel direction="vertical" initialSize={window.innerHeight * 0.65} minSize={150}>
-          <div className="w-full h-full bg-gray-800/50 flex justify-center overflow-auto p-4">
+          <div className="w-full h-full bg-gray-400/20 flex justify-center overflow-auto p-4">
             <div style={deviceStyles[device]} className="h-full shadow-2xl bg-white flex-shrink-0 transition-all duration-300 ease-in-out">
               <iframe
                 key={htmlContent} // Force re-render on content change
@@ -185,7 +190,7 @@ const LivePreview: React.FC<LivePreviewProps> = ({ htmlContent, isFullscreen = f
               />
             </div>
           </div>
-          <DevToolsPanel logs={consoleLogs} onClear={() => setConsoleLogs([])} />
+          <DevToolsPanel logs={logs} onClear={onClearLogs} />
         </ResizablePanel>
       )}
     </div>

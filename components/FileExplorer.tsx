@@ -84,15 +84,15 @@ const TreeNodeComponent: React.FC<{
       <li key={node.path}>
         <button
           onClick={() => onToggleFolder(node.path)}
-          className="w-full text-left flex items-center p-2 rounded-lg text-sm hover:bg-white/5 text-gray-300 transition-colors"
+          className="w-full text-left flex items-center p-2 rounded-lg text-sm hover:bg-black/5 text-gray-700 transition-colors"
           aria-expanded={isExpanded}
         >
           <Icon name="chevron-down" className={`w-4 h-4 mr-1 flex-shrink-0 transition-transform ${!isExpanded ? '-rotate-90' : ''}`} />
-          <Icon name="folder" className="w-4 h-4 mr-2 flex-shrink-0 text-purple-400" />
+          <Icon name="folder" className="w-4 h-4 mr-2 flex-shrink-0 text-purple-600" />
           <span className="truncate">{node.name}</span>
         </button>
         {isExpanded && (
-          <ul className="pl-4 border-l border-white/10">
+          <ul className="pl-4 border-l border-black/10">
             {node.children.map(child => (
               <TreeNodeComponent
                 key={child.path}
@@ -115,7 +115,7 @@ const TreeNodeComponent: React.FC<{
       <button
         onClick={() => onSelectFile(node.path)}
         className={`w-full text-left flex items-center p-2 pl-3 rounded-lg text-sm transition-colors ${
-          activeFile === node.path ? 'bg-purple-600/30 text-purple-300' : 'hover:bg-white/5 text-gray-300'
+          activeFile === node.path ? 'bg-purple-600/10 text-purple-700' : 'hover:bg-black/5 text-gray-700'
         }`}
       >
         <Icon name="file" className="w-4 h-4 mr-2 flex-shrink-0" />
@@ -149,9 +149,9 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, activeFile, onSelect
   };
 
   return (
-    <div className="flex flex-col h-full bg-black/10">
-       <div className="flex-shrink-0 p-3 border-b border-white/10">
-        <h2 className="text-sm font-semibold flex items-center text-gray-300">
+    <div className="flex flex-col h-full bg-transparent">
+       <div className="flex-shrink-0 p-3 border-b border-black/10">
+        <h2 className="text-sm font-semibold flex items-center text-gray-700">
           <Icon name="folder" className="w-4 h-4 mr-2" />
           File Explorer
         </h2>
