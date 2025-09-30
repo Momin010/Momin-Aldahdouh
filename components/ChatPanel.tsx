@@ -7,21 +7,30 @@ interface ChatPanelProps {
   messages: Message[];
   onSendMessage: (message: string, attachment?: FileAttachment | null) => void;
   aiStatus: string | null;
+  streamingContent: string | null;
 }
 
-const ChatPanel: React.FC<ChatPanelProps> = ({ messages, onSendMessage, aiStatus }) => {
+// Utility to decode HTML entities
+const decodeHtmlEntities = (text: string): string => {
+    if (typeof window === 'undefined' || !text) return text;
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = text;
+    return textarea.value;
+};
+
+const ChatPanel: React.FC<ChatPanelProps> = ({ messages, onSendMessage, aiStatus, streamingContent }) => {
   const [input, setInput] = useState('');
   const [attachment, setAttachment] = useState<FileAttachment | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isLoading = aiStatus !== null;
+  const isLoading = aiStatus !== null || streamingContent !== null;
 
   useEffect(() => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
     }
-  }, [messages, aiStatus]);
+  }, [messages, aiStatus, streamingContent]);
 
   const handleSend = () => {
     if ((input.trim() || attachment) && !isLoading) {
@@ -72,8 +81,21 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages, onSendMessage, aiStatus
     <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
       <div ref={scrollContainerRef} className="flex-grow p-4 overflow-y-auto">
         <div className="flex flex-col-reverse gap-6">
-          {aiStatus && (
-            <div className="flex items-start gap-3">
+          {streamingContent !== null && (
+             <div className="flex items-start gap-3 animate-fadeInUp">
+                <div className="w-8 h-8 rounded-full border border-purple-400/50 flex items-center justify-center flex-shrink-0 bg-black/20 p-0.5">
+                  <div className="w-full h-full rounded-full bg-gradient-to-br from-purple-500 to-cyan-400 opacity-50" />
+                </div>
+                <div className="max-w-md p-4 rounded-2xl bg-black/30 text-gray-200 rounded-bl-none">
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                    {decodeHtmlEntities(streamingContent)}
+                    <span className="cursor-blink"></span>
+                  </p>
+                </div>
+            </div>
+          )}
+          {aiStatus && streamingContent === null && (
+            <div className="flex items-start gap-3 animate-fadeInUp">
               <div className="w-8 h-8 rounded-full border border-purple-400/50 flex items-center justify-center flex-shrink-0 bg-black/20 p-0.5 relative">
                  <div className="w-full h-full rounded-full bg-gradient-to-br from-purple-500 to-cyan-400 opacity-50" />
                  <div className="absolute inset-0 rounded-full border border-purple-400 animate-pulse"></div>
@@ -93,14 +115,14 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages, onSendMessage, aiStatus
           {reversedMessages.map((msg, revIndex) => {
             const originalIndex = displayedMessages.length - 1 - revIndex;
             return (
-              <div key={originalIndex} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+              <div key={originalIndex} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''} animate-fadeInUp`}>
                 {msg.role === 'model' && 
                   <div className="w-8 h-8 rounded-full border border-purple-400/50 flex items-center justify-center flex-shrink-0 bg-black/20 p-0.5">
                     <div className="w-full h-full rounded-full bg-gradient-to-br from-purple-500 to-cyan-400 opacity-50" />
                   </div>
                 }
                 <div className={`max-w-md p-4 rounded-2xl ${msg.role === 'user' ? 'bg-purple-600 text-white rounded-br-none' : 'bg-black/30 text-gray-200 rounded-bl-none'}`}>
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</p>
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed">{decodeHtmlEntities(msg.content)}</p>
                 </div>
               </div>
             );

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useMemo } from 'react';
 import { Icon } from './Icon';
 import ResizablePanel from './ResizablePanel';
 import DevToolsPanel, { ConsoleMessage } from './DevToolsPanel';
@@ -70,11 +71,20 @@ const consoleInterceptorScript = `
   });
 `;
 
+// Utility to decode HTML entities
+const decodeHtmlEntities = (text: string): string => {
+    if (typeof window === 'undefined' || !text) return text;
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = text;
+    return textarea.value;
+};
 
 const LivePreview: React.FC<LivePreviewProps> = ({ htmlContent, isFullscreen = false, onExitFullscreen }) => {
-  const isPlaceholder = !htmlContent.trim();
   const [device, setDevice] = useState<Device>('desktop');
   const [consoleLogs, setConsoleLogs] = useState<ConsoleMessage[]>([]);
+
+  const decodedContent = useMemo(() => decodeHtmlEntities(htmlContent), [htmlContent]);
+  const isPlaceholder = !decodedContent.trim();
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -90,7 +100,7 @@ const LivePreview: React.FC<LivePreviewProps> = ({ htmlContent, isFullscreen = f
     setConsoleLogs([]);
   }, [htmlContent]);
 
-  const srcDoc = isPlaceholder ? '' : `<script>${consoleInterceptorScript}</script>${htmlContent}`;
+  const srcDoc = isPlaceholder ? '' : `<script>${consoleInterceptorScript}</script>${decodedContent}`;
 
   const deviceButtons: { name: Device, icon: string }[] = [
     { name: 'desktop', icon: 'desktop' },

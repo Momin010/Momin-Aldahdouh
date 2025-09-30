@@ -1,26 +1,26 @@
 import { GoogleGenAI, Type, Chat } from '@google/genai';
 import type { Message, Files, FileAttachment, Change, ApiResponse } from '../types';
 
-// The API key must be obtained exclusively from the environment variable `process.env.GEMINI_API_KEY`.
-const API_KEY = process.env.GEMINI_API_KEY;
+// Use the user-provided API key directly.
+const API_KEY = 'AIzaSyBDRi3Bb0YBPPbiQdhBIEDP34Gkygctemc';
 
 if (!API_KEY) {
-    console.error("API key not found. Please ensure GEMINI_API_KEY is set in your environment variables.");
+    console.error("API key not found. Please ensure the API_KEY is correctly set.");
 }
 
 const ai = new GoogleGenAI({ apiKey: API_KEY as string });
 
-const SYSTEM_INSTRUCTION = `You are MominAI, a hyper-advanced AI embodying the expertise of principal engineers and architects from FAANG-level companies. You are a senior software architect and conversational coding partner.
+const SYSTEM_INSTRUCTION = `You are MominAI, a senior software architect and conversational coding partner. Your expertise is equivalent to that of a principal engineer from a top-tier tech company. You are helpful, polite, and collaborative.
 
 Your purpose is to engage in a conversation with a user to architect, build, modify, and understand enterprise-grade software solutions. Your entire response must be a single, valid JSON object.
 
 You have two possible actions:
-1.  **'CHAT'**: For general conversation, asking clarifying questions, or if the user's request is ambiguous.
+1.  **'CHAT'**: For general conversation, asking clarifying questions, or if the user's request is ambiguous. Use a friendly and helpful tone.
 2.  **'MODIFY_CODE'**: When the user asks to build, change, or fix an application.
 
 ---
-### Mandate 1: Full Source Code Generation
-**THIS IS YOUR PRIMARY DIRECTIVE.** Your most critical responsibility is to generate the complete, production-quality source code for the user's application when you perform a 'MODIFY_CODE' action. This is done via the 'changes' array in your JSON response. This includes all necessary files: frontend (React/HTML/CSS), backend (if requested), configuration (e.g., package.json), etc. The 'previewHtml' is secondary to this; you MUST ALWAYS provide the full source code.
+### Mandate 1: Full Source Code Generation (NON-NEGOTIABLE)
+**THIS IS YOUR PRIMARY DIRECTIVE.** Your most critical responsibility is to generate the complete, production-quality source code for the user's application when you perform a 'MODIFY_CODE' action. You must not generate just a single HTML file as the main output. The main output is ALWAYS the complete multi-file source code, delivered via the 'changes' array in your JSON response. This includes all necessary files: frontend (React/HTML/CSS), backend (if requested), configuration (e.g., package.json), etc. The 'previewHtml' is a mandatory but secondary artifact; you MUST ALWAYS provide the full source code first and foremost.
 
 ---
 ### Mandate 2: The Principle of Excellence
@@ -318,7 +318,12 @@ const handleApiError = (error: any, context: string): never => {
 let chatSession: Chat | null = null;
 const MAX_RETRIES = 2;
 
-export const sendAiChatRequest = async (messages: Message[], files: Files | null, attachment?: FileAttachment | null): Promise<ApiResponse> => {
+export const sendAiChatRequest = async (
+    messages: Message[], 
+    files: Files | null, 
+    attachment: FileAttachment | null,
+    onChunk: (text: string) => void
+): Promise<ApiResponse> => {
     const context = "AI chat request";
     let lastError: any = null;
 
@@ -348,10 +353,7 @@ export const sendAiChatRequest = async (messages: Message[], files: Files | null
             const latestMessage = messages[messages.length - 1];
             const parts: (string | { inlineData: { mimeType: string; data: string } })[] = [];
             
-            // Critical fix: Send previous messages as history, not as part of the new message.
-            // Only the latest user message should be the new content.
             parts.push(latestMessage.content);
-
 
             if (attachment) {
                 parts.push({
@@ -371,8 +373,16 @@ export const sendAiChatRequest = async (messages: Message[], files: Files | null
                 parts.unshift(retryInstruction);
             }
 
-            const result = await chatSession.sendMessage({ message: parts });
-            const responseText = result.text;
+            const resultStream = await chatSession.sendMessageStream({ message: parts });
+            
+            let responseText = '';
+            for await (const chunk of resultStream) {
+                const chunkText = chunk.text;
+                if (chunkText) {
+                    responseText += chunkText;
+                    onChunk(chunkText);
+                }
+            }
 
             if (!responseText.trim()) {
                 throw new Error(`The AI returned an empty response during the '${context}' step. This could be due to a content safety filter or an internal error.`);

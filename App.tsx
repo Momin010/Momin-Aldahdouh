@@ -35,6 +35,8 @@ const App: React.FC = () => {
   const [isPublishModalOpen, setPublishModalOpen] = useState(false);
   const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
+  const [streamingContent, setStreamingContent] = useState<string | null>(null);
+
 
   const currentState = history.versions[history.currentIndex];
   const { files, previewHtml, chatMessages, hasGeneratedCode, projectName } = currentState;
@@ -86,6 +88,11 @@ const App: React.FC = () => {
         const newVersions = prevHistory.versions.slice(0, prevHistory.currentIndex + 1);
         newVersions.push(newVersion);
 
+        // Limit history to 20 versions to prevent localStorage quota errors
+        if (newVersions.length > 20) {
+            newVersions.splice(0, newVersions.length - 20);
+        }
+
         return {
             versions: newVersions,
             currentIndex: newVersions.length - 1,
@@ -95,15 +102,22 @@ const App: React.FC = () => {
 
   const handleSendMessage = useCallback(async (message: string, attachment?: FileAttachment) => {
     const userMessage: Message = { role: 'user', content: message };
-    
-    // Add user message to a temporary chat state for immediate feedback
-    // but the permanent update happens in addHistoryState
-    const tempChatMessages = [...chatMessages, userMessage];
-    setHistory(h => ({ ...h, versions: h.versions.map((v, i) => i === h.currentIndex ? {...v, chatMessages: tempChatMessages } : v) }));
+    addHistoryState(prev => ({...prev, chatMessages: [...prev.chatMessages, userMessage]}));
 
     try {
-      setAiStatus('MominAI is thinking...');
-      const response = await sendAiChatRequest(tempChatMessages, hasGeneratedCode ? files : null, attachment);
+      setStreamingContent('');
+      setAiStatus('MominAI is working...');
+      
+      const response = await sendAiChatRequest(
+        [...currentState.chatMessages, userMessage], // Send the most up-to-date message list
+        hasGeneratedCode ? files : null, 
+        attachment,
+        (chunk: string) => {
+           setStreamingContent(prev => (prev ?? '') + chunk);
+        }
+      );
+
+      setStreamingContent(null);
 
       switch (response.responseType) {
         case 'CHAT': {
@@ -157,8 +171,9 @@ const App: React.FC = () => {
       addHistoryState(prev => ({...prev, chatMessages: [...prev.chatMessages, errorMessage] }));
     } finally {
       setAiStatus(null);
+      setStreamingContent(null);
     }
-  }, [chatMessages, files, hasGeneratedCode, activeFile, addHistoryState, setHistory, setActiveFile]);
+  }, [currentState.chatMessages, files, hasGeneratedCode, activeFile, addHistoryState, setActiveFile]);
 
 
   const handleCodeChange = useCallback((newContent: string) => {
@@ -240,7 +255,12 @@ const App: React.FC = () => {
           ${mobileView === 'preview' ? 'hidden' : 'flex'}
           md:flex flex-col w-full md:w-1/3 md:max-w-lg h-full
         `}>
-          <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} aiStatus={aiStatus} />
+          <ChatPanel 
+            messages={chatMessages} 
+            onSendMessage={handleSendMessage} 
+            aiStatus={aiStatus}
+            streamingContent={streamingContent}
+          />
         </div>
 
         <div className={`
