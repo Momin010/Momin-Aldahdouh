@@ -7,12 +7,12 @@ import CommandPalette from './components/CommandPalette';
 import LivePreview from './components/LivePreview';
 import ResizablePanel from './components/ResizablePanel';
 import Sidebar from './components/Sidebar';
+import { Icon } from './components/Icon';
 import type { Message, Files, Change, FileAttachment, History, AppState, ConsoleMessage, Plan, Workspace, Project } from './types';
 import { sendAiChatRequest, resetChat } from './services/geminiService';
 import { downloadProjectAsZip } from './services/zipService';
 import { INITIAL_CHAT_MESSAGE, INITIAL_FILES } from './constants';
 import usePersistentState from './hooks/usePersistentState';
-import { Icon } from './components/Icon';
 
 
 type MobileView = 'chat' | 'preview';
@@ -50,8 +50,7 @@ const App: React.FC = () => {
   const [streamingContent, setStreamingContent] = useState<string | null>(null);
   const [consoleLogs, setConsoleLogs] = useState<ConsoleMessage[]>([]);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [isSidebarOpen, setSidebarOpen] = useState(false);
-
+  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
 
   useEffect(() => {
     // On initial load, if no project is active, activate the first one.
@@ -71,7 +70,7 @@ const App: React.FC = () => {
     files: {}, previewHtml: '', chatMessages: [], hasGeneratedCode: false, projectName: 'Loading...', projectPlan: null
   };
   
-  const isProjectLoaded = !!activeProject && Object.keys(files).length > 0;
+  const isProjectLoaded = activeProject && Object.keys(files).length > 0;
   const canUndo = activeProject ? activeProject.history.currentIndex > 0 : false;
   const canRedo = activeProject ? activeProject.history.currentIndex < activeProject.history.versions.length - 1 : false;
 
@@ -172,269 +171,377 @@ ${JSON.stringify(errors, null, 2)}
         addHistoryState(prev => {
             const updatedFiles = { ...prev.files };
             modification.changes.forEach((change: Change) => {
-                if (change.action === 'create' || change.action === 'update') {
-                    updatedFiles[change.filePath] = change.content || '';
-                } else if (change.action === 'delete') {
-                    delete updatedFiles[change.filePath];
-                }
+              if (change.action === 'delete') {
+                delete updatedFiles[change.filePath];
+              } else { 
+                updatedFiles[change.filePath] = change.content || '';
+              }
             });
+
+            const fixMessage: Message = { role: 'model', content: `**Self-Correction:** ${modification.reason}` };
+            
             return {
-                ...prev,
-                files: updatedFiles,
-                previewHtml: modification.previewHtml !== undefined ? modification.previewHtml : prev.previewHtml,
-                chatMessages: [...prev.chatMessages, { role: 'system', content: `Self-correction applied: ${modification.reason}` }],
-                hasGeneratedCode: true,
+              ...prev,
+              files: updatedFiles,
+              previewHtml: modification.previewHtml || prev.previewHtml,
+              chatMessages: [...prev.chatMessages, fixMessage],
             };
         });
         setAiStatus(null);
-        setConsoleLogs([]); // Clear logs after applying fix
-      } else {
-        throw new Error("AI did not return a code modification for the correction.");
-      }
-    } catch (e) {
-        console.error("Self-correction failed:", e);
-        setAiStatus('Failed to apply fix.');
+       } else {
+         const chatMessage: Message = { role: 'model', content: response.message };
+         addHistoryState(prev => ({...prev, chatMessages: [...prev.chatMessages, chatMessage] }));
+         setAiStatus(null);
+       }
+
+    } catch (error) {
+       console.error('Error during self-correction:', error);
+       const errorMessage: Message = { role: 'model', content: `Sorry, I encountered an error while trying to fix the code: ${error instanceof Error ? error.message : 'Unknown error'}` };
+       addHistoryState(prev => ({...prev, chatMessages: [...prev.chatMessages, errorMessage] }));
+       setAiStatus(null);
     }
-  }, [currentState, files, addHistoryState, setAiStatus]);
+
+  }, [addHistoryState, currentState, files]);
+
 
   useEffect(() => {
-    if (consoleLogs.some(log => log.level === 'error') && !isVerifying) {
-      setIsVerifying(true);
+    if (!isVerifying) return;
+
+    const verificationTimeout = setTimeout(() => {
       const errors = consoleLogs.filter(log => log.level === 'error');
-      // Use a timeout to allow multiple errors to be logged before triggering
-      const timer = setTimeout(() => {
+      if (errors.length > 0) {
         triggerSelfCorrection(errors);
-        setIsVerifying(false);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [consoleLogs, isVerifying, triggerSelfCorrection]);
+      } else {
+        setAiStatus(null); // No errors, we're done
+      }
+      setIsVerifying(false);
+    }, 3000);
 
-  const handleSendMessage = useCallback(async (message: string, attachment: FileAttachment | null = null) => {
+    return () => clearTimeout(verificationTimeout);
+  }, [isVerifying, consoleLogs, triggerSelfCorrection]);
+
+
+  const handleSendMessage = useCallback(async (message: string, attachment?: FileAttachment) => {
+    if (!currentState) return;
+
     const userMessage: Message = { role: 'user', content: message };
-    addHistoryState(prev => ({ ...prev, chatMessages: [...prev.chatMessages, userMessage] }));
+    
+    addHistoryState(prev => ({
+        ...prev,
+        chatMessages: [...prev.chatMessages.map(msg => 
+            msg.action === 'AWAITING_PLAN_APPROVAL' 
+            ? { ...msg, action: undefined } 
+            : msg
+        ), userMessage]
+    }));
 
+    setStreamingContent(null);
     setAiStatus('MominAI is working...');
-    setConsoleLogs([]);
+    setIsVerifying(false);
 
     try {
-        const response = await sendAiChatRequest([...chatMessages, userMessage], files, attachment);
-        setAiStatus('Generating files...');
-        
-        if (response.responseType === 'MODIFY_CODE') {
-            const { modification } = response;
-            addHistoryState(prev => {
-                const updatedFiles = { ...prev.files };
-                modification.changes.forEach((change: Change) => {
-                    if (change.action === 'create' || change.action === 'update') {
-                        updatedFiles[change.filePath] = change.content || '';
-                    } else if (change.action === 'delete') {
-                        delete updatedFiles[change.filePath];
-                    }
-                });
-                const newProjectName = modification.projectName || prev.projectName;
+      const messagesForAI = [...currentState.chatMessages, userMessage];
 
-                return {
-                    ...prev,
-                    files: updatedFiles,
-                    previewHtml: modification.previewHtml !== undefined ? modification.previewHtml : prev.previewHtml,
-                    chatMessages: [...prev.chatMessages, { role: 'system', content: modification.reason }],
-                    hasGeneratedCode: true,
-                    projectName: newProjectName
-                };
-            });
-            setStreamingContent(modification.reason);
-        } else if (response.responseType === 'CHAT') {
-             setStreamingContent(response.message);
-        } else if (response.responseType === 'PROJECT_PLAN') {
-            const { plan } = response;
-            addHistoryState(prev => ({
-                ...prev,
-                projectPlan: plan,
-                projectName: plan.projectName,
-                chatMessages: [...prev.chatMessages, {
-                  role: 'model',
-                  content: "I've drafted a plan for your project. Take a look and let me know if you'd like any changes before I start building.",
-                  action: 'AWAITING_PLAN_APPROVAL',
-                  plan: plan,
-                }]
-            }));
+      const response = await sendAiChatRequest(
+        messagesForAI,
+        hasGeneratedCode ? files : null, 
+        attachment
+      );
+      
+      setAiStatus(null);
+
+      switch (response.responseType) {
+        case 'CHAT': {
+          setStreamingContent(response.message);
+          break;
         }
+        case 'PROJECT_PLAN': {
+          const { plan } = response;
+          const planContent = `I've drafted a plan for your project, **${plan.projectName}**. Please review it below.`;
+          const planMessage: Message = {
+            role: 'model',
+            content: planContent,
+            plan: plan,
+            action: 'AWAITING_PLAN_APPROVAL'
+          };
+          addHistoryState(prev => ({
+            ...prev,
+            projectPlan: plan,
+            chatMessages: [...prev.chatMessages, planMessage]
+          }));
+          setAiStatus("Awaiting your approval...");
+          break;
+        }
+        case 'MODIFY_CODE': {
+          setAiStatus('Generating files...');
+          const { modification } = response;
+          
+          addHistoryState(prev => {
+            const updatedFiles = prev.hasGeneratedCode ? { ...prev.files } : {};
+            modification.changes.forEach((change: Change) => {
+              if (change.action === 'delete') {
+                delete updatedFiles[change.filePath];
+              } else { 
+                updatedFiles[change.filePath] = change.content || '';
+              }
+            });
 
-    } catch (e: any) {
-        console.error("Error from AI:", e);
-        const errorMessage = `An error occurred: ${e.message}`;
-        setStreamingContent(errorMessage);
-    } finally {
-        setAiStatus(null);
+            const modificationMessage: Message = { role: 'model', content: modification.reason };
+            const gotoPreviewMessage: Message = { role: 'system', content: 'Go to Preview', action: 'GOTO_PREVIEW' };
+            
+            const isFirstGeneration = !prev.hasGeneratedCode;
+            const activeFileDeleted = modification.changes.some(c => c.action === 'delete' && c.filePath === activeFile);
+            if (isFirstGeneration || activeFileDeleted) {
+               const preferredFiles = ['src/App.tsx', 'index.html'];
+               const defaultFile = preferredFiles.find(f => f in updatedFiles) || Object.keys(updatedFiles)[0] || '';
+               setActiveFile(defaultFile);
+            }
+          
+            return {
+              ...prev,
+              files: updatedFiles,
+              previewHtml: modification.previewHtml || prev.previewHtml,
+              chatMessages: [...prev.chatMessages, modificationMessage, gotoPreviewMessage],
+              hasGeneratedCode: true,
+              projectName: modification.projectName || prev.projectName,
+              projectPlan: null,
+            };
+          });
+
+          setConsoleLogs([]);
+          setIsVerifying(true);
+          setAiStatus('Verifying generated code...');
+          break;
+        }
+      }
+    } catch (error) {
+      console.error('Error in AI interaction:', error);
+      const errorMessage: Message = { role: 'model', content: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}` };
+      addHistoryState(prev => ({...prev, chatMessages: [...prev.chatMessages, errorMessage], projectPlan: null }));
+      setAiStatus(null);
+      setStreamingContent(null);
     }
-  }, [addHistoryState, chatMessages, files]);
+  }, [currentState, files, hasGeneratedCode, activeFile, addHistoryState, setActiveFile]);
 
 
   const handleCodeChange = useCallback((newContent: string) => {
-    if (activeFile && files[activeFile] !== newContent) {
-       addHistoryState(prev => ({
-        ...prev,
-        files: {
-          ...prev.files,
-          [activeFile]: newContent,
-        }
-       }));
-    }
-  }, [activeFile, files, addHistoryState]);
-
-  const handleUndo = useCallback(() => {
     updateActiveProject(project => {
-      if (project.history.currentIndex > 0) {
-        return { ...project, history: { ...project.history, currentIndex: project.history.currentIndex - 1 } };
-      }
-      return project;
+        const newHistory = { ...project.history };
+        const newVersions = [...newHistory.versions];
+        const currentVersion = { ...newVersions[project.history.currentIndex] };
+        currentVersion.files = { ...currentVersion.files, [activeFile]: newContent };
+        newVersions[project.history.currentIndex] = currentVersion;
+        newHistory.versions = newVersions;
+        return { ...project, history: newHistory };
     });
-  }, [updateActiveProject]);
-
-  const handleRedo = useCallback(() => {
-     updateActiveProject(project => {
-      if (project.history.currentIndex < project.history.versions.length - 1) {
-        return { ...project, history: { ...project.history, currentIndex: project.history.currentIndex + 1 } };
-      }
-      return project;
-    });
-  }, [updateActiveProject]);
+  }, [activeFile, updateActiveProject]);
 
   const handleRenameProject = useCallback((newName: string) => {
-    addHistoryState(prev => ({ ...prev, projectName: newName }));
+    addHistoryState(prev => ({...prev, projectName: newName }));
   }, [addHistoryState]);
-  
-  const handleDownloadProject = useCallback(() => {
-    downloadProjectAsZip(files, projectName);
-  }, [files, projectName]);
 
-  const handleNewProject = useCallback(() => {
-    setWorkspace(prev => {
-        const newProj = createNewProject(`Project ${prev.projects.length + 1}`);
-        return {
-            ...prev,
-            projects: [...prev.projects, newProj],
-            activeProjectId: newProj.id,
-        };
-    });
-  }, [setWorkspace]);
+  const handleDownloadProject = async () => {
+    if (Object.keys(files).length > 0) {
+      await downloadProjectAsZip(files, projectName);
+    }
+  };
+
+  const handleUndo = useCallback(() => {
+    if (canUndo) {
+      updateActiveProject(project => ({
+        ...project,
+        history: { ...project.history, currentIndex: project.history.currentIndex - 1 }
+      }));
+    }
+  }, [canUndo, updateActiveProject]);
+
+  const handleRedo = useCallback(() => {
+    if (canRedo) {
+      updateActiveProject(project => ({
+        ...project,
+        history: { ...project.history, currentIndex: project.history.currentIndex + 1 }
+      }));
+    }
+  }, [canRedo, updateActiveProject]);
+
+  const handleSelectFileFromPalette = (path: string) => {
+    setActiveFile(path);
+  };
+
+  const handleToggleFullscreen = useCallback(() => {
+    setIsPreviewFullscreen(prev => !prev);
+  }, []);
+
+  const handleNavigateToPreview = useCallback(() => {
+    setMobileView('preview');
+  }, []);
+
+  const handleNewLog = useCallback((log: ConsoleMessage) => {
+    setConsoleLogs(prev => [...prev, log]);
+  }, []);
 
   const handleSelectProject = useCallback((id: string) => {
-    setWorkspace(prev => ({ ...prev, activeProjectId: id }));
+    setWorkspace(ws => ({ ...ws, activeProjectId: id }));
+  }, [setWorkspace]);
+
+  const handleNewProject = useCallback(() => {
+    const newProj = createNewProject('New Project');
+    setWorkspace(ws => ({
+      projects: [...ws.projects, newProj],
+      activeProjectId: newProj.id,
+    }));
   }, [setWorkspace]);
 
   const handleDeleteProject = useCallback((id: string) => {
-    setWorkspace(prev => {
-        if (prev.projects.length <= 1) {
-            alert("You cannot delete the last project.");
-            return prev;
-        }
+    setWorkspace(ws => {
+      const newProjects = ws.projects.filter(p => p.id !== id);
+      // If we deleted the active project, select another one
+      if (ws.activeProjectId === id) {
         return {
-            ...prev,
-            projects: prev.projects.filter(p => p.id !== id),
-            // activeProjectId will be reset by useEffect if it was the deleted one
+          projects: newProjects,
+          activeProjectId: newProjects[0]?.id || null,
         };
+      }
+      return { ...ws, projects: newProjects };
     });
   }, [setWorkspace]);
 
   if (isPreviewFullscreen) {
     return (
-      <LivePreview
-        htmlContent={previewHtml}
-        isFullscreen={true}
-        onExitFullscreen={() => setIsPreviewFullscreen(false)}
-        logs={consoleLogs}
-        onNewLog={(log) => setConsoleLogs(prev => [...prev, log])}
-        onClearLogs={() => setConsoleLogs([])}
-      />
+      <div className="fixed inset-0 z-[100] bg-black">
+        <LivePreview
+          htmlContent={previewHtml}
+          isFullscreen={true}
+          onExitFullscreen={handleToggleFullscreen}
+          logs={consoleLogs}
+          onNewLog={handleNewLog}
+          onClearLogs={() => setConsoleLogs([])}
+        />
+      </div>
     );
   }
 
+  if (!activeProject || !currentState) {
+     return <div className="flex items-center justify-center h-screen bg-gray-900 text-white">Loading Workspace...</div>;
+  }
+
   return (
-    <div className="relative flex h-screen w-full overflow-hidden">
-        
+    <div className="h-screen bg-transparent text-gray-200 font-sans">
+       <div
+        className="fixed top-0 left-0 h-full z-40"
+        onMouseLeave={() => setIsSidebarVisible(false)}
+      >
         <div
-            className={`absolute top-0 left-0 h-full z-40 transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
-            onMouseLeave={() => setSidebarOpen(false)}
+          className={`h-full transition-transform duration-300 ease-in-out ${
+            isSidebarVisible ? 'translate-x-0' : '-translate-x-full'
+          }`}
         >
-            <Sidebar
-                projects={workspace.projects}
-                activeProjectId={workspace.activeProjectId}
-                onSelectProject={handleSelectProject}
-                onNewProject={handleNewProject}
-                onDeleteProject={handleDeleteProject}
-            />
+          <Sidebar
+            projects={workspace.projects}
+            activeProjectId={workspace.activeProjectId}
+            onSelectProject={handleSelectProject}
+            onNewProject={handleNewProject}
+            onDeleteProject={handleDeleteProject}
+          />
         </div>
 
         <button
-            onMouseEnter={() => setSidebarOpen(true)}
-            className={`fixed bottom-6 left-6 z-30 p-3 bg-white/40 backdrop-blur-md border border-black/10 rounded-full text-purple-600 hover:text-white hover:bg-purple-500 transition-all duration-300 ${isSidebarOpen ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100 scale-100'}`}
-            aria-label="Toggle Project Sidebar"
+          onMouseEnter={() => setIsSidebarVisible(true)}
+          className={`absolute bottom-4 left-4 p-2 rounded-full bg-purple-600/80 backdrop-blur-sm text-white shadow-lg border border-white/20 transition-opacity duration-300 focus:outline-none focus:ring-2 focus:ring-purple-400 ${
+            isSidebarVisible ? 'opacity-0 pointer-events-none' : 'opacity-80 hover:opacity-100'
+          }`}
+          aria-label="Show sidebar"
         >
-            <Icon name="logo" className="w-6 h-6" />
+          <Icon name="logo" className="w-5 h-5" />
         </button>
-
-        <main className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out`} style={{ marginLeft: isSidebarOpen ? '16rem' : '0' }}>
-            <Header
-                projectName={projectName}
-                onRenameProject={handleRenameProject}
-                onDownloadProject={handleDownloadProject}
-                onPublish={() => setPublishModalOpen(true)}
-                mobileView={mobileView}
-                isProjectLoaded={isProjectLoaded}
-                onToggleView={() => setMobileView(v => v === 'chat' ? 'preview' : 'chat')}
-                onUndo={handleUndo}
-                onRedo={handleRedo}
-                canUndo={canUndo}
-                canRedo={canRedo}
-            />
-            <div className="flex-grow p-1 md:p-4 grid grid-cols-1 md:grid-cols-2 gap-4 overflow-hidden">
-                <div className={`h-full ${mobileView === 'preview' ? 'hidden md:block' : ''}`}>
-                  <ChatPanel
-                      messages={chatMessages}
-                      onSendMessage={handleSendMessage}
-                      aiStatus={aiStatus}
-                      streamingContent={streamingContent}
-                      onAnimationComplete={handleAnimationComplete}
-                      hasGeneratedCode={hasGeneratedCode}
-                      onNavigateToPreview={() => setMobileView('preview')}
-                  />
-                </div>
-                <div className={`h-full ${mobileView === 'chat' ? 'hidden md:block' : ''}`}>
-                   <EditorPreviewPanel
-                        files={files}
-                        activeFile={activeFile}
-                        onSelectFile={setActiveFile}
-                        onCodeChange={handleCodeChange}
-                        previewHtml={previewHtml}
-                        onBackToChat={() => setMobileView('chat')}
-                        onToggleFullscreen={() => setIsPreviewFullscreen(true)}
-                        consoleLogs={consoleLogs}
-                        onNewLog={(log) => setConsoleLogs(prev => [...prev, log])}
-                        onClearConsole={() => setConsoleLogs([])}
-                    />
-                </div>
-            </div>
-        </main>
+      </div>
       
-        {isPublishModalOpen && currentState && (
-            <PublishModal
-                projectName={projectName}
-                files={files}
-                onClose={() => setPublishModalOpen(false)}
+      <div className="flex flex-col h-full overflow-hidden">
+        <Header 
+          projectName={projectName}
+          onRenameProject={handleRenameProject}
+          onDownloadProject={handleDownloadProject}
+          onPublish={() => setPublishModalOpen(true)}
+          mobileView={mobileView}
+          isProjectLoaded={isProjectLoaded}
+          onToggleView={() => setMobileView(prev => prev === 'chat' ? 'preview' : 'chat')}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          canUndo={canUndo}
+          canRedo={canRedo}
+        />
+        
+        <main className="hidden md:flex flex-grow p-4 gap-4 overflow-hidden">
+          <ResizablePanel direction="horizontal" initialSize={450} minSize={320}>
+            <ChatPanel 
+              messages={chatMessages} 
+              onSendMessage={handleSendMessage} 
+              aiStatus={aiStatus}
+              streamingContent={streamingContent}
+              onAnimationComplete={handleAnimationComplete}
+              hasGeneratedCode={hasGeneratedCode}
+              onNavigateToPreview={handleNavigateToPreview}
             />
-        )}
-        {isCommandPaletteOpen && (
-            <CommandPalette
-                isOpen={isCommandPaletteOpen}
-                onClose={() => setCommandPaletteOpen(false)}
-                files={files}
-                onSelectFile={(path) => { setActiveFile(path); setCommandPaletteOpen(false); }}
-                onDownloadProject={handleDownloadProject}
-                onPublish={() => setPublishModalOpen(true)}
+            <EditorPreviewPanel
+              files={files}
+              activeFile={activeFile}
+              onSelectFile={setActiveFile}
+              onCodeChange={handleCodeChange}
+              previewHtml={previewHtml}
+              onBackToChat={() => {}}
+              onToggleFullscreen={handleToggleFullscreen}
+              consoleLogs={consoleLogs}
+              onNewLog={handleNewLog}
+              onClearConsole={() => setConsoleLogs([])}
             />
-        )}
+          </ResizablePanel>
+        </main>
+
+        <main className="md:hidden flex flex-col flex-grow p-0 overflow-hidden">
+          <div className={`${mobileView === 'preview' ? 'hidden' : 'flex'} flex-col w-full h-full`}>
+            <ChatPanel 
+              messages={chatMessages} 
+              onSendMessage={handleSendMessage} 
+              aiStatus={aiStatus}
+              streamingContent={streamingContent}
+              onAnimationComplete={handleAnimationComplete}
+              hasGeneratedCode={hasGeneratedCode}
+              onNavigateToPreview={handleNavigateToPreview}
+            />
+          </div>
+
+          <div className={`${mobileView === 'chat' ? 'hidden' : 'flex'} flex-col flex-grow h-full`}>
+            <EditorPreviewPanel
+              files={files}
+              activeFile={activeFile}
+              onSelectFile={setActiveFile}
+              onCodeChange={handleCodeChange}
+              previewHtml={previewHtml}
+              onBackToChat={() => setMobileView('chat')}
+              onToggleFullscreen={handleToggleFullscreen}
+              consoleLogs={consoleLogs}
+              onNewLog={handleNewLog}
+              onClearConsole={() => setConsoleLogs([])}
+            />
+          </div>
+        </main>
+      </div>
+
+      {isPublishModalOpen && (
+        <PublishModal
+          projectName={projectName}
+          files={files}
+          onClose={() => setPublishModalOpen(false)}
+        />
+      )}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        files={files}
+        onSelectFile={handleSelectFileFromPalette}
+        onDownloadProject={handleDownloadProject}
+        onPublish={() => setPublishModalOpen(true)}
+       />
     </div>
   );
 };

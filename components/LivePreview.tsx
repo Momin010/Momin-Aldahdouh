@@ -116,14 +116,14 @@ const LivePreview: React.FC<LivePreviewProps> = ({
   ];
   
   const containerClasses = isFullscreen
-    ? "flex flex-col h-full bg-white relative"
-    : "flex flex-col h-full bg-transparent overflow-hidden";
+    ? "flex flex-col h-full bg-black relative"
+    : "flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden";
 
   if (isPlaceholder) {
     return (
-      <div className={containerClasses}>
-        <div className="flex flex-col items-center justify-center h-full text-gray-600">
-          <Icon name="eye" className="w-16 h-16 text-gray-500" />
+      <div className={containerClasses.replace('md:rounded-2xl', 'md:rounded-b-2xl md:rounded-t-none')}>
+        <div className="flex flex-col items-center justify-center h-full text-gray-500">
+          <Icon name="eye" className="w-16 h-16 text-gray-600" />
           <h3 className="text-xl font-semibold mt-4">Live Preview</h3>
           <p>Your generated project preview will appear here.</p>
         </div>
@@ -132,11 +132,11 @@ const LivePreview: React.FC<LivePreviewProps> = ({
   }
 
   return (
-    <div className={containerClasses}>
+    <div className={containerClasses.replace('md:rounded-2xl', 'md:rounded-b-2xl md:rounded-t-none')}>
       {isFullscreen && (
         <button
           onClick={onExitFullscreen}
-          className="absolute top-4 right-4 z-50 flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg bg-white/50 hover:bg-white/80 text-gray-800 backdrop-blur-md border border-black/10 transition-colors"
+          className="absolute top-4 right-4 z-50 flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg bg-black/50 hover:bg-black/80 text-white backdrop-blur-md border border-white/20 transition-colors"
           aria-label="Exit fullscreen"
         >
           <Icon name="fullscreen-exit" className="w-4 h-4" />
@@ -145,14 +145,14 @@ const LivePreview: React.FC<LivePreviewProps> = ({
       )}
 
       {!isFullscreen && onToggleFullscreen && (
-        <div className="flex-shrink-0 flex items-center justify-between p-1.5 bg-black/5 border-b border-black/10">
+        <div className="flex-shrink-0 flex items-center justify-between p-1.5 bg-black/20 border-b border-white/10">
           <div className='flex items-center gap-2'>
             {deviceButtons.map(({ name, icon }) => (
               <button
                 key={name}
                 onClick={() => setDevice(name)}
                 className={`p-2 rounded-lg transition-colors ${
-                  device === name ? 'bg-purple-600 text-white' : 'text-gray-600 hover:bg-black/10 hover:text-black'
+                  device === name ? 'bg-purple-600 text-white' : 'text-gray-400 hover:bg-white/10 hover:text-white'
                 }`}
                 aria-label={`Switch to ${name} view`}
                 aria-pressed={device === name}
@@ -161,7 +161,7 @@ const LivePreview: React.FC<LivePreviewProps> = ({
               </button>
             ))}
           </div>
-          <button onClick={onToggleFullscreen} className="p-2 rounded-lg text-gray-600 hover:text-black hover:bg-black/10" aria-label="Toggle fullscreen">
+          <button onClick={onToggleFullscreen} className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10" aria-label="Toggle fullscreen">
             <Icon name="fullscreen" className="w-5 h-5" />
           </button>
         </div>
@@ -179,7 +179,7 @@ const LivePreview: React.FC<LivePreviewProps> = ({
         </div>
       ) : (
         <ResizablePanel direction="vertical" initialSize={window.innerHeight * 0.65} minSize={150}>
-          <div className="w-full h-full bg-gray-400/20 flex justify-center overflow-auto p-4">
+          <div className="w-full h-full bg-gray-800/50 flex justify-center overflow-auto p-4">
             <div style={deviceStyles[device]} className="h-full shadow-2xl bg-white flex-shrink-0 transition-all duration-300 ease-in-out">
               <iframe
                 key={htmlContent} // Force re-render on content change

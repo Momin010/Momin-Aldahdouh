@@ -73,7 +73,7 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="relative z-30 flex items-center justify-between py-2 px-4 bg-white/20 backdrop-blur-2xl border-b border-white/30 flex-shrink-0">
+    <header className="relative z-30 flex items-center justify-between py-2 px-4 bg-black/20 backdrop-blur-lg border-b border-white/10 flex-shrink-0">
       <div className="flex-1 flex items-center gap-4">
         <div className="relative" ref={dropdownRef}>
           {isRenaming ? (
@@ -84,29 +84,29 @@ const Header: React.FC<HeaderProps> = ({
                 value={tempName}
                 onChange={(e) => setTempName(e.target.value)}
                 onBlur={handleRenameSubmit}
-                className="bg-black/10 text-gray-800 font-semibold rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                className="bg-white/20 text-white font-semibold rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
             </form>
           ) : (
             <button 
               onClick={() => setDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-2 p-2 rounded-lg bg-black/5 hover:bg-black/10 transition-colors"
+              className="flex items-center gap-2 p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
             >
-              <span className="font-semibold text-gray-800">{projectName}</span>
+              <span className="font-semibold">{projectName}</span>
               <Icon name="chevron-down" className="w-4 h-4" />
             </button>
           )}
           {isDropdownOpen && !isRenaming && (
-            <div className="absolute top-full left-0 mt-2 w-48 bg-white/80 backdrop-blur-md border border-black/10 rounded-xl shadow-lg z-20">
+            <div className="absolute top-full left-0 mt-2 w-48 bg-gray-800 border border-white/10 rounded-xl shadow-lg z-20">
               <button
                 onClick={() => setRenaming(true)}
-                className="w-full text-left px-4 py-2 text-sm text-gray-800 hover:bg-black/10"
+                className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-white/10"
               >
                 Rename
               </button>
               <button
                 onClick={handleDownloadClick}
-                className="w-full text-left px-4 py-2 text-sm text-gray-800 hover:bg-black/10"
+                className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-white/10"
               >
                 Download ZIP
               </button>
@@ -121,7 +121,7 @@ const Header: React.FC<HeaderProps> = ({
               <button 
                 onClick={onUndo} 
                 disabled={!canUndo} 
-                className="p-2 rounded-lg text-gray-600 hover:text-black hover:bg-black/10 disabled:text-gray-400 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors" 
+                className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 disabled:text-gray-600 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors" 
                 aria-label="Undo"
               >
                 <Icon name="undo" className="w-5 h-5" />
@@ -129,7 +129,7 @@ const Header: React.FC<HeaderProps> = ({
               <button 
                 onClick={onRedo} 
                 disabled={!canRedo} 
-                className="p-2 rounded-lg text-gray-600 hover:text-black hover:bg-black/10 disabled:text-gray-400 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors" 
+                className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 disabled:text-gray-600 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors" 
                 aria-label="Redo"
               >
                 <Icon name="redo" className="w-5 h-5" />
@@ -141,7 +141,7 @@ const Header: React.FC<HeaderProps> = ({
       <div className="flex-1 flex justify-end items-center gap-4">
         {isProjectLoaded && (
            <div className="md:hidden">
-            <button onClick={onToggleView} className="px-3 py-2 text-sm font-semibold text-white rounded-lg bg-purple-600 hover:bg-purple-700 transition-colors flex items-center gap-2">
+            <button onClick={onToggleView} className="px-3 py-2 text-sm font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 transition-colors flex items-center gap-2">
               {mobileView === 'chat' ? (
                 <>
                   <Icon name="eye" className="w-4 h-4" />
@@ -162,7 +162,7 @@ const Header: React.FC<HeaderProps> = ({
             href="https://github.com/Momin-Ai/Momin-AI-IDE" 
             target="_blank" 
             rel="noopener noreferrer" 
-            className="p-2 rounded-lg text-gray-600 hover:text-black hover:bg-black/10 transition-colors" 
+            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors" 
             aria-label="View on GitHub"
           >
             <Icon name="github" className="w-6 h-6" />
@@ -170,7 +170,7 @@ const Header: React.FC<HeaderProps> = ({
           <button 
             onClick={onPublish}
             disabled={!isProjectLoaded}
-            className="px-4 py-2 text-sm font-semibold text-white rounded-lg bg-purple-600 hover:bg-purple-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
+            className="px-4 py-2 text-sm font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">
             Publish
           </button>
         </div>
