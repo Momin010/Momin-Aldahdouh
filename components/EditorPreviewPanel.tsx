@@ -50,8 +50,8 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
             <Icon name="eye" className="w-4 h-4" /> Preview
           </button>
         </div>
-        <button onClick={onToggleFullscreen} className="p-2 rounded-lg hover:bg-white/10" aria-label="Toggle fullscreen">
-          <Icon name="fullscreen" className="w-4 h-4" />
+        <button onClick={onToggleFullscreen} className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10" aria-label="Toggle fullscreen">
+          <Icon name="fullscreen" className="w-5 h-5" />
         </button>
       </div>
 

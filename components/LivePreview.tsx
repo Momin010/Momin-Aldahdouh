@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Icon } from './Icon';
 import ResizablePanel from './ResizablePanel';
@@ -8,6 +7,7 @@ interface LivePreviewProps {
   htmlContent: string;
   isFullscreen?: boolean;
   onExitFullscreen?: () => void;
+  onToggleFullscreen?: () => void;
 }
 
 type Device = 'desktop' | 'tablet' | 'mobile';
@@ -79,7 +79,7 @@ const decodeHtmlEntities = (text: string): string => {
     return textarea.value;
 };
 
-const LivePreview: React.FC<LivePreviewProps> = ({ htmlContent, isFullscreen = false, onExitFullscreen }) => {
+const LivePreview: React.FC<LivePreviewProps> = ({ htmlContent, isFullscreen = false, onExitFullscreen, onToggleFullscreen }) => {
   const [device, setDevice] = useState<Device>('desktop');
   const [consoleLogs, setConsoleLogs] = useState<ConsoleMessage[]>([]);
 
@@ -107,20 +107,22 @@ const LivePreview: React.FC<LivePreviewProps> = ({ htmlContent, isFullscreen = f
     { name: 'tablet', icon: 'tablet' },
     { name: 'mobile', icon: 'mobile' },
   ];
-
-  if (isPlaceholder) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-gray-500 bg-black/20 rounded-xl">
-        <Icon name="eye" className="w-16 h-16 text-gray-600" />
-        <h3 className="text-xl font-semibold mt-4">Live Preview</h3>
-        <p>Your generated project preview will appear here.</p>
-      </div>
-    );
-  }
   
   const containerClasses = isFullscreen
     ? "flex flex-col h-full bg-black relative"
-    : "flex flex-col h-full bg-black/10";
+    : "flex flex-col h-full bg-black/20 backdrop-blur-lg border border-white/10 rounded-2xl overflow-hidden";
+
+  if (isPlaceholder) {
+    return (
+      <div className={containerClasses}>
+        <div className="flex flex-col items-center justify-center h-full text-gray-500">
+          <Icon name="eye" className="w-16 h-16 text-gray-600" />
+          <h3 className="text-xl font-semibold mt-4">Live Preview</h3>
+          <p>Your generated project preview will appear here.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={containerClasses}>
@@ -136,20 +138,27 @@ const LivePreview: React.FC<LivePreviewProps> = ({ htmlContent, isFullscreen = f
       )}
 
       {!isFullscreen && (
-        <div className="flex-shrink-0 flex items-center justify-center p-1.5 gap-2 bg-black/20 border-b border-white/10">
-          {deviceButtons.map(({ name, icon }) => (
-            <button
-              key={name}
-              onClick={() => setDevice(name)}
-              className={`p-2 rounded-lg transition-colors ${
-                device === name ? 'bg-purple-600 text-white' : 'text-gray-400 hover:bg-white/10 hover:text-white'
-              }`}
-              aria-label={`Switch to ${name} view`}
-              aria-pressed={device === name}
-            >
-              <Icon name={icon} className="w-5 h-5" />
+        <div className="flex-shrink-0 flex items-center justify-between p-1.5 bg-black/20 border-b border-white/10">
+          <div className='flex items-center gap-2'>
+            {deviceButtons.map(({ name, icon }) => (
+              <button
+                key={name}
+                onClick={() => setDevice(name)}
+                className={`p-2 rounded-lg transition-colors ${
+                  device === name ? 'bg-purple-600 text-white' : 'text-gray-400 hover:bg-white/10 hover:text-white'
+                }`}
+                aria-label={`Switch to ${name} view`}
+                aria-pressed={device === name}
+              >
+                <Icon name={icon} className="w-5 h-5" />
+              </button>
+            ))}
+          </div>
+          {onToggleFullscreen && (
+            <button onClick={onToggleFullscreen} className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10" aria-label="Toggle fullscreen">
+              <Icon name="fullscreen" className="w-5 h-5" />
             </button>
-          ))}
+          )}
         </div>
       )}
       
