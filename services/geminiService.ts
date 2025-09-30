@@ -322,7 +322,7 @@ export const sendAiChatRequest = async (
     messages: Message[], 
     files: Files | null, 
     attachment: FileAttachment | null,
-    onChunk: (text: string) => void
+    onChunk?: (text: string) => void
 ): Promise<ApiResponse> => {
     const context = "AI chat request";
     let lastError: any = null;
@@ -380,7 +380,7 @@ export const sendAiChatRequest = async (
                 const chunkText = chunk.text;
                 if (chunkText) {
                     responseText += chunkText;
-                    onChunk(chunkText);
+                    onChunk?.(chunkText);
                 }
             }
 

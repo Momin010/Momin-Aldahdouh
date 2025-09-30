@@ -8,6 +8,7 @@ interface ChatPanelProps {
   onSendMessage: (message: string, attachment?: FileAttachment | null) => void;
   aiStatus: string | null;
   streamingContent: string | null;
+  onAnimationComplete: (content: string) => void;
 }
 
 // Utility to decode HTML entities
@@ -18,9 +19,10 @@ const decodeHtmlEntities = (text: string): string => {
     return textarea.value;
 };
 
-const ChatPanel: React.FC<ChatPanelProps> = ({ messages, onSendMessage, aiStatus, streamingContent }) => {
+const ChatPanel: React.FC<ChatPanelProps> = ({ messages, onSendMessage, aiStatus, streamingContent, onAnimationComplete }) => {
   const [input, setInput] = useState('');
   const [attachment, setAttachment] = useState<FileAttachment | null>(null);
+  const [animatedText, setAnimatedText] = useState('');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -30,7 +32,27 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages, onSendMessage, aiStatus
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
     }
-  }, [messages, aiStatus, streamingContent]);
+  }, [messages, aiStatus, animatedText]);
+  
+  useEffect(() => {
+    if (streamingContent) {
+      setAnimatedText(''); // Reset on new message
+      let index = 0;
+      const intervalId = setInterval(() => {
+          index++;
+          setAnimatedText(streamingContent.substring(0, index));
+
+          if (index >= streamingContent.length) {
+              clearInterval(intervalId);
+              // Add a small delay before persisting to make the cursor blink at the end
+              setTimeout(() => onAnimationComplete(streamingContent), 500); 
+          }
+      }, 20); // Typing speed in ms
+
+      return () => clearInterval(intervalId);
+    }
+  }, [streamingContent, onAnimationComplete]);
+
 
   const handleSend = () => {
     if ((input.trim() || attachment) && !isLoading) {
@@ -88,13 +110,13 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages, onSendMessage, aiStatus
                 </div>
                 <div className="max-w-md p-4 rounded-2xl bg-black/30 text-gray-200 rounded-bl-none">
                   <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                    {decodeHtmlEntities(streamingContent)}
+                    {decodeHtmlEntities(animatedText)}
                     <span className="cursor-blink"></span>
                   </p>
                 </div>
             </div>
           )}
-          {aiStatus && streamingContent === null && (
+          {aiStatus && (
             <div className="flex items-start gap-3 animate-fadeInUp">
               <div className="w-8 h-8 rounded-full border border-purple-400/50 flex items-center justify-center flex-shrink-0 bg-black/20 p-0.5 relative">
                  <div className="w-full h-full rounded-full bg-gradient-to-br from-purple-500 to-cyan-400 opacity-50" />
