@@ -269,9 +269,9 @@ const RESPONSE_SCHEMA = {
                         required: ['filePath', 'action']
                     }
                 },
-                previewHtml: { type: Type.STRING, description: "The complete, updated Mirage Prototype HTML if a visual or functional change was made." }
+                previewHtml: { type: Type.STRING, description: "The complete, updated Mirage Prototype HTML. MUST be included for any visual or functional change. Can be an empty string if only non-visual code was changed (e.g., refactoring, adding comments)." }
             },
-            required: ['reason', 'changes']
+            required: ['reason', 'changes', 'previewHtml']
         }
     },
     required: ['responseType']
