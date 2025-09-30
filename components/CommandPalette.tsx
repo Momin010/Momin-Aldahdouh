@@ -93,10 +93,10 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, files,
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/60 backdrop-blur-sm" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="relative w-full max-w-xl bg-gray-800/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/20 backdrop-blur-sm" onClick={onClose} role="dialog" aria-modal="true">
+      <div className="relative w-full max-w-xl bg-white/60 backdrop-blur-2xl border border-white/30 rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="relative">
-          <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
           <input
             ref={inputRef}
             type="text"
@@ -106,10 +106,10 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, files,
               setSelectedIndex(0);
             }}
             placeholder="Search files and commands..."
-            className="w-full bg-transparent p-4 pl-12 text-lg text-white focus:outline-none"
+            className="w-full bg-transparent p-4 pl-12 text-lg text-gray-900 focus:outline-none placeholder-gray-500"
           />
         </div>
-        <hr className="border-white/10" />
+        <hr className="border-black/10" />
         {filteredItems.length > 0 ? (
           <ul ref={resultsRef} className="max-h-96 overflow-y-auto p-2">
             {filteredItems.map((item, index) => (
@@ -121,18 +121,18 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, files,
                 }}
                 onMouseMove={() => setSelectedIndex(index)}
                 className={`flex items-center gap-4 p-3 rounded-lg cursor-pointer ${
-                  selectedIndex === index ? 'bg-purple-600/50' : 'hover:bg-white/5'
+                  selectedIndex === index ? 'bg-purple-600/30' : 'hover:bg-black/5'
                 }`}
                 role="option"
                 aria-selected={selectedIndex === index}
               >
-                <Icon name={item.icon} className="w-5 h-5 text-gray-300 flex-shrink-0" />
-                <span className="text-sm text-gray-200 truncate">{item.name}</span>
+                <Icon name={item.icon} className="w-5 h-5 text-gray-700 flex-shrink-0" />
+                <span className="text-sm text-gray-800 truncate">{item.name}</span>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="p-4 text-center text-gray-400">No results found.</p>
+          <p className="p-4 text-center text-gray-500">No results found.</p>
         )}
       </div>
     </div>
