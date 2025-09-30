@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-," />
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MominAI - AI Web App Builder</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -73,6 +73,19 @@
   .animate-scaleIn {
     animation: scaleIn 0.5s ease-out forwards;
   }
+
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+  .cursor-blink {
+    display: inline-block;
+    width: 0.5rem;
+    height: 1rem;
+    margin-left: 0.25rem;
+    background-color: #c084fc; /* purple-300 */
+    animation: blink 1s step-end infinite;
+  }
+
   /* Staggered animation delays */
   .delay-100 { animation-delay: 100ms; }
   .delay-200 { animation-delay: 200ms; }
