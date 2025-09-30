@@ -100,31 +100,34 @@ const App: React.FC = () => {
     });
   }, [setHistory]);
 
+  const handleAnimationComplete = useCallback((content: string) => {
+    const modelMessage: Message = { role: 'model', content };
+    addHistoryState(prev => ({
+      ...prev,
+      chatMessages: [...prev.chatMessages, modelMessage],
+    }));
+    setStreamingContent(null);
+  }, [addHistoryState]);
+
   const handleSendMessage = useCallback(async (message: string, attachment?: FileAttachment) => {
     const userMessage: Message = { role: 'user', content: message };
     addHistoryState(prev => ({...prev, chatMessages: [...prev.chatMessages, userMessage]}));
 
+    setStreamingContent(null);
+    setAiStatus('MominAI is working...');
+
     try {
-      setStreamingContent('');
-      setAiStatus('MominAI is working...');
-      
       const response = await sendAiChatRequest(
         [...currentState.chatMessages, userMessage], // Send the most up-to-date message list
         hasGeneratedCode ? files : null, 
-        attachment,
-        (chunk: string) => {
-           setStreamingContent(prev => (prev ?? '') + chunk);
-        }
+        attachment
       );
-
-      setStreamingContent(null);
+      
+      setAiStatus(null); // AI is done thinking/processing
 
       switch (response.responseType) {
         case 'CHAT': {
-          addHistoryState(prev => ({
-            ...prev,
-            chatMessages: [...prev.chatMessages, { role: 'model', content: response.message }]
-          }));
+          setStreamingContent(response.message); // This will trigger the typing animation
           break;
         }
         case 'MODIFY_CODE': {
@@ -162,6 +165,7 @@ const App: React.FC = () => {
               projectName: modification.projectName || prev.projectName,
             };
           });
+          setAiStatus(null);
           break;
         }
       }
@@ -169,7 +173,6 @@ const App: React.FC = () => {
       console.error('Error in AI interaction:', error);
       const errorMessage: Message = { role: 'model', content: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}` };
       addHistoryState(prev => ({...prev, chatMessages: [...prev.chatMessages, errorMessage] }));
-    } finally {
       setAiStatus(null);
       setStreamingContent(null);
     }
@@ -260,6 +263,7 @@ const App: React.FC = () => {
             onSendMessage={handleSendMessage} 
             aiStatus={aiStatus}
             streamingContent={streamingContent}
+            onAnimationComplete={handleAnimationComplete}
           />
         </div>
 
