@@ -1,7 +1,7 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import type { Message, FileAttachment } from '../types';
 import { Icon } from './Icon';
+import { STARTER_PROMPTS } from '../constants';
 
 interface ChatPanelProps {
   messages: Message[];
@@ -9,6 +9,8 @@ interface ChatPanelProps {
   aiStatus: string | null;
   streamingContent: string | null;
   onAnimationComplete: (content: string) => void;
+  hasGeneratedCode: boolean;
+  onNavigateToPreview: () => void;
 }
 
 // Utility to decode HTML entities
@@ -19,7 +21,7 @@ const decodeHtmlEntities = (text: string): string => {
     return textarea.value;
 };
 
-const ChatPanel: React.FC<ChatPanelProps> = ({ messages, onSendMessage, aiStatus, streamingContent, onAnimationComplete }) => {
+const ChatPanel: React.FC<ChatPanelProps> = ({ messages, onSendMessage, aiStatus, streamingContent, onAnimationComplete, hasGeneratedCode, onNavigateToPreview }) => {
   const [input, setInput] = useState('');
   const [attachment, setAttachment] = useState<FileAttachment | null>(null);
   const [animatedText, setAnimatedText] = useState('');
@@ -27,6 +29,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages, onSendMessage, aiStatus
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isLoading = aiStatus !== null || streamingContent !== null;
+  const showStarterPrompts = !hasGeneratedCode && messages.length === 1;
 
   useEffect(() => {
     if (scrollContainerRef.current) {
@@ -83,6 +86,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages, onSendMessage, aiStatus
             console.error("Error reading file:", error);
             alert("Sorry, there was an error reading the selected file.");
         }
+        // FIX: Corrected typo from readDataURL to readAsDataURL.
         reader.readAsDataURL(file);
     } else if (file) {
         alert("Please select an image file (e.g., PNG, JPG, GIF).");
@@ -96,7 +100,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages, onSendMessage, aiStatus
     }
   };
 
-  const displayedMessages = messages.filter(m => m.role !== 'system');
+  const displayedMessages = messages.filter(m => m.role !== 'system' || (m.role === 'system' && !!m.action));
   const reversedMessages = [...displayedMessages].reverse();
 
   return (
@@ -136,6 +140,21 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages, onSendMessage, aiStatus
           )}
           {reversedMessages.map((msg, revIndex) => {
             const originalIndex = displayedMessages.length - 1 - revIndex;
+
+            if (msg.action === 'GOTO_PREVIEW') {
+              return (
+                <div key={`${originalIndex}-action`} className="md:hidden flex justify-center py-2 animate-fadeInUp">
+                  <button
+                    onClick={onNavigateToPreview}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 transition-colors"
+                  >
+                    <Icon name="eye" className="w-4 h-4" />
+                    <span>{msg.content}</span>
+                  </button>
+                </div>
+              );
+            }
+
             return (
               <div key={originalIndex} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''} animate-fadeInUp`}>
                 {msg.role === 'model' && 
@@ -145,6 +164,21 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages, onSendMessage, aiStatus
                 }
                 <div className={`max-w-md p-4 rounded-2xl ${msg.role === 'user' ? 'bg-purple-600 text-white rounded-br-none' : 'bg-black/30 text-gray-200 rounded-bl-none'}`}>
                   <p className="whitespace-pre-wrap text-sm leading-relaxed">{decodeHtmlEntities(msg.content)}</p>
+                  {showStarterPrompts && originalIndex === 0 && (
+                    <div className="mt-4 grid grid-cols-1 gap-2 border-t border-white/10 pt-4">
+                        {STARTER_PROMPTS.map(p => (
+                            <button
+                                key={p.label}
+                                onClick={() => onSendMessage(p.prompt, null)}
+                                className="text-left p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors duration-200 w-full disabled:opacity-50"
+                                disabled={isLoading}
+                            >
+                                <span className="font-semibold text-purple-300">{p.label}</span>
+                                <p className="text-gray-400 text-xs mt-1 leading-snug">{p.prompt}</p>
+                            </button>
+                        ))}
+                    </div>
+                  )}
                 </div>
               </div>
             );

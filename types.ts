@@ -5,6 +5,7 @@ export interface Files {
 export interface Message {
   role: 'user' | 'model' | 'system';
   content: string;
+  action?: 'GOTO_PREVIEW';
 }
 
 export interface FileAttachment {

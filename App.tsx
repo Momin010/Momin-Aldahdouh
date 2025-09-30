@@ -5,11 +5,13 @@ import EditorPreviewPanel from './components/EditorPreviewPanel';
 import PublishModal from './components/PublishModal';
 import CommandPalette from './components/CommandPalette';
 import LivePreview from './components/LivePreview';
+import ResizablePanel from './components/ResizablePanel';
 import type { Message, Files, Change, FileAttachment, History, AppState } from './types';
 import { sendAiChatRequest, resetChat } from './services/geminiService';
 import { downloadProjectAsZip } from './services/zipService';
 import { INITIAL_CHAT_MESSAGE, INITIAL_FILES } from './constants';
 import usePersistentState from './hooks/usePersistentState';
+
 
 type MobileView = 'chat' | 'preview';
 
@@ -145,6 +147,7 @@ const App: React.FC = () => {
             });
 
             const modificationMessage: Message = { role: 'model', content: modification.reason };
+            const gotoPreviewMessage: Message = { role: 'system', content: 'Go to Preview', action: 'GOTO_PREVIEW' };
             
             const isFirstGeneration = !prev.hasGeneratedCode;
             const activeFileDeleted = modification.changes.some(c => c.action === 'delete' && c.filePath === activeFile);
@@ -154,13 +157,11 @@ const App: React.FC = () => {
                setActiveFile(defaultFile);
             }
           
-            setMobileView('preview');
-
             return {
               ...prev,
               files: updatedFiles,
               previewHtml: modification.previewHtml || prev.previewHtml,
-              chatMessages: [...prev.chatMessages, modificationMessage],
+              chatMessages: [...prev.chatMessages, modificationMessage, gotoPreviewMessage],
               hasGeneratedCode: true,
               projectName: modification.projectName || prev.projectName,
             };
@@ -226,6 +227,10 @@ const App: React.FC = () => {
     setIsPreviewFullscreen(prev => !prev);
   }, []);
 
+  const handleNavigateToPreview = useCallback(() => {
+    setMobileView('preview');
+  }, []);
+
   if (isPreviewFullscreen) {
     return (
       <div className="fixed inset-0 z-[100] bg-black">
@@ -253,24 +258,46 @@ const App: React.FC = () => {
         canUndo={canUndo}
         canRedo={canRedo}
       />
-      <main className="flex flex-grow p-0 md:p-4 gap-4 overflow-hidden flex-col md:flex-row">
-        <div className={`
-          ${mobileView === 'preview' ? 'hidden' : 'flex'}
-          md:flex flex-col w-full md:w-1/3 md:max-w-lg h-full
-        `}>
+      
+      {/* --- Desktop Layout --- */}
+      <main className="hidden md:flex flex-grow p-4 gap-4 overflow-hidden">
+        <ResizablePanel direction="horizontal" initialSize={450} minSize={320}>
           <ChatPanel 
             messages={chatMessages} 
             onSendMessage={handleSendMessage} 
             aiStatus={aiStatus}
             streamingContent={streamingContent}
             onAnimationComplete={handleAnimationComplete}
+            hasGeneratedCode={hasGeneratedCode}
+            onNavigateToPreview={handleNavigateToPreview}
+          />
+          <EditorPreviewPanel
+            files={files}
+            activeFile={activeFile}
+            onSelectFile={setActiveFile}
+            onCodeChange={handleCodeChange}
+            previewHtml={previewHtml}
+            onBackToChat={() => {}} // Not used on desktop
+            onToggleFullscreen={handleToggleFullscreen}
+          />
+        </ResizablePanel>
+      </main>
+
+      {/* --- Mobile Layout --- */}
+      <main className="md:hidden flex flex-col flex-grow p-0 overflow-hidden">
+        <div className={`${mobileView === 'preview' ? 'hidden' : 'flex'} flex-col w-full h-full`}>
+          <ChatPanel 
+            messages={chatMessages} 
+            onSendMessage={handleSendMessage} 
+            aiStatus={aiStatus}
+            streamingContent={streamingContent}
+            onAnimationComplete={handleAnimationComplete}
+            hasGeneratedCode={hasGeneratedCode}
+            onNavigateToPreview={handleNavigateToPreview}
           />
         </div>
 
-        <div className={`
-          ${mobileView === 'chat' ? 'hidden' : 'flex'}
-          md:flex flex-col flex-grow h-full
-        `}>
+        <div className={`${mobileView === 'chat' ? 'hidden' : 'flex'} flex-col flex-grow h-full`}>
           <EditorPreviewPanel
             files={files}
             activeFile={activeFile}
@@ -282,6 +309,7 @@ const App: React.FC = () => {
           />
         </div>
       </main>
+
       {isPublishModalOpen && (
         <PublishModal
           projectName={projectName}
