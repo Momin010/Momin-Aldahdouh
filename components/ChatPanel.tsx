@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { Message, FileAttachment, Plan } from '../types';
 import { Icon } from './Icon';
-import { STARTER_PROMPTS } from '../constants';
+import { STARTER_PROMPTS, DESIGN_BLUEPRINTS } from '../constants';
 
 // Utility to decode HTML entities
 const decodeHtmlEntities = (text: string): string => {
@@ -292,13 +292,26 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                         </div>
                       )}
                       {!msg.streaming && showStarterPrompts && originalIndex === 0 && (
-                        <div className="mt-4 grid grid-cols-1 gap-2 border-t border-white/10 pt-4">
-                            {STARTER_PROMPTS.map(p => (
-                                <button key={p.label} onClick={() => onSendMessage(p.prompt, null)} className="text-left p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors duration-200 w-full disabled:opacity-50" disabled={isLoading}>
-                                    <span className="font-semibold text-purple-300">{p.label}</span>
-                                    <p className="text-gray-400 text-xs mt-1 leading-snug">{p.prompt}</p>
-                                </button>
-                            ))}
+                        <div className="mt-4 space-y-4 border-t border-white/10 pt-4">
+                            <div className="grid grid-cols-1 gap-2">
+                                {STARTER_PROMPTS.map(p => (
+                                    <button key={p.label} onClick={() => onSendMessage(p.prompt, null)} className="text-left p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors duration-200 w-full disabled:opacity-50" disabled={isLoading}>
+                                        <span className="font-semibold text-purple-300">{p.label}</span>
+                                        <p className="text-gray-400 text-xs mt-1 leading-snug">{p.prompt}</p>
+                                    </button>
+                                ))}
+                            </div>
+                            <div>
+                                <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Choose a Design Blueprint</h4>
+                                <div className="grid grid-cols-2 gap-2">
+                                     {DESIGN_BLUEPRINTS.map(d => (
+                                        <button key={d.name} onClick={() => onSendMessage(`${STARTER_PROMPTS[0].prompt} ${d.promptFragment}`)} className="text-left p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors duration-200 w-full disabled:opacity-50" disabled={isLoading}>
+                                            <span className="font-semibold text-purple-300">{d.name}</span>
+                                            <p className="text-gray-400 text-xs mt-1 leading-snug">{d.description}</p>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                       )}
                     </>
