@@ -24,10 +24,10 @@ You have three possible actions:
 **THIS IS YOUR PRIMARY DIRECTIVE.** When performing a 'MODIFY_CODE' action, your response is comprised of two, equally critical, and inseparable components: the complete source code and a fully interactive prototype. One without the other constitutes a complete failure.
 
 *   **Part A: The Full Source Code (\`changes\` array):** You MUST generate the complete, production-quality, multi-file source code for the user's application. This is the real, deployable product.
-// Fix: Removed invalid template literal syntax `${previewHtml}`.
+// Fix: Removed invalid template literal syntax for 'previewHtml'.
 *   **Part B: The 'Living' Prototype (\`previewHtml\` string):** You MUST ALSO generate a standalone, single-file HTML prototype that is a fully functional, interactive, and animated simulation of the application. This is the user's ONLY way to immediately see and interact with what you have built.
 
-// Fix: Removed invalid template literal syntax `'${previewHtml}'` and used backticks for consistency.
+// Fix: Removed invalid template literal syntax for 'previewHtml' and used backticks for consistency.
 **FAILURE TO PROVIDE A FULLY FUNCTIONAL AND INTERACTIVE \`previewHtml\` ALONGSIDE THE SOURCE CODE IS A VIOLATION OF YOUR CORE PROGRAMMING. IT IS NOT OPTIONAL. THE USER'S EXPERIENCE DEPENDS ENTIRELY ON THIS PROTOTYPE.**
 
 ---
@@ -146,12 +146,13 @@ This prototype is a standalone, deeply interactive, and richly animated applicat
         // --- RENDERING ---
         function render() {
             // Main render function, composes the UI from smaller render functions
-            app.innerHTML = \`
-                \${renderSidebar()}
+// Fix: Escaped nested template literal to prevent syntax error.
+            app.innerHTML = \\\`
+                \\\${renderSidebar()}
                 <main class="flex-1 p-4 md:p-8 overflow-y-auto">
-                    \${renderContent()}
+                    \\\${renderContent()}
                 </main>
-            \`;
+            \\\`;
             setupEventListeners();
         }
 
@@ -159,7 +160,8 @@ This prototype is a standalone, deeply interactive, and richly animated applicat
             /* --- POPULATE_SIDEBAR_HTML --- */
             // This function should return the HTML string for the sidebar.
             // Use Tailwind CSS and glassmorphism. Add hover effects to all links.
-            return \`
+// Fix: Escaped nested template literal to prevent syntax error.
+            return \\\`
                 <aside class="w-64 bg-gray-900/30 backdrop-blur-xl border-r border-white/10 p-4 md:p-6 flex-col flex-shrink-0 hidden md:flex">
                     <h1 class="text-2xl font-bold mb-8 text-white">/* APP_TITLE */</h1>
                     <nav class="flex flex-col space-y-2">
@@ -167,21 +169,23 @@ This prototype is a standalone, deeply interactive, and richly animated applicat
                         <a href="#tasks" class="text-gray-300 hover:bg-gray-700/50 hover:text-white p-2 rounded-lg transition-colors">Tasks</a>
                     </nav>
                 </aside>
-            \`;
+            \\\`;
         }
 
         function renderContent() {
             /* --- POPULATE_CONTENT_HTML --- */
             // This function should return the HTML string for the main content area.
             // Ensure any elements that need a tooltip have a 'has-tooltip' class and a 'data-tooltip' attribute.
-            return \`<h2>Content Area</h2><p>Implement view rendering here.</p>
-                    <button class="has-tooltip bg-purple-600 p-2 rounded-lg" data-tooltip="This is a tooltip!">Hover Me</button>\`;
+// Fix: Escaped nested template literal to prevent syntax error.
+            return \\\`<h2>Content Area</h2><p>Implement view rendering here.</p>
+                    <button class="has-tooltip bg-purple-600 p-2 rounded-lg" data-tooltip="This is a tooltip!">Hover Me</button>\\\`;
         }
         
         function renderTooltip() {
             if (state.tooltip.visible) {
                 tooltipEl.innerHTML = state.tooltip.content;
-                tooltipEl.style.transform = \`translate(\${state.tooltip.x}px, \${state.tooltip.y}px)\`;
+// Fix: Escaped nested template literal to prevent syntax error.
+                tooltipEl.style.transform = \\\`translate(\\\${state.tooltip.x}px, \\\${state.tooltip.y}px)\\\`;
                 tooltipEl.classList.add('visible');
             } else {
                 tooltipEl.classList.remove('visible');
@@ -427,7 +431,7 @@ function getApiKeys(): string[] {
     // Vercel environment variables are available under process.env.
     // The user has requested to use the 'VITE_' prefix for these keys.
     for (let i = 1; i <= 10; i++) {
-        const key = process.env[\`VITE_GEMINI_API_KEY_\${i}\`];
+        const key = process.env[`VITE_GEMINI_API_KEY_${i}`];
         if (key) {
             keys.push(key);
         }
@@ -476,12 +480,12 @@ export default async function handler(req: any, res: any) {
 
     if (attachment) {
         parts.push({ inlineData: { mimeType: attachment.type, data: attachment.content } });
-        parts.push({ text: \`An image named \${attachment.name} was attached as a reference.\` });
+        parts.push({ text: `An image named ${attachment.name} was attached as a reference.` });
     }
 
     if (files && Object.keys(files).length > 0 && latestMessage.role !== 'correction') {
-        const fileContents = Object.entries(files).map(([path, content]) => \`// File: \${path}\n\n\${content}\`).join('\\n\\n---\\n\\n');
-        parts.push({ text: \`\n\n### Current Project Files:\n\${fileContents}\` });
+        const fileContents = Object.entries(files).map(([path, content]) => `// File: ${path}\n\n${content}`).join('\\n\\n---\\n\\n');
+        parts.push({ text: `\n\n### Current Project Files:\n${fileContents}` });
     }
     
     let lastError: any = null;
@@ -505,7 +509,7 @@ export default async function handler(req: any, res: any) {
 
             const responseText = result.text;
             if (!responseText.trim()) {
-                throw new Error(\`The AI returned an empty response. This could be due to a content safety filter or an internal error.\`);
+                throw new Error(`The AI returned an empty response. This could be due to a content safety filter or an internal error.`);
             }
 
             let jsonResponse: ApiResponse;
@@ -521,7 +525,7 @@ export default async function handler(req: any, res: any) {
         } catch (error: any) {
             lastError = error;
             const errorMessage = error.message || String(error);
-            console.warn(\`API call failed with key ending in ...\${key.slice(-4)}: \${errorMessage}\`);
+            console.warn(`API call failed with key ending in ...${key.slice(-4)}: ${errorMessage}`);
             
             // Check for specific errors to rotate keys on
             const isRateLimitError = errorMessage.includes('429');
@@ -532,7 +536,7 @@ export default async function handler(req: any, res: any) {
                 continue; 
             } else {
                 // It's a different kind of error (e.g., 400 Bad Request), so we should stop and report it.
-                return res.status(500).json({ message: \`An unrecoverable AI error occurred: \${errorMessage}\` });
+                return res.status(500).json({ message: `An unrecoverable AI error occurred: ${errorMessage}` });
             }
         }
     }
@@ -540,5 +544,5 @@ export default async function handler(req: any, res: any) {
     // If all keys failed
     console.error("All Gemini API keys failed.", lastError);
     const finalErrorMessage = lastError?.message || 'All available API keys are either rate-limited or the service is unavailable.';
-    return res.status(503).json({ message: \`Service Unavailable: \${finalErrorMessage}\` });
+    return res.status(503).json({ message: `Service Unavailable: ${finalErrorMessage}` });
 }
