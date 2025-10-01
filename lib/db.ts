@@ -1,12 +1,10 @@
-import { createPool } from '@vercel/postgres';
+import { sql } from '@vercel/postgres';
 
-// Vercel automatically provides the POSTGRES_URL environment variable
-// when a Vercel Postgres database is connected to a project.
-// Explicitly creating a pool makes the connection more robust and fixes potential issues
-// where the automatic detection might fail in some serverless environments.
-const pool = createPool({
-  connectionString: process.env.POSTGRES_URL,
-});
+// For serverless functions, `@vercel/postgres` recommends using the `sql`
+// template tag directly. It automatically handles connection management
+// (opening and closing connections) for each query, and it reads the
+// connection string from environment variables like `POSTGRES_URL` by default.
+// This is more efficient and reliable in a serverless environment than
+// managing a long-lived connection pool.
 
-// We are now exporting the sql template tag from our configured pool.
-export const { sql } = pool;
+export { sql };
