@@ -98,6 +98,13 @@ const LivePreview: React.FC<LivePreviewProps> = ({
   const isPlaceholder = !decodedContent.trim();
 
   useEffect(() => {
+    // Set default device to mobile on smaller screens for a better initial experience.
+    if (window.innerWidth < 768) {
+      setDevice('mobile');
+    }
+  }, []);
+
+  useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data && event.data.source === 'mominai-preview-console') {
         onNewLog({ level: event.data.level, payload: event.data.payload });
