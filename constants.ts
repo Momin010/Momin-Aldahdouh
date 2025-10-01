@@ -1,4 +1,4 @@
-import type { Message, Files } from './types.js';
+import type { Message, Files, DesignBlueprint } from './types.js';
 
 export const INITIAL_FILES: Files = {};
 
@@ -11,6 +11,29 @@ export const STARTER_PROMPTS: StarterPrompt[] = [
   { label: 'Portfolio Website', prompt: 'Build me a stunning, animated portfolio website to showcase my photography. It should have a full-screen hero image, a gallery section, and an about me page.' },
   { label: 'To-Do List App', prompt: 'Create a functional to-do list application. I should be able to add tasks, mark them as complete, and filter by status. Use local storage to persist the tasks.' },
   { label: 'SaaS Landing Page', prompt: 'Design a modern landing page for a new SaaS product called "InnovateAI". It needs a bold hero section, a features grid, a pricing table, and a contact form.' },
+];
+
+export const DESIGN_BLUEPRINTS: DesignBlueprint[] = [
+  {
+    name: 'Glassmorphism',
+    description: 'Frosted-glass effects, transparency, and vivid gradients.',
+    promptFragment: 'with a Glassmorphism design style',
+  },
+  {
+    name: 'Neumorphism',
+    description: 'Soft, extruded UI elements that appear to push through the surface.',
+    promptFragment: 'with a Neumorphism design style',
+  },
+    {
+    name: 'Claymorphism',
+    description: 'Soft, puffy, and playful UI that looks like clay.',
+    promptFragment: 'with a Claymorphism design style',
+  },
+  {
+    name: 'Material Design',
+    description: "Google's classic design language with shadows and responsive animations.",
+    promptFragment: 'using Google’s Material Design principles',
+  },
 ];
 
 

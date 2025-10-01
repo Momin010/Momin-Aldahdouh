@@ -94,3 +94,10 @@ export interface Workspace {
 export interface User {
   email: string;
 }
+
+// New type for Design Blueprints
+export interface DesignBlueprint {
+  name: string;
+  description: string;
+  promptFragment: string;
+}
