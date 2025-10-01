@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import ChatPanel from './ChatPanel';
 import Header from './Header';
@@ -436,7 +437,6 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, initialWorkspace, onS
   if (isPreviewFullscreen) {
     return (
       <div className="fixed inset-0 z-[100] bg-black">
-        {/* FIX: Add missing 'device' prop */}
         <LivePreview device={device} htmlContent={previewHtml} isFullscreen onExitFullscreen={handleToggleFullscreen} logs={consoleLogs} onNewLog={handleNewLog} onClearLogs={() => setConsoleLogs([])} />
       </div>
     );
@@ -500,16 +500,23 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, initialWorkspace, onS
   };
   
   return (
-    <div className="h-screen bg-transparent text-gray-200 font-sans flex overflow-hidden" onClick={handleCloseContextMenu}>
-      {/* Desktop Sidebar (Hover-based) */}
-      <div className="hidden md:block relative h-full flex-shrink-0 z-40" onMouseEnter={() => setIsSidebarHovered(true)} onMouseLeave={() => setIsSidebarHovered(false)}>
-        <div className={`h-full transition-transform duration-300 ease-in-out ${isSidebarHovered ? 'translate-x-0' : '-translate-x-full'}`}>
-          <Sidebar {...sidebarProps} />
-        </div>
-        <div className="absolute bottom-4 left-4 pointer-events-none">
-           <div className={`p-3 rounded-full bg-purple-600/80 backdrop-blur-md border border-white/10 text-white shadow-lg transition-opacity duration-300 ${isSidebarHovered ? 'opacity-0' : 'opacity-100'}`}>
-              <Icon name="menu" className="w-6 h-6" />
-           </div>
+    <div className="h-screen bg-transparent text-gray-200 font-sans flex overflow-hidden relative" onClick={handleCloseContextMenu}>
+      {/* Desktop Sidebar (Overlay) */}
+      <div 
+        className={`hidden md:block absolute top-0 left-0 h-full z-40 transition-transform duration-300 ease-in-out ${isSidebarHovered ? 'translate-x-0' : '-translate-x-full'}`}
+        onMouseEnter={() => setIsSidebarHovered(true)}
+        onMouseLeave={() => setIsSidebarHovered(false)}
+      >
+        <Sidebar {...sidebarProps} />
+      </div>
+
+      {/* Floating Menu Button to trigger sidebar */}
+      <div 
+        onMouseEnter={() => setIsSidebarHovered(true)}
+        className={`hidden md:block fixed bottom-4 left-4 z-50 cursor-pointer transition-opacity duration-300 ${isSidebarHovered ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+      >
+        <div className="p-3 rounded-full bg-purple-600/80 backdrop-blur-md border border-white/10 text-white shadow-lg">
+            <Icon name="menu" className="w-6 h-6" />
         </div>
       </div>
       
@@ -522,7 +529,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, initialWorkspace, onS
       </div>
       
       {/* Main Content */}
-      <div className={`flex-grow h-full transition-all duration-300 ease-in-out ${isSidebarHovered ? 'md:ml-0' : 'md:-ml-64'}`}>
+      <div className="flex-grow h-full">
         {renderWorkspaceContent()}
       </div>
 
