@@ -1,4 +1,4 @@
-import { getUserFromRequest } from '../../lib/auth';
+import { getUserFromRequest } from '../../lib/auth.js';
 
 export default async function handler(req: any, res: any) {
   const user = await getUserFromRequest(req);

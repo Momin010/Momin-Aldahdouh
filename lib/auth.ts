@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { serialize, parse } from 'cookie';
-import type { User } from '../types';
+import type { User } from '../types.js';
 
 // The JWT_SECRET must be set in the environment variables.
 // Do not provide a default fallback, as it's a security risk and hides configuration errors.
