@@ -1,7 +1,7 @@
-import { db } from '../../lib/db';
-import { hashPassword, createSession } from '../../lib/auth';
-import type { User, Project, AppState } from '../../types';
-import { INITIAL_CHAT_MESSAGE } from '../../constants';
+import { db } from '../../lib/db.js';
+import { hashPassword, createSession } from '../../lib/auth.js';
+import type { User, Project, AppState } from '../../types.js';
+import { INITIAL_CHAT_MESSAGE } from '../../constants.js';
 import { v4 as uuidv4 } from 'uuid';
 
 export default async function handler(req: any, res: any) {

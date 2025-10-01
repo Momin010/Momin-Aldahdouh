@@ -1,6 +1,6 @@
-import { sql } from '../../lib/db';
-import { comparePassword, createSession } from '../../lib/auth';
-import type { User } from '../../types';
+import { sql } from '../../lib/db.js';
+import { comparePassword, createSession } from '../../lib/auth.js';
+import type { User } from '../../types.js';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {

@@ -1,6 +1,6 @@
-import { sql } from '../../lib/db';
-import { getUserFromRequest } from '../../lib/auth';
-import type { Project } from '../../types';
+import { sql } from '../../lib/db.js';
+import { getUserFromRequest } from '../../lib/auth.js';
+import type { Project } from '../../types.js';
 
 export default async function handler(req: any, res: any) {
   const user = await getUserFromRequest(req);

@@ -1,8 +1,8 @@
-import { sql } from '../../lib/db';
-import { getUserFromRequest } from '../../lib/auth';
-import type { Project, Workspace, AppState } from '../../types';
+import { sql } from '../../lib/db.js';
+import { getUserFromRequest } from '../../lib/auth.js';
+import type { Project, Workspace, AppState } from '../../types.js';
 import { v4 as uuidv4 } from 'uuid';
-import { INITIAL_CHAT_MESSAGE } from '../../constants';
+import { INITIAL_CHAT_MESSAGE } from '../../constants.js';
 
 
 export default async function handler(req: any, res: any) {
