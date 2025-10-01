@@ -1,4 +1,4 @@
-import type { Message, Files } from './types';
+import type { Message, Files } from './types.js';
 
 export const INITIAL_FILES: Files = {};
 
