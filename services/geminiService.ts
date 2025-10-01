@@ -1,13 +1,15 @@
 import { GoogleGenAI, Type, Chat, GenerateContentResponse } from '@google/genai';
 import type { Message, Files, FileAttachment, Change, ApiResponse } from '../types';
 
-// Use the user-provided API key directly.
-const API_KEY = 'AIzaSyBDRi3Bb0YBPPbiQdhBIEDP34Gkygctemc';
+// The API key is managed by the execution environment.
+const API_KEY = process.env.API_KEY;
 
 if (!API_KEY) {
-    console.error("API key not found. Please ensure the API_KEY is correctly set.");
+    // This will be visible in the console if the API_KEY environment variable is not set.
+    console.error("API key not found. Please set the API_KEY environment variable.");
 }
 
+// Initialize with a check to prevent errors if the key is missing.
 const ai = new GoogleGenAI({ apiKey: API_KEY as string });
 
 const SYSTEM_INSTRUCTION = `You are MominAI, a senior software architect and conversational coding partner. Your expertise is equivalent to that of a principal engineer from a top-tier tech company. You are helpful, polite, and collaborative.
@@ -434,6 +436,12 @@ const parseJsonResponse = (rawText: string, context: string): ApiResponse => {
 
 const handleApiError = (error: any, context: string): never => {
     console.error(`Error during Gemini API call (${context}):`, error);
+    
+    // Don't throw for user-initiated aborts, let the caller handle it.
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw error;
+    }
+    
     const errorMessage = error instanceof Error ? error.message : String(error);
     
     if (errorMessage.includes('429') || errorMessage.toLowerCase().includes('quota')) {
@@ -445,47 +453,45 @@ const handleApiError = (error: any, context: string): never => {
     throw new Error(errorMessage || `An unexpected error occurred with the AI during the '${context}' step.`);
 };
 
-let chatSession: Chat | null = null;
 const MAX_RETRIES = 2;
 
 export const sendAiChatRequest = async (
     messages: Message[], 
     files: Files | null, 
-    attachment: FileAttachment | null
+    attachment: FileAttachment | null,
+    signal?: AbortSignal
 ): Promise<ApiResponse> => {
     const context = "AI chat request";
     let lastError: any = null;
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
         try {
-            if (!chatSession) {
-                 const history = messages.slice(0, -1)
-                    .filter(m => m.role !== 'system' && m.role !== 'correction')
-                    .map(msg => ({
-                        role: msg.role,
-                        parts: [{ text: msg.content }]
-                    }));
-
-                chatSession = ai.chats.create({
-                    model: 'gemini-2.5-flash',
-                    history,
-                    config: {
-                        systemInstruction: SYSTEM_INSTRUCTION,
-                        responseMimeType: 'application/json',
-                        responseSchema: RESPONSE_SCHEMA,
-                    },
-                });
+            if (signal?.aborted) {
+                throw new DOMException('Aborted before request', 'AbortError');
             }
 
+            const history = messages.slice(0, -1)
+                .filter(m => m.role !== 'system' && m.role !== 'correction')
+                .map(msg => ({
+                    role: msg.role,
+                    parts: [{ text: msg.content }]
+                }));
+
+            const chatSession: Chat = ai.chats.create({
+                model: 'gemini-2.5-flash',
+                history,
+                config: {
+                    systemInstruction: SYSTEM_INSTRUCTION,
+                    responseMimeType: 'application/json',
+                    responseSchema: RESPONSE_SCHEMA,
+                },
+            });
+
             const latestMessage = messages[messages.length - 1];
-            const parts: (string | { inlineData: { mimeType: string; data: string } })[] = [];
-            
-            parts.push(latestMessage.content);
+            const parts: (string | { inlineData: { mimeType: string; data: string } })[] = [latestMessage.content];
 
             if (attachment) {
-                parts.push({
-                    inlineData: { mimeType: attachment.type, data: attachment.content },
-                });
+                parts.push({ inlineData: { mimeType: attachment.type, data: attachment.content } });
                 parts.push(`An image named ${attachment.name} was attached as a reference.`);
             }
 
@@ -496,11 +502,20 @@ export const sendAiChatRequest = async (
 
             if (attempt > 1) {
                 console.warn(`AI request failed. Retrying (attempt ${attempt}/${MAX_RETRIES})...`);
-                const retryInstruction = "CRITICAL REMINDER: Your previous response was not valid JSON. You MUST ensure your entire output is a single, valid JSON object that adheres strictly to the provided schema. Do not include any text, notes, or markdown formatting outside of the JSON object itself.";
-                parts.unshift(retryInstruction);
+                parts.unshift("CRITICAL REMINDER: Your previous response was not valid JSON. You MUST ensure your entire output is a single, valid JSON object that adheres strictly to the provided schema. Do not include any text, notes, or markdown formatting outside of the JSON object itself.");
             }
 
-            const result: GenerateContentResponse = await chatSession.sendMessage({ message: parts });
+            // FIX: The sendMessage method expects an object with a `message` property containing the parts array.
+            const apiCallPromise = chatSession.sendMessage({ message: parts });
+            
+            const responsePromise = new Promise<GenerateContentResponse>((resolve, reject) => {
+                apiCallPromise.then(resolve).catch(reject);
+                signal?.addEventListener('abort', () => {
+                    reject(new DOMException('Aborted by user.', 'AbortError'));
+                });
+            });
+
+            const result = await responsePromise;
             const responseText = result.text;
 
             if (!responseText.trim()) {
@@ -511,7 +526,9 @@ export const sendAiChatRequest = async (
         } catch (error) {
             lastError = error;
             console.error(`Error during Gemini API call (attempt ${attempt})`, error);
-            chatSession = null; 
+            if (error instanceof DOMException && error.name === 'AbortError') {
+                throw error; // Propagate abort error immediately
+            }
             if (attempt < MAX_RETRIES) {
                 await sleep(1000 * attempt);
             }
@@ -520,9 +537,6 @@ export const sendAiChatRequest = async (
     handleApiError(lastError, context);
 };
 
-/**
- * Resets the current chat session.
- */
 export const resetChat = () => {
-    chatSession = null;
+    // This service is now stateless, so this function does nothing.
 };

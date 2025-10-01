@@ -3,59 +3,12 @@ import type { Message, FileAttachment, Plan } from '../types';
 import { Icon } from './Icon';
 import { STARTER_PROMPTS } from '../constants';
 
-// Utility to decode HTML entities
-const decodeHtmlEntities = (text: string): string => {
-    if (typeof window === 'undefined' || !text) return text;
-    const textarea = document.createElement('textarea');
-    textarea.innerHTML = text;
-    return textarea.value;
-};
-
-const ModelMessageContent: React.FC<{
-  message: Message;
-  index: number;
-  onComplete: (index: number) => void;
-}> = React.memo(({ message, index, onComplete }) => {
-  const [animatedText, setAnimatedText] = useState(message.streaming ? '' : message.content);
-  // Use a ref to prevent re-triggering the effect after completion
-  const animationCompletedRef = useRef(!message.streaming);
-
-  useEffect(() => {
-    if (message.streaming && !animationCompletedRef.current) {
-      let charIndex = 0;
-      const intervalId = setInterval(() => {
-        charIndex++;
-        setAnimatedText(message.content.substring(0, charIndex));
-        if (charIndex >= message.content.length) {
-          clearInterval(intervalId);
-          animationCompletedRef.current = true;
-          // Notify parent that this specific message is done streaming
-          setTimeout(() => onComplete(index), 100);
-        }
-      }, 20); // Typing speed
-      return () => clearInterval(intervalId);
-    } else if (!message.streaming) {
-        // Ensure final content is displayed if streaming is false from the start
-        setAnimatedText(message.content);
-    }
-  }, [message.streaming, message.content, index, onComplete]);
-
-  const isStreaming = message.streaming && animatedText.length < message.content.length;
-
-  return (
-    <>
-      <p className="whitespace-pre-wrap text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(animatedText).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
-      {isStreaming && <span className="cursor-blink" />}
-    </>
-  );
-});
-
-
 interface ChatPanelProps {
   messages: Message[];
   onSendMessage: (message: string, attachment?: FileAttachment | null) => void;
   aiStatus: string | null;
-  onStreamingComplete: (index: number) => void;
+  streamingContent: string | null;
+  onAnimationComplete: (content: string) => void;
   hasGeneratedCode: boolean;
   onNavigateToPreview: () => void;
   onCancelRequest: () => void;
@@ -63,6 +16,7 @@ interface ChatPanelProps {
   onContextMenu: (event: React.MouseEvent, index: number) => void;
   onDeleteMessage: (index: number) => void;
   onResubmitMessage: (index: number, newContent: string) => void;
+  // FIX: Added props to control editing state from the parent component.
   editingIndex: number | null;
   onCancelEditing: () => void;
 }
@@ -74,6 +28,14 @@ const LOADING_STATUSES = [
   'Verifying generated code...',
   'Errors detected. Attempting to fix...'
 ];
+
+// Utility to decode HTML entities
+const decodeHtmlEntities = (text: string): string => {
+    if (typeof window === 'undefined' || !text) return text;
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = text;
+    return textarea.value;
+};
 
 const PlanDisplay: React.FC<{ plan: Plan }> = ({ plan }) => (
     <div className="border-t border-white/10 mt-4 pt-4">
@@ -103,11 +65,13 @@ const PlanDisplay: React.FC<{ plan: Plan }> = ({ plan }) => (
 );
 
 const ChatPanel: React.FC<ChatPanelProps> = ({ 
-  messages, onSendMessage, aiStatus, onStreamingComplete, hasGeneratedCode, onNavigateToPreview,
+  messages, onSendMessage, aiStatus, streamingContent, onAnimationComplete, hasGeneratedCode, onNavigateToPreview,
   onCancelRequest, isCancelling, onContextMenu, onResubmitMessage, editingIndex, onCancelEditing
 }) => {
   const [input, setInput] = useState('');
   const [attachment, setAttachment] = useState<FileAttachment | null>(null);
+  const [animatedText, setAnimatedText] = useState('');
+  // FIX: Removed local editingIndex state, as it's now controlled by props.
   const [editingText, setEditingText] = useState('');
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -115,15 +79,32 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const longPressTimerRef = useRef<number | null>(null);
 
-  const isLoading = (aiStatus !== null && LOADING_STATUSES.includes(aiStatus));
+  const isLoading = (aiStatus !== null && LOADING_STATUSES.includes(aiStatus)) || streamingContent !== null;
   const showStarterPrompts = !hasGeneratedCode && messages.length === 1;
 
   useEffect(() => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
     }
-  }, [messages, aiStatus]);
+  }, [messages, aiStatus, animatedText]);
+  
+  useEffect(() => {
+    if (streamingContent) {
+      setAnimatedText(''); // Reset on new message
+      let index = 0;
+      const intervalId = setInterval(() => {
+          index++;
+          setAnimatedText(streamingContent.substring(0, index));
+          if (index >= streamingContent.length) {
+              clearInterval(intervalId);
+              setTimeout(() => onAnimationComplete(streamingContent), 500); 
+          }
+      }, 20); // Typing speed in ms
+      return () => clearInterval(intervalId);
+    }
+  }, [streamingContent, onAnimationComplete]);
 
+  // FIX: Effect to update editing text when the editingIndex prop changes.
   useEffect(() => {
     if (editingIndex !== null && messages[editingIndex]) {
       setEditingText(messages[editingIndex].content);
@@ -164,7 +145,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     }
   };
 
+  // FIX: Removed startEditing function, as editing is now initiated from the parent component.
+
   const cancelEditing = () => {
+    // FIX: Call the onCancelEditing prop to update the state in the parent.
     onCancelEditing();
     setEditingText('');
   };
@@ -221,8 +205,21 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
       <div ref={scrollContainerRef} className="flex-grow p-4 overflow-y-auto">
         <div className="flex flex-col-reverse gap-6">
+          {streamingContent !== null && (
+             <div className="flex items-start gap-3 animate-fadeInUp">
+                <div className="w-8 h-8 rounded-full border border-purple-400/50 flex items-center justify-center flex-shrink-0 bg-black/20 p-0.5">
+                  <div className="w-full h-full rounded-full bg-gradient-to-br from-purple-500 to-cyan-400 opacity-50" />
+                </div>
+                <div className="max-w-md p-4 rounded-2xl bg-black/30 text-gray-200 rounded-bl-none">
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                    {decodeHtmlEntities(animatedText)}
+                    <span className="cursor-blink"></span>
+                  </p>
+                </div>
+            </div>
+          )}
           {aiStatus && (
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-3 animate-fadeInUp">
               <div className="w-8 h-8 rounded-full border border-purple-400/50 flex items-center justify-center flex-shrink-0 bg-black/20 p-0.5 relative">
                  <div className="w-full h-full rounded-full bg-gradient-to-br from-purple-500 to-cyan-400 opacity-50" />
                  <div className="absolute inset-0 rounded-full border border-purple-400 animate-pulse"></div>
@@ -246,7 +243,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
 
             if (msg.action === 'GOTO_PREVIEW') {
               return (
-                <div key={`${originalIndex}-action`} className="md:hidden flex justify-center py-2">
+                <div key={`${originalIndex}-action`} className="md:hidden flex justify-center py-2 animate-fadeInUp">
                   <button onClick={onNavigateToPreview} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 transition-colors">
                     <Icon name="eye" className="w-4 h-4" /> <span>{msg.content}</span>
                   </button>
@@ -254,10 +251,11 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
               );
             }
 
+            // FIX: Use the editingIndex prop to determine if the message is being edited.
             const isEditing = editingIndex === originalIndex;
 
             return (
-              <div key={originalIndex} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}
+              <div key={originalIndex} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''} animate-fadeInUp`}
                 onContextMenu={(e) => { if (msg.role === 'user') onContextMenu(e, originalIndex); }}
                 onTouchStart={(e) => { if (msg.role === 'user') handleTouchStart(e, originalIndex); }}
                 onTouchEnd={handleTouchEnd}
@@ -268,7 +266,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                     <div className="w-full h-full rounded-full bg-gradient-to-br from-purple-500 to-cyan-400 opacity-50" />
                   </div>
                 }
-                 <div className={`max-w-md p-4 rounded-2xl ${msg.role === 'user' ? 'bg-purple-600 text-white rounded-br-none' : 'bg-black/30 text-gray-200 rounded-bl-none'}`}
+                 <div className={`max-w-md w-full p-4 rounded-2xl ${msg.role === 'user' ? 'bg-purple-600 text-white rounded-br-none' : 'bg-black/30 text-gray-200 rounded-bl-none'}`}
                     onClick={(e) => isEditing && e.stopPropagation()}
                 >
                   {isEditing ? (
@@ -287,14 +285,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                     </div>
                   ) : (
                     <>
-                      {msg.role === 'model' ? (
-                        <ModelMessageContent message={msg} index={originalIndex} onComplete={onStreamingComplete} />
-                      ) : (
-                         <p className="whitespace-pre-wrap text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(msg.content).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}></p>
-                      )}
-                     
-                      {!msg.streaming && msg.plan && <PlanDisplay plan={msg.plan} />}
-                      {!msg.streaming && msg.action === 'AWAITING_PLAN_APPROVAL' && (
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(msg.content).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}></p>
+                      {msg.plan && <PlanDisplay plan={msg.plan} />}
+                      {msg.action === 'AWAITING_PLAN_APPROVAL' && (
                         <div className="mt-4 flex flex-col sm:flex-row gap-2">
                           <button onClick={() => onSendMessage("Looks good, proceed with building the project.")} disabled={isLoading} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 transition-colors disabled:bg-gray-600">
                             <Icon name="lightning" className="w-4 h-4" /> Accept & Build
@@ -302,7 +295,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                           <button onClick={() => inputRef.current?.focus()} disabled={isLoading} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-50">Suggest Changes</button>
                         </div>
                       )}
-                      {!msg.streaming && showStarterPrompts && originalIndex === 0 && (
+                      {showStarterPrompts && originalIndex === 0 && (
                         <div className="mt-4 grid grid-cols-1 gap-2 border-t border-white/10 pt-4">
                             {STARTER_PROMPTS.map(p => (
                                 <button key={p.label} onClick={() => onSendMessage(p.prompt, null)} className="text-left p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors duration-200 w-full disabled:opacity-50" disabled={isLoading}>

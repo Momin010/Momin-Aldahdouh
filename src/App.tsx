@@ -55,11 +55,13 @@ const App: React.FC = () => {
   const [isPublishModalOpen, setPublishModalOpen] = useState(false);
   const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
+  const [streamingContent, setStreamingContent] = useState<string | null>(null);
   const [consoleLogs, setConsoleLogs] = useState<ConsoleMessage[]>([]);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({ visible: false, x: 0, y: 0, messageIndex: -1, message: null });
+  // FIX: Lifted editing state from ChatPanel to App component to be controlled by MessageContextMenu
   const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
 
   useEffect(() => {
@@ -153,25 +155,14 @@ const App: React.FC = () => {
     });
   }, [updateActiveProject]);
 
-  const handleStreamingComplete = useCallback((messageIndex: number) => {
-      updateActiveProject(project => {
-        const newHistory = { ...project.history };
-        const newVersions = [...newHistory.versions];
-        const currentVersion = { ...newVersions[project.history.currentIndex] };
-        const newMessages = [...currentVersion.chatMessages];
-        
-        if (newMessages[messageIndex] && newMessages[messageIndex].streaming) {
-          const updatedMessage = { ...newMessages[messageIndex] };
-          delete updatedMessage.streaming; // Set streaming to false or remove property
-          newMessages[messageIndex] = updatedMessage;
-        }
-
-        currentVersion.chatMessages = newMessages;
-        newVersions[project.history.currentIndex] = currentVersion;
-        newHistory.versions = newVersions;
-        return { ...project, history: newHistory };
-      });
-  }, [updateActiveProject]);
+  const handleAnimationComplete = useCallback((content: string) => {
+    const modelMessage: Message = { role: 'model', content };
+    addHistoryState(prev => ({
+      ...prev,
+      chatMessages: [...prev.chatMessages, modelMessage],
+    }));
+    setStreamingContent(null);
+  }, [addHistoryState]);
 
   const triggerSelfCorrection = useCallback(async (errors: ConsoleMessage[]) => {
     if (!currentState) return;
@@ -239,6 +230,7 @@ ${JSON.stringify(errors, null, 2)}
   }, [isVerifying, consoleLogs, triggerSelfCorrection]);
 
   const triggerAiResponse = useCallback(async (messagesForAI: Message[], attachment: FileAttachment | null = null) => {
+    setStreamingContent(null);
     setAiStatus('MominAI is working...');
     setIsVerifying(false);
     
@@ -257,11 +249,7 @@ ${JSON.stringify(errors, null, 2)}
 
       switch (response.responseType) {
         case 'CHAT': {
-          const streamingMessage: Message = { role: 'model', content: response.message, streaming: true };
-          addHistoryState(prev => ({
-            ...prev,
-            chatMessages: [...prev.chatMessages, streamingMessage]
-          }));
+          setStreamingContent(response.message);
           break;
         }
         case 'PROJECT_PLAN': {
@@ -309,6 +297,7 @@ ${JSON.stringify(errors, null, 2)}
       const errorMessage: Message = { role: 'model', content: errorMessageContent };
       addHistoryState(prev => ({ ...prev, chatMessages: [...prev.chatMessages, errorMessage], projectPlan: null }));
       setAiStatus(null);
+      setStreamingContent(null);
     } finally {
       setAbortController(null);
     }
@@ -370,6 +359,7 @@ ${JSON.stringify(errors, null, 2)}
     setContextMenu(prev => ({ ...prev, visible: false }));
   }, []);
 
+  // FIX: Handler to initiate editing a message from the context menu.
   const handleEditMessage = useCallback(() => {
     if (contextMenu.messageIndex !== -1) {
       setEditingMessageIndex(contextMenu.messageIndex);
@@ -530,7 +520,8 @@ ${JSON.stringify(errors, null, 2)}
               messages={chatMessages} 
               onSendMessage={handleSendMessage} 
               aiStatus={aiStatus}
-              onStreamingComplete={handleStreamingComplete}
+              streamingContent={streamingContent}
+              onAnimationComplete={handleAnimationComplete}
               hasGeneratedCode={hasGeneratedCode}
               onNavigateToPreview={handleNavigateToPreview}
               onCancelRequest={handleCancelRequest}
@@ -562,7 +553,8 @@ ${JSON.stringify(errors, null, 2)}
               messages={chatMessages} 
               onSendMessage={handleSendMessage} 
               aiStatus={aiStatus}
-              onStreamingComplete={handleStreamingComplete}
+              streamingContent={streamingContent}
+              onAnimationComplete={handleAnimationComplete}
               hasGeneratedCode={hasGeneratedCode}
               onNavigateToPreview={handleNavigateToPreview}
               onCancelRequest={handleCancelRequest}
@@ -607,6 +599,7 @@ ${JSON.stringify(errors, null, 2)}
         onDownloadProject={handleDownloadProject}
         onPublish={() => setPublishModalOpen(true)}
        />
+       {/* FIX: Added the required `onEdit` prop to MessageContextMenu to enable message editing. */}
        <MessageContextMenu
         {...contextMenu}
         onClose={handleCloseContextMenu}
