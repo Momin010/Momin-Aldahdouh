@@ -1,71 +1,77 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import LandingPage from './components/LandingPage';
 import IdeWorkspace from './components/IdeWorkspace';
 import AuthModal from './components/AuthModal';
 import * as authService from './services/authService';
-import type { User, Workspace, Project } from './types';
-import { INITIAL_CHAT_MESSAGE, INITIAL_FILES } from './constants';
-
-const createNewProject = (name: string): Project => ({
-  id: `proj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-  projectName: name,
-  history: {
-    versions: [{
-      files: INITIAL_FILES,
-      previewHtml: '',
-      chatMessages: [INITIAL_CHAT_MESSAGE],
-      hasGeneratedCode: false,
-      projectName: name,
-      projectPlan: null,
-    }],
-    currentIndex: 0,
-  }
-});
-
-const INITIAL_WORKSPACE: Workspace = {
-  projects: [createNewProject('Untitled Project')],
-  activeProjectId: null,
-};
+import * as projectService from './services/projectService';
+import type { User, Workspace } from './types';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [workspaces, setWorkspaces] = useState<{[email: string]: Workspace}>(() => authService.getAllWorkspaces());
+  const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [isAuthModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signIn' | 'signUp'>('signUp');
   const [initialPrompt, setInitialPrompt] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const user = authService.getCurrentUser();
-    if (user) {
-      setCurrentUser(user);
-    }
-    setIsLoading(false);
+    const checkSession = async () => {
+      setIsLoading(true);
+      try {
+        const user = await authService.getCurrentUser();
+        if (user) {
+          setCurrentUser(user);
+          const userWorkspace = await projectService.getWorkspace();
+          setWorkspace(userWorkspace);
+        }
+      } catch (error) {
+        console.error("Error during session check:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    checkSession();
   }, []);
 
-  const handleSignIn = (user: User) => {
+  const handleSignIn = async (user: User) => {
     setCurrentUser(user);
     setAuthModalOpen(false);
-    if (initialPrompt) {
-      // User signed in via the landing page prompt flow
-      // We'll let the effect below handle project creation
+    setIsLoading(true);
+    try {
+        const userWorkspace = await projectService.getWorkspace();
+        setWorkspace(userWorkspace);
+    } catch (error) {
+        console.error("Failed to fetch workspace after sign in:", error);
+    } finally {
+        setIsLoading(false);
     }
   };
 
-  const handleSignUp = (user: User) => {
+  const handleSignUp = async (user: User) => {
     setCurrentUser(user);
     setAuthModalOpen(false);
-    // Create an initial workspace for the new user
-    setWorkspaces(prev => {
-        const newWorkspaces = { ...prev, [user.email]: INITIAL_WORKSPACE };
-        authService.saveAllWorkspaces(newWorkspaces);
-        return newWorkspaces;
-    });
+    setIsLoading(true);
+     try {
+        // The backend should have created a default workspace on signup. We fetch it here.
+        const userWorkspace = await projectService.getWorkspace();
+        setWorkspace(userWorkspace);
+    } catch (error) {
+        console.error("Failed to fetch workspace after sign up:", error);
+    } finally {
+        setIsLoading(false);
+    }
   };
 
-  const handleSignOut = () => {
-    authService.signOut();
-    setCurrentUser(null);
+  const handleSignOut = async () => {
+    try {
+        await authService.signOut();
+    } catch(error) {
+        console.error("Failed to sign out:", error);
+    } finally {
+        setCurrentUser(null);
+        setWorkspace(null);
+    }
   };
 
   const handleStartFromLanding = (prompt: string) => {
@@ -78,34 +84,20 @@ const App: React.FC = () => {
     setAuthMode('signIn');
     setAuthModalOpen(true);
   }
-
-  const userWorkspace = currentUser ? workspaces[currentUser.email] || INITIAL_WORKSPACE : INITIAL_WORKSPACE;
   
-  const setUserWorkspace = (updater: Workspace | ((ws: Workspace) => Workspace)) => {
-    if (currentUser) {
-        const newWorkspace = typeof updater === 'function' ? updater(userWorkspace) : updater;
-        setWorkspaces(prev => {
-            const newWorkspaces = { ...prev, [currentUser.email]: newWorkspace };
-            authService.saveAllWorkspaces(newWorkspaces);
-            return newWorkspaces;
-        });
-    }
-  };
-
   if (isLoading) {
     return <div className="flex items-center justify-center h-screen bg-gray-900 text-white">Loading...</div>;
   }
 
   return (
     <>
-      {!currentUser ? (
+      {!currentUser || !workspace ? (
         <LandingPage onStart={handleStartFromLanding} onSignInClick={handleOpenSignInModal} />
       ) : (
         <IdeWorkspace
           key={currentUser.email} // Force remount on user change
           user={currentUser}
-          workspace={userWorkspace}
-          setWorkspace={setUserWorkspace}
+          initialWorkspace={workspace}
           onSignOut={handleSignOut}
           initialPrompt={initialPrompt}
           clearInitialPrompt={() => setInitialPrompt(null)}
