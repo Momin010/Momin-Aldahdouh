@@ -13,6 +13,7 @@ interface HeaderProps {
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  onToggleSidebar: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -26,12 +27,11 @@ const Header: React.FC<HeaderProps> = ({
   onUndo,
   onRedo,
   canUndo,
-  canRedo
+  canRedo,
+  onToggleSidebar
 }) => {
-  const [isDropdownOpen, setDropdownOpen] = useState(false);
   const [isRenaming, setRenaming] = useState(false);
   const [tempName, setTempName] = useState(projectName);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -45,38 +45,25 @@ const Header: React.FC<HeaderProps> = ({
     }
   }, [isRenaming]);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false);
-        setRenaming(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
   const handleRenameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (tempName.trim()) {
       onRenameProject(tempName.trim());
     }
     setRenaming(false);
-    setDropdownOpen(false);
   };
   
-  const handleDownloadClick = () => {
-    onDownloadProject();
-    setDropdownOpen(false);
-  };
-
   return (
     <header className="relative z-30 flex items-center justify-between py-2 px-4 bg-black/20 backdrop-blur-lg border-b border-white/10 flex-shrink-0">
-      <div className="flex-1 flex items-center gap-4">
-        <div className="relative" ref={dropdownRef}>
-          {isRenaming ? (
+      <div className="flex-1 flex items-center gap-2">
+         <button 
+            onClick={onToggleSidebar} 
+            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors" 
+            aria-label="Toggle sidebar"
+          >
+            <Icon name="menu" className="w-5 h-5" />
+          </button>
+         {isRenaming ? (
             <form onSubmit={handleRenameSubmit}>
               <input
                 ref={inputRef}
@@ -88,31 +75,14 @@ const Header: React.FC<HeaderProps> = ({
               />
             </form>
           ) : (
-            <button 
-              onClick={() => setDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-2 p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
-            >
-              <span className="font-semibold">{projectName}</span>
-              <Icon name="chevron-down" className="w-4 h-4" />
-            </button>
-          )}
-          {isDropdownOpen && !isRenaming && (
-            <div className="absolute top-full left-0 mt-2 w-48 bg-gray-800 border border-white/10 rounded-xl shadow-lg z-20">
-              <button
-                onClick={() => setRenaming(true)}
-                className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-white/10"
+             <h1 
+                onDoubleClick={() => setRenaming(true)} 
+                className="font-semibold text-lg cursor-pointer"
+                title="Double-click to rename"
               >
-                Rename
-              </button>
-              <button
-                onClick={handleDownloadClick}
-                className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-white/10"
-              >
-                Download ZIP
-              </button>
-            </div>
+                {projectName}
+            </h1>
           )}
-        </div>
       </div>
       
       <div className="flex-1 flex justify-center items-center gap-2">

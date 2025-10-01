@@ -89,3 +89,8 @@ export interface Workspace {
   projects: Project[];
   activeProjectId: string | null;
 }
+
+// New type for user authentication
+export interface User {
+  email: string;
+}
