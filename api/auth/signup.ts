@@ -1,6 +1,6 @@
-import { sql } from '../../lib/db';
+import { db } from '../../lib/db';
 import { hashPassword, createSession } from '../../lib/auth';
-import type { User, Workspace, Project, AppState } from '../../types';
+import type { User, Project, AppState } from '../../types';
 import { INITIAL_CHAT_MESSAGE } from '../../constants';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -14,16 +14,22 @@ export default async function handler(req: any, res: any) {
   if (!email || !password || password.length < 6) {
     return res.status(400).json({ message: 'Invalid email or password must be at least 6 characters long.' });
   }
+  
+  const client = await db.connect();
 
   try {
-    // Check if user already exists
-    const { rows: existingUsers } = await sql`SELECT email FROM users WHERE email = ${email}`;
+    // Check if user already exists outside the transaction for a quicker response.
+    const { rows: existingUsers } = await client.sql`SELECT email FROM users WHERE email = ${email}`;
     if (existingUsers.length > 0) {
+      client.release();
       return res.status(409).json({ message: 'User with this email already exists.' });
     }
     
-    // Create tables if they don't exist
-    await sql`
+    // Start a transaction for the multi-step signup process
+    await client.sql`BEGIN`;
+
+    // Create tables if they don't exist. This is safe to run multiple times.
+    await client.sql`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
@@ -31,7 +37,7 @@ export default async function handler(req: any, res: any) {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `;
-    await sql`
+    await client.sql`
       CREATE TABLE IF NOT EXISTS projects (
         id UUID PRIMARY KEY,
         user_email VARCHAR(255) REFERENCES users(email) ON DELETE CASCADE,
@@ -43,10 +49,10 @@ export default async function handler(req: any, res: any) {
 
     const hashedPassword = await hashPassword(password);
     
-    // Insert new user
-    await sql`INSERT INTO users (email, password_hash) VALUES (${email}, ${hashedPassword})`;
+    // 1. Insert new user
+    await client.sql`INSERT INTO users (email, password_hash) VALUES (${email}, ${hashedPassword})`;
     
-    // Create a default project for the new user
+    // 2. Create a default project for the new user
     const initialAppState: AppState = {
         files: {},
         previewHtml: '',
@@ -65,17 +71,25 @@ export default async function handler(req: any, res: any) {
         },
     };
     
-    await sql`
+    await client.sql`
         INSERT INTO projects (id, user_email, project_name, history)
         VALUES (${newProject.id}, ${email}, ${newProject.projectName}, ${JSON.stringify(newProject.history)});
     `;
+
+    // If all database operations succeed, commit the transaction
+    await client.sql`COMMIT`;
     
     const user: User = { email };
     await createSession(user, res);
     
     res.status(201).json(user);
   } catch (error) {
-    console.error('Signup error:', error);
+    // If any step fails, roll back the entire transaction
+    await client.sql`ROLLBACK`;
+    console.error('Signup transaction error:', error);
     res.status(500).json({ message: 'Internal Server Error' });
+  } finally {
+    // Always release the client connection
+    client.release();
   }
 }

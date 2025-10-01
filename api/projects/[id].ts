@@ -11,11 +11,17 @@ export default async function handler(req: any, res: any) {
   const { id } = req.query;
 
   try {
+    // First, verify the project belongs to the user for all methods
+    const { rows } = await sql`SELECT id FROM projects WHERE id = ${id} AND user_email = ${user.email}`;
+    if (rows.length === 0 && req.method !== 'PUT') { // PUT creates if not exists implicitly in this logic, but lets be safer
+         return res.status(404).json({ message: 'Project not found or you do not have permission to access it.' });
+    }
+
     if (req.method === 'PUT') {
       const project: Project = req.body;
       
       if (project.id !== id) {
-        return res.status(400).json({ message: 'Project ID mismatch' });
+        return res.status(400).json({ message: 'Project ID mismatch in request body and URL.' });
       }
 
       await sql`
