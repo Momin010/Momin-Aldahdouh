@@ -116,7 +116,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const longPressTimerRef = useRef<number | null>(null);
 
   const isLoading = (aiStatus !== null && LOADING_STATUSES.includes(aiStatus));
-  const showStarterPrompts = !hasGeneratedCode && messages.length === 1;
+  const showStarterPrompts = !hasGeneratedCode && messages.length <= 1;
 
   useEffect(() => {
     if (scrollContainerRef.current) {
@@ -176,27 +176,16 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     cancelEditing();
   };
 
-  // Add this to your component
   useEffect(() => {
-    const handleGlobalClick = () => {
-        if (editingIndex !== null) {
-            // This is a simplified check. In a real app, you might want to check
-            // if the click was outside the editing area more robustly.
-            // For now, any click outside will cancel. Or you could auto-save.
-        }
-    };
-    
     const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Escape' && editingIndex !== null) {
             cancelEditing();
         }
     };
 
-    window.addEventListener('click', handleGlobalClick);
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-        window.removeEventListener('click', handleGlobalClick);
         window.removeEventListener('keydown', handleKeyDown);
     };
   }, [editingIndex, cancelEditing]);
@@ -345,6 +334,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
           />
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
             {isCancelling ? (
+                <button className="px-3 py-2 text-xs font-semibold rounded-lg bg-yellow-600 text-white" aria-label="Cancelling generation">
+                    Cancelling...
+                </button>
+            ) : isLoading ? (
                 <button onClick={onCancelRequest} className="px-3 py-2 text-xs font-semibold rounded-lg bg-red-600 hover:bg-red-500 transition-colors" aria-label="Cancel generation">
                     Cancel
                 </button>
