@@ -18,17 +18,8 @@ export default async function handler(req: any, res: any) {
   const client = await db.connect();
 
   try {
-    // Check if user already exists outside the transaction for a quicker response.
-    const { rows: existingUsers } = await client.sql`SELECT email FROM users WHERE email = ${email}`;
-    if (existingUsers.length > 0) {
-      client.release();
-      return res.status(409).json({ message: 'User with this email already exists.' });
-    }
-    
-    // Start a transaction for the multi-step signup process
-    await client.sql`BEGIN`;
-
-    // Create tables if they don't exist. This is safe to run multiple times.
+    // 1. Ensure tables exist before executing any queries against them.
+    // This is idempotent and safe to run on every request.
     await client.sql`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -47,12 +38,22 @@ export default async function handler(req: any, res: any) {
       );
     `;
 
+    // 2. Check if user already exists.
+    const { rows: existingUsers } = await client.sql`SELECT email FROM users WHERE email = ${email}`;
+    if (existingUsers.length > 0) {
+      client.release();
+      return res.status(409).json({ message: 'User with this email already exists.' });
+    }
+    
+    // 3. Start a transaction for the multi-step signup process.
+    await client.sql`BEGIN`;
+    
     const hashedPassword = await hashPassword(password);
     
-    // 1. Insert new user
+    // Insert new user
     await client.sql`INSERT INTO users (email, password_hash) VALUES (${email}, ${hashedPassword})`;
     
-    // 2. Create a default project for the new user
+    // Create a default project for the new user
     const initialAppState: AppState = {
         files: {},
         previewHtml: '',
@@ -76,7 +77,7 @@ export default async function handler(req: any, res: any) {
         VALUES (${newProject.id}, ${email}, ${newProject.projectName}, ${JSON.stringify(newProject.history)});
     `;
 
-    // If all database operations succeed, commit the transaction
+    // If all database operations succeed, commit the transaction.
     await client.sql`COMMIT`;
     
     const user: User = { email };
@@ -84,12 +85,12 @@ export default async function handler(req: any, res: any) {
     
     res.status(201).json(user);
   } catch (error) {
-    // If any step fails, roll back the entire transaction
-    await client.sql`ROLLBACK`;
+    // If any step fails, attempt to roll back the transaction.
+    await client.sql`ROLLBACK`.catch(err => console.warn("Rollback failed or not needed:", err));
     console.error('Signup transaction error:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   } finally {
-    // Always release the client connection
+    // Always release the client connection.
     client.release();
   }
 }
