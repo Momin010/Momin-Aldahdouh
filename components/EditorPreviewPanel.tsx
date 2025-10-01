@@ -72,14 +72,32 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
           />
         )}
         {view === 'code' && (
-           <ResizablePanel direction="horizontal" initialSize={250} minSize={150}>
-            <FileExplorer files={files} activeFile={activeFile} onSelectFile={onSelectFile} />
-            <CodeEditor
-              filePath={activeFile}
-              code={files[activeFile] || ''}
-              onCodeChange={onCodeChange}
-            />
-          </ResizablePanel>
+          <div className="h-full w-full">
+            {/* Desktop: Resizable horizontal panel */}
+            <div className="hidden md:flex h-full">
+              <ResizablePanel direction="horizontal" initialSize={250} minSize={150}>
+                <FileExplorer files={files} activeFile={activeFile} onSelectFile={onSelectFile} />
+                <CodeEditor
+                  filePath={activeFile}
+                  code={files[activeFile] || ''}
+                  onCodeChange={onCodeChange}
+                />
+              </ResizablePanel>
+            </div>
+            {/* Mobile: Vertical stack */}
+            <div className="md:hidden flex flex-col h-full">
+              <div className="h-2/5 border-b border-white/10 overflow-hidden">
+                <FileExplorer files={files} activeFile={activeFile} onSelectFile={onSelectFile} />
+              </div>
+              <div className="h-3/5">
+                <CodeEditor
+                  filePath={activeFile}
+                  code={files[activeFile] || ''}
+                  onCodeChange={onCodeChange}
+                />
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

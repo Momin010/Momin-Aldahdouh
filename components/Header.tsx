@@ -55,14 +55,10 @@ const Header: React.FC<HeaderProps> = ({
   
   return (
     <header className="relative z-30 flex items-center justify-between py-2 px-4 bg-black/20 backdrop-blur-lg border-b border-white/10 flex-shrink-0">
-      <div className="flex-1 flex items-center gap-2">
-         <button 
-            onClick={onToggleSidebar} 
-            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors" 
-            aria-label="Toggle sidebar"
-          >
-            <Icon name="menu" className="w-5 h-5" />
-          </button>
+      <div className="flex-1 min-w-0 flex items-center gap-2">
+        <button onClick={onToggleSidebar} className="p-2 -ml-2 rounded-lg md:hidden text-gray-300 hover:bg-white/10" aria-label="Toggle sidebar">
+            <Icon name="menu" className="w-6 h-6" />
+        </button>
          {isRenaming ? (
             <form onSubmit={handleRenameSubmit}>
               <input
@@ -77,7 +73,7 @@ const Header: React.FC<HeaderProps> = ({
           ) : (
              <h1 
                 onDoubleClick={() => setRenaming(true)} 
-                className="font-semibold text-lg cursor-pointer"
+                className="font-semibold text-lg cursor-pointer ml-2 truncate"
                 title="Double-click to rename"
               >
                 {projectName}
@@ -85,7 +81,7 @@ const Header: React.FC<HeaderProps> = ({
           )}
       </div>
       
-      <div className="flex-1 flex justify-center items-center gap-2">
+      <div className="hidden md:flex flex-1 justify-center items-center gap-2">
          {isProjectLoaded && (
             <>
               <button 

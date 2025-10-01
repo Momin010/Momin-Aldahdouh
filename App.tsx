@@ -5,7 +5,7 @@ import IdeWorkspace from './components/IdeWorkspace';
 import AuthModal from './components/AuthModal';
 import * as authService from './services/authService';
 import * as projectService from './services/projectService';
-import type { User, Workspace } from './types';
+import type { User, Workspace, FileAttachment } from './types';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -13,6 +13,7 @@ const App: React.FC = () => {
   const [isAuthModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signIn' | 'signUp'>('signUp');
   const [initialPrompt, setInitialPrompt] = useState<string | null>(null);
+  const [initialAttachment, setInitialAttachment] = useState<FileAttachment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -74,8 +75,9 @@ const App: React.FC = () => {
     }
   };
 
-  const handleStartFromLanding = (prompt: string) => {
+  const handleStartFromLanding = (prompt: string, attachment?: FileAttachment | null) => {
     setInitialPrompt(prompt);
+    setInitialAttachment(attachment || null);
     setAuthMode('signUp');
     setAuthModalOpen(true);
   };
@@ -101,6 +103,8 @@ const App: React.FC = () => {
           onSignOut={handleSignOut}
           initialPrompt={initialPrompt}
           clearInitialPrompt={() => setInitialPrompt(null)}
+          initialAttachment={initialAttachment}
+          clearInitialAttachment={() => setInitialAttachment(null)}
         />
       )}
       <AuthModal
