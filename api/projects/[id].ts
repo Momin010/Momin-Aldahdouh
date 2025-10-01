@@ -1,0 +1,46 @@
+import { sql } from '../../lib/db';
+import { getUserFromRequest } from '../../lib/auth';
+import type { Project } from '../../types';
+
+export default async function handler(req: any, res: any) {
+  const user = await getUserFromRequest(req);
+  if (!user) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  
+  const { id } = req.query;
+
+  try {
+    if (req.method === 'PUT') {
+      const project: Project = req.body;
+      
+      if (project.id !== id) {
+        return res.status(400).json({ message: 'Project ID mismatch' });
+      }
+
+      await sql`
+        UPDATE projects
+        SET project_name = ${project.projectName}, history = ${JSON.stringify(project.history)}, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ${id} AND user_email = ${user.email}
+      `;
+
+      return res.status(204).end();
+    }
+    
+    if (req.method === 'DELETE') {
+      await sql`
+        DELETE FROM projects
+        WHERE id = ${id} AND user_email = ${user.email}
+      `;
+      
+      return res.status(204).end();
+    }
+    
+    res.setHeader('Allow', ['PUT', 'DELETE']);
+    res.status(405).json({ message: `Method ${req.method} Not Allowed` });
+
+  } catch (error) {
+    console.error(`Project API error for ID ${id}:`, error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+}

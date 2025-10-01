@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react';
+
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import ChatPanel from './ChatPanel';
 import Header from './Header';
 import EditorPreviewPanel from './EditorPreviewPanel';
@@ -11,36 +12,20 @@ import { Icon } from './Icon';
 import MessageContextMenu from './MessageContextMenu';
 import type { Message, Files, Change, FileAttachment, History, AppState, ConsoleMessage, Plan, Workspace, Project, User } from '../types';
 import { sendAiChatRequest, resetChat } from '../services/geminiService';
+import * as projectService from '../services/projectService';
 import { downloadProjectAsZip } from '../services/zipService';
-import { INITIAL_CHAT_MESSAGE, INITIAL_FILES } from '../constants';
-import usePersistentState from '../hooks/usePersistentState';
+import { INITIAL_CHAT_MESSAGE } from '../constants';
+import { useDebounce } from '../hooks/useDebounce';
 
 type MobileView = 'chat' | 'preview';
 
 interface IdeWorkspaceProps {
     user: User;
-    workspace: Workspace;
-    setWorkspace: (updater: Workspace | ((ws: Workspace) => Workspace)) => void;
+    initialWorkspace: Workspace;
     onSignOut: () => void;
     initialPrompt: string | null;
     clearInitialPrompt: () => void;
 }
-
-const createNewProject = (name: string): Project => ({
-  id: `proj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-  projectName: name,
-  history: {
-    versions: [{
-      files: INITIAL_FILES,
-      previewHtml: '',
-      chatMessages: [INITIAL_CHAT_MESSAGE],
-      hasGeneratedCode: false,
-      projectName: name,
-      projectPlan: null,
-    }],
-    currentIndex: 0,
-  }
-});
 
 interface ContextMenuState {
   visible: boolean;
@@ -50,8 +35,11 @@ interface ContextMenuState {
   message: Message | null;
 }
 
-const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, setWorkspace, onSignOut, initialPrompt, clearInitialPrompt }) => {
-  const [activeFile, setActiveFile] = usePersistentState<string>('mominai_activeFile', '', user.email);
+const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, initialWorkspace, onSignOut, initialPrompt, clearInitialPrompt }) => {
+  const [workspace, setWorkspace] = useState<Workspace>(initialWorkspace);
+  const storageKey = `mominai_activeFile_${user.email}`;
+  const [activeFile, setActiveFile] = useState<string>(() => localStorage.getItem(storageKey) || '');
+  
   const [aiStatus, setAiStatus] = useState<string | null>(null);
   const [mobileView, setMobileView] = useState<MobileView>('chat');
   const [isPublishModalOpen, setPublishModalOpen] = useState(false);
@@ -64,18 +52,31 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, setWorkspa
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({ visible: false, x: 0, y: 0, messageIndex: -1, message: null });
   const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
 
+  const activeProject = workspace.projects.find(p => p.id === workspace.activeProjectId);
+  const debouncedProject = useDebounce(activeProject, 2000); // Debounce project saving
+  const isInitialMountRef = useRef(true);
+
+  // Effect for auto-saving debounced project changes
+  useEffect(() => {
+    if (isInitialMountRef.current) {
+        isInitialMountRef.current = false;
+        return;
+    }
+    if (debouncedProject) {
+        projectService.updateProject(debouncedProject).catch(err => {
+            console.error("Failed to auto-save project:", err);
+            // Here you could add a visual indicator for failed save
+        });
+    }
+  }, [debouncedProject]);
+
   useEffect(() => {
     // On initial load, if no project is active, activate the first one.
     if (!workspace.activeProjectId && workspace.projects.length > 0) {
         setWorkspace(ws => ({ ...ws, activeProjectId: ws.projects[0].id }));
     }
-    // If the active project was deleted, reset to the first one.
-    if (workspace.activeProjectId && !workspace.projects.some(p => p.id === workspace.activeProjectId)) {
-        setWorkspace(ws => ({ ...ws, activeProjectId: ws.projects[0]?.id || null }));
-    }
-  }, [workspace, setWorkspace]);
+  }, [workspace.activeProjectId, workspace.projects]);
 
-  const activeProject = workspace.projects.find(p => p.id === workspace.activeProjectId);
   const currentState = activeProject?.history.versions[activeProject.history.currentIndex];
   
   const { files, previewHtml, chatMessages, hasGeneratedCode, projectName, projectPlan } = currentState || {
@@ -112,6 +113,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, setWorkspa
   }, [isPreviewFullscreen]);
 
   useEffect(() => {
+    localStorage.setItem(storageKey, activeFile);
     if (!activeProject) return;
     const currentFiles = activeProject.history.versions[activeProject.history.currentIndex].files;
     if (activeFile && !currentFiles.hasOwnProperty(activeFile)) {
@@ -121,7 +123,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, setWorkspa
       const defaultFile = preferredFiles.find(f => f in currentFiles) || Object.keys(currentFiles)[0];
       setActiveFile(defaultFile);
     }
-  }, [files, activeFile, setActiveFile, activeProject]);
+  }, [files, activeFile, activeProject, storageKey]);
 
   const updateActiveProject = useCallback((updater: (project: Project) => Project) => {
     setWorkspace(prevWorkspace => {
@@ -133,7 +135,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, setWorkspa
         });
         return { ...prevWorkspace, projects: newProjects };
     });
-  }, [setWorkspace]);
+  }, []);
 
   const addHistoryState = useCallback((updater: (prevState: AppState) => AppState) => {
     updateActiveProject(project => {
@@ -262,23 +264,22 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, setWorkspa
     await triggerAiResponse(messagesWithUser, attachment);
   }, [currentState, addHistoryState, triggerAiResponse]);
 
-    const handleNewProject = useCallback((name: string = 'New Project', andThenSend?: string) => {
-        const newProj = createNewProject(name);
-        setWorkspace(ws => ({
-            projects: [...ws.projects, newProj],
-            activeProjectId: newProj.id,
-        }));
-        if (andThenSend) {
-            // This needs to happen after the state has updated and re-rendered.
-            // Using a timeout is a way to wait for the next tick.
-            setTimeout(() => {
-                // Now we find the new project's state and send the message.
-                // Note: The `currentState` in the outer scope is stale.
-                // We rely on `handleSendMessage` to read the latest state when it runs.
-                handleSendMessage(andThenSend);
-            }, 0);
+    const handleNewProject = useCallback(async (name: string = 'New Project', andThenSend?: string) => {
+        try {
+            const newProject = await projectService.createProject(name);
+            setWorkspace(ws => ({
+                projects: [...ws.projects, newProject],
+                activeProjectId: newProject.id,
+            }));
+            if (andThenSend) {
+                // Wait for state to update then send message
+                setTimeout(() => handleSendMessage(andThenSend), 0);
+            }
+        } catch (error) {
+            console.error("Failed to create new project:", error);
+            // Optionally, display an error message to the user
         }
-    }, [setWorkspace, handleSendMessage]);
+    }, [handleSendMessage]);
 
     // Effect to handle the initial prompt from the landing page
     useEffect(() => {
@@ -286,13 +287,13 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, setWorkspa
             const prompt = initialPrompt;
             clearInitialPrompt(); // Consume the prompt
             
-            // Check if this is a brand new user/workspace
-            if (workspace.projects.length === 1 && workspace.projects[0].projectName === 'Untitled Project' && chatMessages.length === 1) {
-                // This is a fresh workspace, rename the first project and send the prompt
+            const isFreshWorkspace = workspace.projects.length === 1 && chatMessages.length === 1 &&
+                                  (workspace.projects[0].projectName === 'Untitled Project' || workspace.projects[0].projectName === 'New Project');
+            
+            if (isFreshWorkspace) {
                 addHistoryState(prev => ({...prev, projectName: prompt.substring(0, 30)}));
                 handleSendMessage(prompt);
             } else {
-                // User has existing projects, create a new one
                 handleNewProject(prompt.substring(0, 30), prompt);
             }
         }
@@ -472,20 +473,23 @@ ${JSON.stringify(errors, null, 2)}
 
   const handleSelectProject = useCallback((id: string) => {
     setWorkspace(ws => ({ ...ws, activeProjectId: id }));
-  }, [setWorkspace]);
+  }, []);
 
-  const handleDeleteProject = useCallback((id: string) => {
-    setWorkspace(ws => {
-      const newProjects = ws.projects.filter(p => p.id !== id);
-      if (ws.activeProjectId === id) {
-        return {
-          projects: newProjects,
-          activeProjectId: newProjects[0]?.id || null,
-        };
-      }
-      return { ...ws, projects: newProjects };
-    });
-  }, [setWorkspace]);
+  const handleDeleteProject = useCallback(async (id: string) => {
+    try {
+        await projectService.deleteProject(id);
+        setWorkspace(ws => {
+            const newProjects = ws.projects.filter(p => p.id !== id);
+            let newActiveId = ws.activeProjectId;
+            if (ws.activeProjectId === id) {
+                newActiveId = newProjects[0]?.id || null;
+            }
+            return { projects: newProjects, activeProjectId: newActiveId };
+        });
+    } catch (error) {
+        console.error("Failed to delete project:", error);
+    }
+  }, []);
 
   if (isPreviewFullscreen) {
     return (
@@ -503,7 +507,23 @@ ${JSON.stringify(errors, null, 2)}
   }
 
   if (!activeProject || !currentState) {
-     return <div className="flex items-center justify-center h-screen bg-transparent text-white">Loading Project...</div>;
+     return (
+        <div className="flex h-screen w-full">
+            <Sidebar
+                isExpanded={isSidebarExpanded}
+                projects={workspace.projects}
+                activeProjectId={workspace.activeProjectId}
+                onSelectProject={handleSelectProject}
+                onNewProject={() => handleNewProject()}
+                onDeleteProject={handleDeleteProject}
+                user={user}
+                onSignOut={onSignOut}
+            />
+            <main className="flex-grow flex items-center justify-center bg-transparent text-white">
+                <div>No project selected. Create one to get started!</div>
+            </main>
+        </div>
+     );
   }
 
   return (
