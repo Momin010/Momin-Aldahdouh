@@ -1,20 +1,20 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { Icon } from './Icon';
 import ResizablePanel from './ResizablePanel';
 import DevToolsPanel from './DevToolsPanel';
 import type { ConsoleMessage } from '../types';
 
+export type Device = 'desktop' | 'tablet' | 'mobile';
+
 interface LivePreviewProps {
   htmlContent: string;
+  device: Device;
   isFullscreen?: boolean;
   onExitFullscreen?: () => void;
-  onToggleFullscreen?: () => void;
   logs: ConsoleMessage[];
   onNewLog: (log: ConsoleMessage) => void;
   onClearLogs: () => void;
 }
-
-type Device = 'desktop' | 'tablet' | 'mobile';
 
 const deviceStyles: Record<Device, React.CSSProperties> = {
   desktop: { width: '100%' },
@@ -85,24 +85,16 @@ const decodeHtmlEntities = (text: string): string => {
 
 const LivePreview: React.FC<LivePreviewProps> = ({ 
   htmlContent, 
+  device,
   isFullscreen = false, 
   onExitFullscreen, 
-  onToggleFullscreen,
   logs,
   onNewLog,
   onClearLogs
 }) => {
-  const [device, setDevice] = useState<Device>('desktop');
-
   const decodedContent = useMemo(() => decodeHtmlEntities(htmlContent), [htmlContent]);
   const isPlaceholder = !decodedContent.trim();
-
-  useEffect(() => {
-    // Set default device to mobile on smaller screens for a better initial experience.
-    if (window.innerWidth < 768) {
-      setDevice('mobile');
-    }
-  }, []);
+  const isMobileView = window.innerWidth < 768;
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -115,12 +107,6 @@ const LivePreview: React.FC<LivePreviewProps> = ({
   }, [onNewLog]);
 
   const srcDoc = isPlaceholder ? '' : `<script>${consoleInterceptorScript}</script>${decodedContent}`;
-
-  const deviceButtons: { name: Device, icon: string }[] = [
-    { name: 'desktop', icon: 'desktop' },
-    { name: 'tablet', icon: 'tablet' },
-    { name: 'mobile', icon: 'mobile' },
-  ];
   
   if (isPlaceholder) {
     return (
@@ -135,6 +121,20 @@ const LivePreview: React.FC<LivePreviewProps> = ({
   const containerClasses = isFullscreen
     ? "flex flex-col h-full bg-black relative"
     : "flex flex-col h-full overflow-hidden";
+    
+  const previewIframe = (
+    <div className="w-full h-full bg-gray-800/50 flex justify-center overflow-auto p-4">
+      <div style={deviceStyles[device]} className="h-full shadow-2xl bg-white flex-shrink-0 transition-all duration-300 ease-in-out">
+        <iframe
+          key={htmlContent} // Force re-render on content change
+          srcDoc={srcDoc}
+          title="Live Preview"
+          className="w-full h-full border-0 bg-white"
+          sandbox="allow-scripts allow-same-origin allow-forms"
+        />
+      </div>
+    </div>
+  );
 
   return (
     <div className={containerClasses}>
@@ -148,29 +148,6 @@ const LivePreview: React.FC<LivePreviewProps> = ({
           <span>Exit (Esc)</span>
         </button>
       )}
-
-      {!isFullscreen && onToggleFullscreen && (
-        <div className="flex-shrink-0 flex items-center justify-between p-1.5 bg-black/20 border-b border-white/10">
-          <div className='flex items-center gap-2'>
-            {deviceButtons.map(({ name, icon }) => (
-              <button
-                key={name}
-                onClick={() => setDevice(name)}
-                className={`p-2 rounded-lg transition-colors ${
-                  device === name ? 'bg-purple-600 text-white' : 'text-gray-400 hover:bg-white/10 hover:text-white'
-                }`}
-                aria-label={`Switch to ${name} view`}
-                aria-pressed={device === name}
-              >
-                <Icon name={icon} className="w-5 h-5" />
-              </button>
-            ))}
-          </div>
-          <button onClick={onToggleFullscreen} className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10" aria-label="Toggle fullscreen">
-            <Icon name="fullscreen" className="w-5 h-5" />
-          </button>
-        </div>
-      )}
       
       {isFullscreen ? (
         <div className="w-full h-full bg-white">
@@ -183,20 +160,14 @@ const LivePreview: React.FC<LivePreviewProps> = ({
           />
         </div>
       ) : (
-        <ResizablePanel direction="vertical" initialSize={window.innerHeight * 0.65} minSize={150}>
-          <div className="w-full h-full bg-gray-800/50 flex justify-center overflow-auto p-4">
-            <div style={deviceStyles[device]} className="h-full shadow-2xl bg-white flex-shrink-0 transition-all duration-300 ease-in-out">
-              <iframe
-                key={htmlContent} // Force re-render on content change
-                srcDoc={srcDoc}
-                title="Live Preview"
-                className="w-full h-full border-0 bg-white"
-                sandbox="allow-scripts allow-same-origin allow-forms"
-              />
-            </div>
-          </div>
-          <DevToolsPanel logs={logs} onClear={onClearLogs} />
-        </ResizablePanel>
+        isMobileView ? (
+          previewIframe // On mobile, show only the preview without the console.
+        ) : (
+          <ResizablePanel direction="vertical" initialSize={window.innerHeight * 0.65} minSize={150}>
+            {previewIframe}
+            <DevToolsPanel logs={logs} onClear={onClearLogs} />
+          </ResizablePanel>
+        )
       )}
     </div>
   );

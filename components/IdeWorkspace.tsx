@@ -1,10 +1,11 @@
+
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import ChatPanel from './ChatPanel';
 import Header from './Header';
 import EditorPreviewPanel from './EditorPreviewPanel';
 import PublishModal from './PublishModal';
 import CommandPalette from './CommandPalette';
-import LivePreview from './LivePreview';
+import LivePreview, { Device } from './LivePreview';
 import ResizablePanel from './ResizablePanel';
 import Sidebar from './Sidebar';
 import { Icon } from './Icon';
@@ -56,6 +57,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, initialWorkspace, onS
   const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
   const [consoleLogs, setConsoleLogs] = useState<ConsoleMessage[]>([]);
+  const [device, setDevice] = useState<Device>('desktop');
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({ visible: false, x: 0, y: 0, messageIndex: -1, message: null });
@@ -101,6 +103,13 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, initialWorkspace, onS
         setWorkspace(ws => ({ ...ws, activeProjectId: ws.projects[0].id }));
     }
   }, [workspace.activeProjectId, workspace.projects]);
+
+  useEffect(() => {
+    // Set default device to mobile on smaller screens for a better initial experience.
+    if (window.innerWidth < 768) {
+      setDevice('mobile');
+    }
+  }, []);
 
   const currentState = activeProject?.history.versions[activeProject.history.currentIndex];
   
@@ -427,7 +436,8 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, initialWorkspace, onS
   if (isPreviewFullscreen) {
     return (
       <div className="fixed inset-0 z-[100] bg-black">
-        <LivePreview htmlContent={previewHtml} isFullscreen onExitFullscreen={handleToggleFullscreen} logs={consoleLogs} onNewLog={handleNewLog} onClearLogs={() => setConsoleLogs([])} />
+        {/* FIX: Add missing 'device' prop */}
+        <LivePreview device={device} htmlContent={previewHtml} isFullscreen onExitFullscreen={handleToggleFullscreen} logs={consoleLogs} onNewLog={handleNewLog} onClearLogs={() => setConsoleLogs([])} />
       </div>
     );
   }
@@ -473,7 +483,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, initialWorkspace, onS
         <main className="hidden md:flex flex-grow p-4 gap-4 overflow-hidden">
           <ResizablePanel direction="horizontal" initialSize={450} minSize={320}>
             <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} aiStatus={activeProjectRunState?.aiStatus || null} onStreamingComplete={onStreamingCompleteForActive} hasGeneratedCode={hasGeneratedCode} onNavigateToPreview={handleNavigateToPreview} onCancelRequest={handleCancelRequest} isCancelling={!!activeProjectRunState?.abortController} onContextMenu={handleOpenContextMenu} onDeleteMessage={handleDeleteMessage} onResubmitMessage={handleResubmitMessage} editingIndex={editingMessageIndex} onCancelEditing={() => setEditingMessageIndex(null)} />
-            <EditorPreviewPanel files={files} activeFile={activeFile} onSelectFile={setActiveFile} onCodeChange={handleCodeChange} previewHtml={previewHtml} onBackToChat={() => {}} onToggleFullscreen={handleToggleFullscreen} consoleLogs={consoleLogs} onNewLog={handleNewLog} onClearConsole={() => setConsoleLogs([])} />
+            <EditorPreviewPanel device={device} onDeviceChange={setDevice} files={files} activeFile={activeFile} onSelectFile={setActiveFile} onCodeChange={handleCodeChange} previewHtml={previewHtml} onBackToChat={() => {}} onToggleFullscreen={handleToggleFullscreen} consoleLogs={consoleLogs} onNewLog={handleNewLog} onClearConsole={() => setConsoleLogs([])} />
           </ResizablePanel>
         </main>
 
@@ -482,7 +492,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, initialWorkspace, onS
             <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} aiStatus={activeProjectRunState?.aiStatus || null} onStreamingComplete={onStreamingCompleteForActive} hasGeneratedCode={hasGeneratedCode} onNavigateToPreview={handleNavigateToPreview} onCancelRequest={handleCancelRequest} isCancelling={!!activeProjectRunState?.abortController} onContextMenu={handleOpenContextMenu} onDeleteMessage={handleDeleteMessage} onResubmitMessage={handleResubmitMessage} editingIndex={editingMessageIndex} onCancelEditing={() => setEditingMessageIndex(null)} />
           </div>
           <div className={`${mobileView === 'chat' ? 'hidden' : 'flex'} flex-col flex-grow h-full`}>
-            <EditorPreviewPanel files={files} activeFile={activeFile} onSelectFile={setActiveFile} onCodeChange={handleCodeChange} previewHtml={previewHtml} onBackToChat={() => setMobileView('chat')} onToggleFullscreen={handleToggleFullscreen} consoleLogs={consoleLogs} onNewLog={handleNewLog} onClearConsole={() => setConsoleLogs([])} />
+            <EditorPreviewPanel device={device} onDeviceChange={setDevice} files={files} activeFile={activeFile} onSelectFile={setActiveFile} onCodeChange={handleCodeChange} previewHtml={previewHtml} onBackToChat={() => setMobileView('chat')} onToggleFullscreen={handleToggleFullscreen} consoleLogs={consoleLogs} onNewLog={handleNewLog} onClearConsole={() => setConsoleLogs([])} />
           </div>
         </main>
       </div>
