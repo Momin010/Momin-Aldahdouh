@@ -328,11 +328,11 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Describe your web app or attach an image reference..."
-            className="w-full bg-black/40 rounded-xl p-3 pr-24 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-gray-500 transition-shadow"
+            className="w-full bg-black/40 rounded-xl p-3 pr-20 sm:pr-24 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-gray-500 transition-shadow"
             rows={1}
             disabled={isLoading || isCancelling}
           />
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+          <div className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
             {isCancelling ? (
                 <button className="px-3 py-2 text-xs font-semibold rounded-lg bg-yellow-600 text-white" aria-label="Cancelling generation">
                     Cancelling...

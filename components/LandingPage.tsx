@@ -68,7 +68,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onSignInClick }) => 
               Describe what you want to create, and let our AI bring your vision to life.
             </p>
 
-            <div className="mt-12">
+            <div className="mt-8 md:mt-12">
                {attachment && (
                  <div className="mb-4 inline-block relative">
                     <img src={`data:${attachment.type};base64,${attachment.content}`} alt={attachment.name} className="h-24 w-auto rounded-lg border border-white/10 shadow-lg" />
@@ -105,9 +105,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onSignInClick }) => 
           </div>
 
            {/* Blueprints Section */}
-          <div className="mt-16 w-full max-w-4xl animate-fadeInUp delay-300">
+          <div className="mt-12 md:mt-16 w-full max-w-4xl animate-fadeInUp delay-300">
              <h2 className="text-lg font-semibold text-gray-300">Or start with a blueprint</h2>
-             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                 {STARTER_PROMPTS.map((prompt, index) => (
                     <button 
                         key={prompt.label} 
