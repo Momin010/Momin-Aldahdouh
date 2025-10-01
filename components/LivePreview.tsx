@@ -115,24 +115,22 @@ const LivePreview: React.FC<LivePreviewProps> = ({
     { name: 'mobile', icon: 'mobile' },
   ];
   
-  const containerClasses = isFullscreen
-    ? "flex flex-col h-full bg-black relative"
-    : "flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden";
-
   if (isPlaceholder) {
     return (
-      <div className={containerClasses.replace('md:rounded-2xl', 'md:rounded-b-2xl md:rounded-t-none')}>
-        <div className="flex flex-col items-center justify-center h-full text-gray-500">
-          <Icon name="eye" className="w-16 h-16 text-gray-600" />
-          <h3 className="text-xl font-semibold mt-4">Live Preview</h3>
-          <p>Your generated project preview will appear here.</p>
-        </div>
+      <div className="flex flex-col items-center justify-center h-full text-gray-500">
+        <Icon name="eye" className="w-16 h-16 text-gray-600" />
+        <h3 className="text-xl font-semibold mt-4">Live Preview</h3>
+        <p>Your generated project preview will appear here.</p>
       </div>
     );
   }
 
+  const containerClasses = isFullscreen
+    ? "flex flex-col h-full bg-black relative"
+    : "flex flex-col h-full overflow-hidden";
+
   return (
-    <div className={containerClasses.replace('md:rounded-2xl', 'md:rounded-b-2xl md:rounded-t-none')}>
+    <div className={containerClasses}>
       {isFullscreen && (
         <button
           onClick={onExitFullscreen}
