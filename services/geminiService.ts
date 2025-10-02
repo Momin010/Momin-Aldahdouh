@@ -1,6 +1,6 @@
 import type { Message, Files, FileAttachment, ApiResponse } from '../types';
 
-// The Gemini API logic is now on the server. This function calls our backend proxy.
+// This function now handles a streaming response from the backend to avoid payload size limits.
 export const sendAiChatRequest = async (
     messages: Message[], 
     files: Files | null, 
@@ -22,7 +22,32 @@ export const sendAiChatRequest = async (
             throw new Error(errorData.message || `Request failed with status ${response.status}`);
         }
 
-        return await response.json();
+        if (!response.body) {
+            throw new Error("The response from the server was empty.");
+        }
+
+        // Read the stream from the server
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let accumulatedJson = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+                break;
+            }
+            accumulatedJson += decoder.decode(value, { stream: true });
+        }
+        
+        // Once the stream is complete, parse the full JSON string.
+        try {
+            return JSON.parse(accumulatedJson);
+        } catch (parseError) {
+            console.error("Failed to parse streamed JSON from server:", parseError);
+            console.error("Received incomplete or malformed content:", accumulatedJson);
+            throw new Error("Received a malformed response from the AI service.");
+        }
+
     } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
             // Re-throw so the UI can handle the abort state

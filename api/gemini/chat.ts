@@ -486,10 +486,6 @@ export default async function handler(req: any, res: any) {
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
-    // This endpoint is now public to allow for guest sessions.
-    // The user's logged-in state is still checked by other endpoints like /api/projects.
-    // We can add rate limiting or other abuse prevention mechanisms here later if needed.
-
     const { messages, files, attachment } = req.body as {
         messages: Message[];
         files: Files | null;
@@ -498,10 +494,16 @@ export default async function handler(req: any, res: any) {
 
     const apiKey = getRandomApiKey();
     if (!apiKey) {
-        // This log will be very helpful for the user.
         console.error("Gemini API key not found during request. Please check server configuration. No GEMINI_API_KEY_n variables found.");
         return res.status(500).json({ message: 'Server configuration error: API key is missing.' });
     }
+
+    // Set headers for streaming
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+    res.setHeader('Connection', 'keep-alive');
+    // VITAL for Vercel: Disables response buffering to allow streaming
+    res.setHeader('X-Accel-Buffering', 'no');
 
     const history = messages.slice(0, -1)
         .filter(m => m.role !== 'system' && m.role !== 'correction')
@@ -526,7 +528,7 @@ export default async function handler(req: any, res: any) {
     try {
         const ai = new GoogleGenAI({ apiKey });
         
-        const result: GenerateContentResponse = await ai.models.generateContent({
+        const resultStream = await ai.models.generateContentStream({
             model: 'gemini-2.5-flash',
             contents: [...history, { role: 'user', parts }],
             config: {
@@ -536,25 +538,28 @@ export default async function handler(req: any, res: any) {
             },
         });
 
-        const responseText = result.text;
-        if (!responseText.trim()) {
-            throw new Error(`The AI returned an empty response. This could be due to a content safety filter or an internal error.`);
+        for await (const chunk of resultStream.response) {
+            const text = chunk.text;
+            if (text) {
+                // Write each chunk of the JSON string directly to the response stream
+                res.write(text);
+            }
         }
-
-        let jsonResponse: ApiResponse;
-        try {
-             jsonResponse = JSON.parse(responseText);
-        } catch (parseError) {
-             console.error("Failed to parse AI JSON response:", responseText);
-             throw new Error("The AI returned a malformed JSON response.");
-        }
-         
-        return res.status(200).json(jsonResponse);
+        
+        // Signal that the response stream is complete
+        res.end();
 
     } catch (error: any) {
         const errorMessage = error.message || String(error);
         console.error(`Gemini API call failed: ${errorMessage}`);
-        // Provide a more generic message to the client for security.
-        return res.status(500).json({ message: `An error occurred while communicating with the AI service.` });
+        // If headers haven't been sent, we can still send a proper error response
+        if (!res.headersSent) {
+            res.status(500).json({ message: `An error occurred while communicating with the AI service.` });
+        } else {
+            // If we're mid-stream, we can't change status codes or headers.
+            // We just have to end the response abruptly. The client's JSON parser will fail,
+            // which will be caught as an error on the client side.
+            res.end();
+        }
     }
 }
