@@ -65,6 +65,8 @@ interface ChatPanelProps {
   onResubmitMessage: (index: number, newContent: string) => void;
   editingIndex: number | null;
   onCancelEditing: () => void;
+  stopwatchSeconds: number;
+  isStopwatchRunning: boolean;
 }
 
 // A list of AI statuses that indicate a "loading" or "working" state.
@@ -104,7 +106,8 @@ const PlanDisplay: React.FC<{ plan: Plan }> = ({ plan }) => (
 
 const ChatPanel: React.FC<ChatPanelProps> = ({ 
   messages, onSendMessage, aiStatus, onStreamingComplete, hasGeneratedCode, onNavigateToPreview,
-  onCancelRequest, isCancelling, onContextMenu, onResubmitMessage, editingIndex, onCancelEditing
+  onCancelRequest, isCancelling, onContextMenu, onResubmitMessage, editingIndex, onCancelEditing,
+  stopwatchSeconds, isStopwatchRunning
 }) => {
   const [input, setInput] = useState('');
   const [attachment, setAttachment] = useState<FileAttachment | null>(null);
@@ -206,6 +209,12 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const displayedMessages = messages.filter(m => m.role !== 'system' || (m.role === 'system' && !!m.action));
   const reversedMessages = [...displayedMessages].reverse();
   
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const secs = (seconds % 60).toString().padStart(2, '0');
+    return `${mins}:${secs}`;
+  };
+
   return (
     <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
       <div ref={scrollContainerRef} className="flex-grow p-4 overflow-y-auto">
@@ -364,6 +373,15 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             )}
           </div>
         </div>
+        {stopwatchSeconds > 0 && (
+          <div className="flex items-center justify-center gap-2 mt-3 text-sm text-gray-400">
+             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{formatTime(stopwatchSeconds)}</span>
+            {isStopwatchRunning && <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>}
+          </div>
+        )}
       </div>
     </div>
   );
