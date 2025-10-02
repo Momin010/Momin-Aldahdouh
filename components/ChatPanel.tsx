@@ -34,11 +34,12 @@ const ModelMessageContent: React.FC<{
         }
       }, 20); // Typing speed
       return () => clearInterval(intervalId);
-    } else if (!message.streaming) {
+    } else if (!message.streaming && !animationCompletedRef.current) {
         // Ensure final content is displayed if streaming is false from the start
         setAnimatedText(message.content);
+        animationCompletedRef.current = true;
     }
-  }, [message.streaming, message.content, index, onComplete]);
+  }, [message.streaming, index, onComplete]);
 
   const isStreaming = message.streaming && animatedText.length < message.content.length;
 
