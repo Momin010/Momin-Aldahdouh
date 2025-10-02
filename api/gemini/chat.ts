@@ -486,11 +486,9 @@ export default async function handler(req: any, res: any) {
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
-    // Authenticate user
-    const user = await getUserFromRequest(req);
-    if (!user) {
-        return res.status(401).json({ message: 'Unauthorized' });
-    }
+    // This endpoint is now public to allow for guest sessions.
+    // The user's logged-in state is still checked by other endpoints like /api/projects.
+    // We can add rate limiting or other abuse prevention mechanisms here later if needed.
 
     const { messages, files, attachment } = req.body as {
         messages: Message[];
