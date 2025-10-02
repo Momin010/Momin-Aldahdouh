@@ -451,9 +451,9 @@ const RESPONSE_SCHEMA = {
 let keyIndex = 0;
 const apiKeys: string[] = [];
 
-// Find all numbered VITE_GEMINI_API_KEY_... variables
+// Find all numbered GEMINI_API_KEY_... variables (Corrected Prefix for Vercel)
 const numberedApiKeys = Object.keys(process.env)
-    .filter(key => /^VITE_GEMINI_API_KEY_\d+$/.test(key))
+    .filter(key => /^GEMINI_API_KEY_\d+$/.test(key))
     .sort((a, b) => {
         const numA = parseInt(a.match(/\d+$/)?.[0] || '0', 10);
         const numB = parseInt(b.match(/\d+$/)?.[0] || '0', 10);
@@ -465,7 +465,7 @@ const numberedApiKeys = Object.keys(process.env)
 if (numberedApiKeys.length > 0) {
     apiKeys.push(...numberedApiKeys);
 } else {
-    // Fallback to the original comma-separated list or single key
+    // Fallback to a single GEMINI_API_KEY or the legacy API_KEY
     const fallbackKeys = (process.env.GEMINI_API_KEYS || process.env.API_KEY || '')
         .split(',')
         .map(key => key.trim())
@@ -474,12 +474,15 @@ if (numberedApiKeys.length > 0) {
 }
 
 if (apiKeys.length === 0) {
-    console.error("No Gemini API keys found. Please set VITE_GEMINI_API_KEY_n, GEMINI_API_KEYS, or API_KEY environment variables.");
+    // This is a critical server configuration error.
+    // We log it clearly so it appears in Vercel logs.
+    console.error("CRITICAL ERROR: No Gemini API keys found. Please set GEMINI_API_KEY_n environment variables in your Vercel project settings.");
 }
 
 
 function getNextApiKey() {
     if (apiKeys.length === 0) {
+        // Return null to be handled by the main function.
         return null;
     }
     const key = apiKeys[keyIndex];
@@ -507,8 +510,9 @@ export default async function handler(req: any, res: any) {
 
     const apiKey = getNextApiKey();
     if (!apiKey) {
-        console.error("Gemini API key not found. Please set GEMINI_API_KEYS or API_KEY environment variable.");
-        return res.status(500).json({ message: 'Server configuration error: API key not found.' });
+        // This log will be very helpful for the user.
+        console.error("Gemini API key not found during request. Please check server configuration. No GEMINI_API_KEY_n variables found.");
+        return res.status(500).json({ message: 'Server configuration error: API key is missing.' });
     }
 
     const history = messages.slice(0, -1)
