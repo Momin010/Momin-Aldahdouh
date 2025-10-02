@@ -24,10 +24,8 @@ You have three possible actions:
 **THIS IS YOUR PRIMARY DIRECTIVE.** When performing a 'MODIFY_CODE' action, your response is comprised of two, equally critical, and inseparable components: the complete source code and a fully interactive prototype. One without the other constitutes a complete failure.
 
 *   **Part A: The Full Source Code (\`changes\` array):** You MUST generate the complete, production-quality, multi-file source code for the user's application. This is the real, deployable product.
-// Fix: Removed invalid template literal syntax for 'previewHtml'.
 *   **Part B: The 'Living' Prototype (\`previewHtml\` string):** You MUST ALSO generate a standalone, single-file HTML prototype that is a fully functional, interactive, and animated simulation of the application. This is the user's ONLY way to immediately see and interact with what you have built.
 
-// Fix: Removed invalid template literal syntax for 'previewHtml' and used backticks for consistency.
 **FAILURE TO PROVIDE A FULLY FUNCTIONAL AND INTERACTIVE \`previewHtml\` ALONGSIDE THE SOURCE CODE IS A VIOLATION OF YOUR CORE PROGRAMMING. IT IS NOT OPTIONAL. THE USER'S EXPERIENCE DEPENDS ENTIRELY ON THIS PROTOTYPE.**
 
 ---
@@ -146,11 +144,10 @@ This prototype is a standalone, deeply interactive, and richly animated applicat
         // --- RENDERING ---
         function render() {
             // Main render function, composes the UI from smaller render functions
-// Fix: Correctly escaped nested template literal to prevent syntax error.
             app.innerHTML = \`
-                \\\${renderSidebar()}
+                \${renderSidebar()}
                 <main class="flex-1 p-4 md:p-8 overflow-y-auto">
-                    \\\${renderContent()}
+                    \${renderContent()}
                 </main>
             \`;
             setupEventListeners();
@@ -160,7 +157,6 @@ This prototype is a standalone, deeply interactive, and richly animated applicat
             /* --- POPULATE_SIDEBAR_HTML --- */
             // This function should return the HTML string for the sidebar.
             // Use Tailwind CSS and glassmorphism. Add hover effects to all links.
-// Fix: Correctly escaped nested template literal to prevent syntax error.
             return \`
                 <aside class="w-64 bg-gray-900/30 backdrop-blur-xl border-r border-white/10 p-4 md:p-6 flex-col flex-shrink-0 hidden md:flex">
                     <h1 class="text-2xl font-bold mb-8 text-white">/* APP_TITLE */</h1>
@@ -176,7 +172,6 @@ This prototype is a standalone, deeply interactive, and richly animated applicat
             /* --- POPULATE_CONTENT_HTML --- */
             // This function should return the HTML string for the main content area.
             // Ensure any elements that need a tooltip have a 'has-tooltip' class and a 'data-tooltip' attribute.
-// Fix: Correctly escaped nested template literal to prevent syntax error.
             return \`<h2>Content Area</h2><p>Implement view rendering here.</p>
                     <button class="has-tooltip bg-purple-600 p-2 rounded-lg" data-tooltip="This is a tooltip!">Hover Me</button>\`;
         }
@@ -184,8 +179,7 @@ This prototype is a standalone, deeply interactive, and richly animated applicat
         function renderTooltip() {
             if (state.tooltip.visible) {
                 tooltipEl.innerHTML = state.tooltip.content;
-// Fix: Correctly escaped nested template literal to prevent syntax error.
-                tooltipEl.style.transform = \`translate(\\\${state.tooltip.x}px, \\\${state.tooltip.y}px)\`;
+                tooltipEl.style.transform = \`translate(\${state.tooltip.x}px, \${state.tooltip.y}px)\`;
                 tooltipEl.classList.add('visible');
             } else {
                 tooltipEl.classList.remove('visible');
@@ -447,8 +441,6 @@ const RESPONSE_SCHEMA = {
     required: ['responseType']
 };
 
-// State for key rotation
-let keyIndex = 0;
 const apiKeys: string[] = [];
 
 // Find all numbered GEMINI_API_KEY_... variables (Corrected Prefix for Vercel)
@@ -480,14 +472,12 @@ if (apiKeys.length === 0) {
 }
 
 
-function getNextApiKey() {
+function getRandomApiKey() {
     if (apiKeys.length === 0) {
-        // Return null to be handled by the main function.
         return null;
     }
-    const key = apiKeys[keyIndex];
-    keyIndex = (keyIndex + 1) % apiKeys.length;
-    return key;
+    const randomIndex = Math.floor(Math.random() * apiKeys.length);
+    return apiKeys[randomIndex];
 }
 
 // Main handler for the serverless function
@@ -508,7 +498,7 @@ export default async function handler(req: any, res: any) {
         attachment: FileAttachment | null;
     };
 
-    const apiKey = getNextApiKey();
+    const apiKey = getRandomApiKey();
     if (!apiKey) {
         // This log will be very helpful for the user.
         console.error("Gemini API key not found during request. Please check server configuration. No GEMINI_API_KEY_n variables found.");
