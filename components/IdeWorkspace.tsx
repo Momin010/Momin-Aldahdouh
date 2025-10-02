@@ -11,12 +11,10 @@ import ResizablePanel from './ResizablePanel';
 import Sidebar from './Sidebar';
 import { Icon } from './Icon';
 import MessageContextMenu from './MessageContextMenu';
-import type { Message, Files, Change, FileAttachment, History, AppState, ConsoleMessage, Plan, Workspace, Project, User } from '../types';
+import type { Message, Files, Change, FileAttachment, History, AppState, ConsoleMessage, Plan, Workspace, Project, User, Modification, ApiResponse } from '../types';
 import { sendAiChatRequest, resetChat } from '../services/geminiService';
 import { downloadProjectAsZip } from '../services/zipService';
-// FIX: Import projectService for API calls.
 import * as projectService from '../services/projectService';
-// FIX: Import uuidv4 to fix 'Cannot find name' error.
 import { v4 as uuidv4 } from 'uuid';
 
 type MobileView = 'chat' | 'preview';
@@ -68,7 +66,6 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
   const activeProject = workspace.projects.find(p => p.id === workspace.activeProjectId);
   const activeProjectRunState = activeProject ? projectRunStates[activeProject.id] : undefined;
 
-  // Initialize/update run states when projects change
   useEffect(() => {
     setProjectRunStates(prevStates => {
         const newStates: Record<string, ProjectRunState> = {};
@@ -83,7 +80,6 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
     });
   }, [workspace.projects]);
 
-  // Activate the first project on initial load if none is active
   useEffect(() => {
     if (!workspace.activeProjectId && workspace.projects.length > 0) {
         onWorkspaceChange(ws => ws ? ({ ...ws, activeProjectId: ws.projects[0].id }) : null);
@@ -91,7 +87,6 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
   }, [workspace.activeProjectId, workspace.projects, onWorkspaceChange]);
 
   useEffect(() => {
-    // Set default device to mobile on smaller screens for a better initial experience.
     if (window.innerWidth < 768) {
       setDevice('mobile');
     }
@@ -188,72 +183,187 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
       });
   }, [updateProjectById]);
 
-  const triggerAiResponse = useCallback(async (projectId: string, messagesForAI: Message[], attachment: FileAttachment | null = null) => {
-    const projectForRequest = workspace.projects.find(p => p.id === projectId);
-    if (!projectForRequest) return;
-    
-    const { files: projectFiles, hasGeneratedCode: projectHasCode } = projectForRequest.history.versions[projectForRequest.history.currentIndex];
+  const applyModification = useCallback((projectId: string, modification: Modification) => {
+    addHistoryStateForProject(projectId, prev => {
+        const updatedFiles = { ...prev.files };
+        modification.changes.forEach((change: Change) => {
+            if (change.action === 'delete') {
+                delete updatedFiles[change.filePath];
+            } else {
+                updatedFiles[change.filePath] = change.content || '';
+            }
+        });
 
+        const newMessages = modification.reason ? [...prev.chatMessages, { role: 'model' as const, content: modification.reason }] : [...prev.chatMessages];
+        if (modification.previewHtml) {
+             newMessages.push({ role: 'system', content: 'Go to Preview', action: 'GOTO_PREVIEW' });
+        }
+
+        return {
+            ...prev,
+            files: updatedFiles,
+            previewHtml: modification.previewHtml || prev.previewHtml,
+            chatMessages: newMessages,
+            hasGeneratedCode: true,
+            projectName: modification.projectName || prev.projectName,
+            projectPlan: null,
+        };
+    });
+    if (modification.changes.length > 0) {
+        setConsoleLogs([]);
+    }
+  }, [addHistoryStateForProject]);
+
+  const makeAiRequest = useCallback(async (
+    projectId: string,
+    messagesForAI: Message[],
+    filesForContext: Files | null,
+    attachment: FileAttachment | null = null
+  ): Promise<ApiResponse | null> => {
     const controller = new AbortController();
     setProjectRunStates(prev => ({
-        ...prev, [projectId]: { aiStatus: 'MominAI is working...', isVerifying: false, abortController: controller }
+        ...prev,
+        [projectId]: { ...prev[projectId], abortController: controller }
     }));
 
     try {
-      const response = await sendAiChatRequest(messagesForAI, projectHasCode ? projectFiles : null, attachment, controller.signal);
-
-      setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], aiStatus: null } }));
-
-      switch (response.responseType) {
-        case 'CHAT':
-          addHistoryStateForProject(projectId, prev => ({...prev, chatMessages: [...prev.chatMessages, { role: 'model', content: response.message, streaming: true }]}));
-          break;
-        case 'PROJECT_PLAN': {
-          const { plan } = response;
-          const planContent = `I've drafted a plan for your project, **${plan.projectName}**. Please review it below.`;
-          const planMessage: Message = { role: 'model', content: planContent, plan: plan, action: 'AWAITING_PLAN_APPROVAL' };
-          addHistoryStateForProject(projectId, prev => ({ ...prev, projectPlan: plan, chatMessages: [...prev.chatMessages, planMessage] }));
-          setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], aiStatus: "Awaiting your approval..."}}));
-          break;
-        }
-        case 'MODIFY_CODE': {
-          setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], aiStatus: "Generating files..."}}));
-          const { modification } = response;
-          addHistoryStateForProject(projectId, prev => {
-            const updatedFiles = prev.hasGeneratedCode ? { ...prev.files } : {};
-            modification.changes.forEach((change: Change) => {
-              if (change.action === 'delete') { delete updatedFiles[change.filePath]; } 
-              else { updatedFiles[change.filePath] = change.content || ''; }
-            });
-            return {
-              ...prev, files: updatedFiles, previewHtml: modification.previewHtml || prev.previewHtml,
-              chatMessages: [...prev.chatMessages, { role: 'model', content: modification.reason }, { role: 'system', content: 'Go to Preview', action: 'GOTO_PREVIEW' }],
-              hasGeneratedCode: true, projectName: modification.projectName || prev.projectName, projectPlan: null,
-            };
-          });
-          setConsoleLogs([]);
-          setProjectRunStates(prev => ({ ...prev, [projectId]: { ...prev[projectId], isVerifying: true, aiStatus: "Verifying generated code..." } }));
-          break;
-        }
-      }
+        return await sendAiChatRequest(messagesForAI, filesForContext, attachment, controller.signal);
     } catch (error) {
-      let errorMessageContent = `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}`;
-      if (error instanceof DOMException && error.name === 'AbortError') errorMessageContent = 'AI generation cancelled.';
-      addHistoryStateForProject(projectId, prev => ({ ...prev, chatMessages: [...prev.chatMessages, { role: 'model', content: errorMessageContent }], projectPlan: null }));
-      setProjectRunStates(prev => ({ ...prev, [projectId]: { aiStatus: null, isVerifying: false, abortController: null } }));
+        if (error instanceof DOMException && error.name === 'AbortError') {
+            addHistoryStateForProject(projectId, prev => ({...prev, chatMessages: [...prev.chatMessages, { role: 'model', content: 'AI generation cancelled.' }]}));
+        } else {
+            const errorMessageContent = `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+            addHistoryStateForProject(projectId, prev => ({ ...prev, chatMessages: [...prev.chatMessages, { role: 'model', content: errorMessageContent }], projectPlan: null }));
+        }
+        setProjectRunStates(prev => ({...prev, [projectId]: { aiStatus: null, isVerifying: false, abortController: null } }));
+        return null;
     } finally {
-      setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], abortController: null } }));
+        setProjectRunStates(prev => ({...prev, [projectId]: { ...prev[projectId], abortController: null } }));
     }
-  }, [workspace.projects, addHistoryStateForProject]);
+  }, [addHistoryStateForProject]);
 
+  const startBuildPipeline = useCallback(async (projectId: string) => {
+    const project = workspace.projects.find(p => p.id === projectId);
+    const currentVersion = project?.history.versions[project.history.currentIndex];
+    if (!project || !currentVersion || !currentVersion.projectPlan) {
+        setProjectRunStates(prev => ({...prev, [projectId]: { aiStatus: 'Error: No plan found.', isVerifying: false, abortController: null } }));
+        return;
+    }
+    
+    const plan = currentVersion.projectPlan;
+    const baseMessages = currentVersion.chatMessages.map(msg => msg.action === 'AWAITING_PLAN_APPROVAL' ? { ...msg, action: undefined } : msg);
+
+    // --- STAGE 1: Generate Core Structure ---
+    setProjectRunStates(prev => ({...prev, [projectId]: { aiStatus: 'Phase 1/3: Generating project structure...', isVerifying: false, abortController: null }}));
+    const coreFilesPrompt = `The project plan for "${plan.projectName}" has been approved. Let's start building.
+    **Phase 1: Core Structure Generation**
+    Based on the approved plan, generate ONLY the foundational files. This includes configuration files like package.json, vite.config.ts, index.html, and the main application entry points (e.g., index.tsx, App.tsx).
+    DO NOT generate any smaller components, pages, or detailed UI elements yet. The 'previewHtml' for this phase can be minimal.
+    Your response must be of type 'MODIFY_CODE'.`;
+    
+    const stage1Messages = [...baseMessages, { role: 'user' as const, content: coreFilesPrompt }];
+    const stage1Response = await makeAiRequest(projectId, stage1Messages, null);
+
+    if (!stage1Response || stage1Response.responseType !== 'MODIFY_CODE') {
+        setProjectRunStates(prev => ({...prev, [projectId]: { aiStatus: 'Build failed at Phase 1.', isVerifying: false, abortController: null } }));
+        return;
+    }
+    applyModification(projectId, stage1Response.modification);
+    const coreFiles: Files = stage1Response.modification.changes.reduce((acc, change) => {
+        if (change.action !== 'delete' && change.content) acc[change.filePath] = change.content;
+        return acc;
+    }, {} as Files);
+
+    // --- STAGE 2: Generate Components ---
+    setProjectRunStates(prev => ({...prev, [projectId]: { aiStatus: 'Phase 2/3: Building UI components...', isVerifying: false, abortController: null }}));
+    const componentsPrompt = `**Phase 2: Component Generation**
+    Core structure is in place. Now, using the same project plan, generate all remaining component and logic files (e.g., Header.tsx, Sidebar.tsx).
+    Ensure new components are correctly imported and integrated into the main application file(s) you generated previously.
+    The 'previewHtml' for this phase can also be minimal. Your response must be of type 'MODIFY_CODE'.`;
+    
+    const stage2Messages = [...stage1Messages, { role: 'model' as const, content: stage1Response.modification.reason }, { role: 'user' as const, content: componentsPrompt }];
+    const stage2Response = await makeAiRequest(projectId, stage2Messages, coreFiles);
+
+    if (!stage2Response || stage2Response.responseType !== 'MODIFY_CODE') {
+        setProjectRunStates(prev => ({...prev, [projectId]: { aiStatus: 'Build failed at Phase 2.', isVerifying: false, abortController: null } }));
+        return;
+    }
+    applyModification(projectId, stage2Response.modification);
+    const componentFiles: Files = stage2Response.modification.changes.reduce((acc, change) => {
+        if (change.action !== 'delete' && change.content) acc[change.filePath] = change.content;
+        return acc;
+    }, {} as Files);
+    const allFiles = { ...coreFiles, ...componentFiles };
+
+    // --- STAGE 3: Generate Final Preview ---
+    setProjectRunStates(prev => ({...prev, [projectId]: { aiStatus: 'Phase 3/3: Creating interactive preview...', isVerifying: false, abortController: null }}));
+    const previewPrompt = `**Phase 3: Final Preview Generation**
+    The complete source code is generated. Your final task is to create the high-fidelity, interactive 'previewHtml' based on this complete set of files.
+    The prototype MUST be a fully functional simulation of the application.
+    Your response must be of type 'MODIFY_CODE', containing ONLY the updated 'previewHtml'. The 'changes' array can be empty.`;
+
+    const stage3Messages = [...stage2Messages, { role: 'model' as const, content: stage2Response.modification.reason }, { role: 'user' as const, content: previewPrompt }];
+    const stage3Response = await makeAiRequest(projectId, stage3Messages, allFiles);
+    
+    if (!stage3Response || stage3Response.responseType !== 'MODIFY_CODE') {
+        setProjectRunStates(prev => ({...prev, [projectId]: { aiStatus: 'Build failed at Phase 3.', isVerifying: false, abortController: null } }));
+        return;
+    }
+    applyModification(projectId, stage3Response.modification);
+
+    // --- DONE ---
+    setProjectRunStates(prev => ({...prev, [projectId]: { aiStatus: 'Verifying generated code...', isVerifying: true, abortController: null }}));
+  }, [workspace.projects, makeAiRequest, applyModification]);
+  
+  const triggerAiResponse = useCallback(async (projectId: string, messagesForAI: Message[], attachment: FileAttachment | null = null) => {
+    const projectForRequest = workspace.projects.find(p => p.id === projectId);
+    if (!projectForRequest) return;
+    const { files: projectFiles, hasGeneratedCode: projectHasCode } = projectForRequest.history.versions[projectForRequest.history.currentIndex];
+
+    setProjectRunStates(prev => ({
+        ...prev, [projectId]: { aiStatus: 'MominAI is working...', isVerifying: false, abortController: null }
+    }));
+
+    const response = await makeAiRequest(projectId, messagesForAI, projectHasCode ? projectFiles : null, attachment);
+    if (!response) return;
+
+    setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], aiStatus: null } }));
+
+    switch (response.responseType) {
+        case 'CHAT':
+            addHistoryStateForProject(projectId, prev => ({...prev, chatMessages: [...prev.chatMessages, { role: 'model', content: response.message, streaming: true }]}));
+            break;
+        case 'PROJECT_PLAN':
+            const { plan } = response;
+            const planMessage: Message = { role: 'model', content: `I've drafted a plan for **${plan.projectName}**. Please review it.`, plan: plan, action: 'AWAITING_PLAN_APPROVAL' };
+            addHistoryStateForProject(projectId, prev => ({ ...prev, projectPlan: plan, chatMessages: [...prev.chatMessages, planMessage] }));
+            setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], aiStatus: "Awaiting your approval..."}}));
+            break;
+        case 'MODIFY_CODE':
+            setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], aiStatus: "Applying changes..."}}));
+            applyModification(projectId, response.modification);
+            setProjectRunStates(prev => ({ ...prev, [projectId]: { ...prev[projectId], isVerifying: true, aiStatus: "Verifying generated code..." } }));
+            break;
+    }
+  }, [workspace.projects, addHistoryStateForProject, makeAiRequest, applyModification]);
+  
   const handleSendMessage = useCallback(async (message: string, attachment?: FileAttachment | null) => {
     if (!activeProject || !currentState) return;
     const projectId = activeProject.id;
+    
     const userMessage: Message = { role: 'user', content: message };
-    const messagesWithUser = [...currentState.chatMessages.map(msg => msg.action === 'AWAITING_PLAN_APPROVAL' ? { ...msg, action: undefined } : msg), userMessage];
-    addHistoryStateForProject(projectId, prev => ({ ...prev, chatMessages: messagesWithUser }));
-    await triggerAiResponse(projectId, messagesWithUser, attachment);
-  }, [activeProject, currentState, addHistoryStateForProject, triggerAiResponse]);
+    addHistoryStateForProject(projectId, prev => ({ ...prev, chatMessages: [...prev.chatMessages, userMessage] }));
+
+    const lastModelMessage = currentState.chatMessages.slice().reverse().find(m => m.role === 'model');
+    const isPlanApproval = lastModelMessage?.action === 'AWAITING_PLAN_APPROVAL';
+
+    if (isPlanApproval) {
+        startBuildPipeline(projectId);
+    } else {
+        const messagesForAI = [...currentState.chatMessages, userMessage];
+        triggerAiResponse(projectId, messagesForAI, attachment);
+    }
+  }, [activeProject, currentState, addHistoryStateForProject, triggerAiResponse, startBuildPipeline]);
 
   const handleNewProject = useCallback(async (name: string = 'New Project', andThenSend?: {prompt: string, attachment: FileAttachment | null}) => {
       const newProject: Project = {
@@ -301,28 +411,16 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
     const correctionMessage: Message = { role: 'correction', content: errorContent };
     const messagesForCorrection = [...projectForRequest.history.versions[projectForRequest.history.currentIndex].chatMessages, correctionMessage];
 
-    try {
-      const response = await sendAiChatRequest(messagesForCorrection, files, null);
-       if (response.responseType === 'MODIFY_CODE') {
-        const { modification } = response;
-        addHistoryStateForProject(projectId, prev => {
-            const updatedFiles = { ...prev.files };
-            modification.changes.forEach((change: Change) => {
-              if (change.action === 'delete') delete updatedFiles[change.filePath];
-              else updatedFiles[change.filePath] = change.content || '';
-            });
-            return {...prev, files: updatedFiles, previewHtml: modification.previewHtml || prev.previewHtml, chatMessages: [...prev.chatMessages, { role: 'model', content: `**Self-Correction:** ${modification.reason}` }]};
-        });
-       } else {
-         addHistoryStateForProject(projectId, prev => ({...prev, chatMessages: [...prev.chatMessages, { role: 'model', content: response.message }] }));
-       }
-       setProjectRunStates(prev => ({...prev, [projectId]: {...prev[projectId], aiStatus: null}}));
-    } catch (error) {
-       const errorMessage = `Sorry, I encountered an error while trying to fix the code: ${error instanceof Error ? error.message : 'Unknown error'}`;
-       addHistoryStateForProject(projectId, prev => ({...prev, chatMessages: [...prev.chatMessages, { role: 'model', content: errorMessage }] }));
-       setProjectRunStates(prev => ({...prev, [projectId]: {...prev[projectId], aiStatus: null}}));
+    const response = await makeAiRequest(projectId, messagesForCorrection, files);
+    if (!response) return;
+
+    if (response.responseType === 'MODIFY_CODE') {
+        applyModification(projectId, response.modification);
+    } else {
+        addHistoryStateForProject(projectId, prev => ({...prev, chatMessages: [...prev.chatMessages, { role: 'model', content: response.message }] }));
     }
-  }, [addHistoryStateForProject, workspace.projects, files]);
+    setProjectRunStates(prev => ({...prev, [projectId]: {...prev[projectId], aiStatus: null}}));
+  }, [addHistoryStateForProject, workspace.projects, files, makeAiRequest, applyModification]);
 
   useEffect(() => {
     const projectToVerifyId = Object.keys(projectRunStates).find(id => projectRunStates[id].isVerifying);
@@ -346,7 +444,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
     const newMessages = currentState.chatMessages.slice(0, messageIndex);
     newMessages.push({ role: 'user', content: newContent });
     addHistoryStateForProject(projectId, prev => ({ ...prev, chatMessages: newMessages }));
-    await triggerAiResponse(projectId, newMessages);
+    triggerAiResponse(projectId, newMessages);
   }, [activeProject, currentState, addHistoryStateForProject, triggerAiResponse]);
 
   const handleDeleteMessage = useCallback((messageIndex: number) => {
@@ -411,27 +509,21 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
   
   const handleSelectProject = useCallback((id: string) => {
     onWorkspaceChange(ws => ws ? ({ ...ws, activeProjectId: id }) : null);
-    setMobileSidebarOpen(false); // Close sidebar on selection
+    setMobileSidebarOpen(false);
   }, [onWorkspaceChange]);
 
-  // FIX: Updated handleDeleteProject to correctly perform an optimistic UI update and call the server API.
   const handleDeleteProject = useCallback(async (id: string) => {
     if (!window.confirm("Are you sure? This cannot be undone.")) return;
-
     onWorkspaceChange(ws => {
       if (!ws) return null;
-
       const newProjects = ws.projects.filter(p => p.id !== id);
       const newActiveId = ws.activeProjectId === id ? (newProjects[0]?.id || null) : ws.activeProjectId;
-      
       if (user) {
         projectService.deleteProject(id).catch(error => {
           console.error("Failed to delete project on server:", error);
           alert("Failed to delete project on the server. Your local view has been updated, but you may need to refresh to sync with the server.");
-          // A more robust implementation would roll back the change here.
         });
       }
-      
       return { projects: newProjects, activeProjectId: newActiveId };
     });
   }, [onWorkspaceChange, user]);
@@ -521,7 +613,6 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
         </div>
       )}
 
-      {/* Desktop Sidebar (Overlay) */}
       <div 
         className={`hidden md:block absolute top-0 h-full z-40 transition-transform duration-300 ease-in-out ${isSidebarHovered ? 'translate-x-0' : '-translate-x-full'} ${isGuest ? 'pt-10' : ''}`}
         onMouseEnter={() => setIsSidebarHovered(true)}
@@ -530,7 +621,6 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
         <Sidebar {...sidebarProps} />
       </div>
 
-      {/* Floating Menu Button to trigger sidebar */}
       <div 
         onMouseEnter={() => setIsSidebarHovered(true)}
         className={`hidden md:block fixed bottom-4 left-4 z-50 cursor-pointer transition-opacity duration-300 ${isSidebarHovered ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
@@ -540,15 +630,13 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
         </div>
       </div>
       
-       {/* Mobile Sidebar (Overlay) */}
-      <div className={`md:hidden fixed inset-0 z-50 transition-opacity duration-300 ${isMobileSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+       <div className={`md:hidden fixed inset-0 z-50 transition-opacity duration-300 ${isMobileSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileSidebarOpen(false)}></div>
           <div className={`relative w-64 h-full transition-transform duration-300 ease-in-out ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
               <Sidebar {...sidebarProps} isMobile={true} onClose={() => setMobileSidebarOpen(false)} />
           </div>
       </div>
       
-      {/* Main Content */}
       <div className={`flex-grow h-full ${isGuest ? 'pt-10' : ''}`}>
         {renderWorkspaceContent()}
       </div>
