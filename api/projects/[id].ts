@@ -10,10 +10,12 @@ export default async function handler(req: any, res: any) {
   }
   
   const { id } = req.query;
+  console.log(`${req.method} request for project ${id} by user ${user.email}`);
 
   try {
     // First, verify the project belongs to the user for all methods
     const { rows } = await sql`SELECT id FROM projects WHERE id = ${id} AND user_email = ${user.email}`;
+    console.log(`Found ${rows.length} matching projects for ID ${id} and user ${user.email}`);
     if (rows.length === 0) {
          return res.status(404).json({ message: 'Project not found or you do not have permission to access it.' });
     }

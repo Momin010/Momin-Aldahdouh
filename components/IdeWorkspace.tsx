@@ -354,24 +354,40 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
   }, [activeProject, currentState, addHistoryStateForProject, triggerAiResponse]);
 
   const handleNewProject = useCallback(async (name: string = 'New Project', andThenSend?: {prompt: string, attachment: FileAttachment | null}) => {
-      const newProject: Project = {
-        id: uuidv4(),
-        projectName: name,
-        history: {
-          versions: [{
-            files: {}, previewHtml: '', frozenPrototypeHtml: null, projectPhase: 'planning', chatMessages: [ { role: 'model', content: "Hello! I'm MominAI. How can I help you build something amazing today?" } ],
-            hasGeneratedCode: false, projectName: name, projectPlan: null,
-          }],
-          currentIndex: 0
-        }
-      };
-      
-      onWorkspaceChange(ws => ws ? ({ projects: [...ws.projects, newProject], activeProjectId: newProject.id }) : null);
+      try {
+        if (user) {
+          // For authenticated users, create project on server first
+          const serverProject = await projectService.createProject(name);
+          onWorkspaceChange(ws => ws ? ({ projects: [...ws.projects, serverProject], activeProjectId: serverProject.id }) : null);
+          
+          if (andThenSend) {
+            setTimeout(() => handleSendMessage(andThenSend.prompt, andThenSend.attachment), 0);
+          }
+        } else {
+          // For guest users, create project locally
+          const newProject: Project = {
+            id: uuidv4(),
+            projectName: name,
+            history: {
+              versions: [{
+                files: {}, previewHtml: '', frozenPrototypeHtml: null, projectPhase: 'planning', chatMessages: [ { role: 'model', content: "Hello! I'm MominAI. How can I help you build something amazing today?" } ],
+                hasGeneratedCode: false, projectName: name, projectPlan: null,
+              }],
+              currentIndex: 0
+            }
+          };
+          
+          onWorkspaceChange(ws => ws ? ({ projects: [...ws.projects, newProject], activeProjectId: newProject.id }) : null);
 
-      if (andThenSend) {
-          setTimeout(() => handleSendMessage(andThenSend.prompt, andThenSend.attachment), 0);
+          if (andThenSend) {
+              setTimeout(() => handleSendMessage(andThenSend.prompt, andThenSend.attachment), 0);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to create new project:', error);
+        alert('Failed to create new project. Please try again.');
       }
-  }, [handleSendMessage, onWorkspaceChange]);
+  }, [handleSendMessage, onWorkspaceChange, user]);
 
   useEffect(() => {
       if ((initialPrompt || initialAttachment) && currentState) {

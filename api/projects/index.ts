@@ -14,12 +14,14 @@ export default async function handler(req: any, res: any) {
 
   try {
     if (req.method === 'GET') {
+      console.log(`Fetching projects for user: ${user.email}`);
       const { rows } = await sql`
         SELECT id, project_name, history FROM projects
         WHERE user_email = ${user.email}
         ORDER BY updated_at DESC
       `;
 
+      console.log(`Found ${rows.length} projects for user ${user.email}`);
       const projects: Project[] = rows.map(row => ({
         id: row.id,
         projectName: row.project_name,
@@ -40,10 +42,11 @@ export default async function handler(req: any, res: any) {
         return res.status(400).json({ message: 'Project name is required' });
       }
 
+      console.log(`Creating new project "${projectName}" for user: ${user.email}`);
+
        const initialAppState: AppState = {
             files: {},
             previewHtml: '',
-            // FIX: Add missing properties to conform to AppState type
             frozenPrototypeHtml: null,
             projectPhase: 'planning',
             chatMessages: [INITIAL_CHAT_MESSAGE],
@@ -66,6 +69,7 @@ export default async function handler(req: any, res: any) {
         VALUES (${newProject.id}, ${user.email}, ${newProject.projectName}, ${JSON.stringify(newProject.history)})
       `;
 
+      console.log(`Successfully created project with ID: ${newProject.id}`);
       return res.status(201).json(newProject);
     }
 

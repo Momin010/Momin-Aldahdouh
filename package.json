@@ -5,28 +5,32 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "setup-db": "node scripts/setup-db.js"
   },
   "dependencies": {
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
     "@google/genai": "^1.20.0",
-    "jszip": "^3.10.1",
     "@vercel/postgres": "^0.10.0",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
     "cookie": "^0.6.0",
+    "jsonwebtoken": "^9.0.2",
+    "jszip": "^3.10.1",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cookie": "^0.6.0",
+    "@types/jsonwebtoken": "^9.0.6",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
-    "@types/bcryptjs": "^2.4.6",
-    "@types/jsonwebtoken": "^9.0.6",
-    "@types/cookie": "^0.6.0",
     "@types/uuid": "^9.0.8",
-    "vite": "^5.2.0",
     "@vitejs/plugin-react": "^4.2.1",
-    "typescript": "^5.2.2"
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.14",
+    "typescript": "^5.2.2",
+    "vite": "^5.2.0"
   }
 }
