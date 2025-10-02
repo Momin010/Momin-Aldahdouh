@@ -13,7 +13,7 @@ export interface Plan {
 export interface Message {
   role: 'user' | 'model' | 'system' | 'correction';
   content: string;
-  action?: 'GOTO_PREVIEW' | 'AWAITING_PLAN_APPROVAL';
+  action?: 'GOTO_PREVIEW' | 'AWAITING_PLAN_APPROVAL' | 'AWAITING_BUILD_APPROVAL';
   plan?: Plan;
   streaming?: boolean;
 }
@@ -61,6 +61,8 @@ export type ApiResponse =
 export interface AppState {
   files: Files;
   previewHtml: string;
+  frozenPrototypeHtml: string | null;
+  projectPhase: 'planning' | 'prototyping' | 'building';
   chatMessages: Message[];
   hasGeneratedCode: boolean;
   projectName: string;
