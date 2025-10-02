@@ -1,4 +1,5 @@
 
+
 import type { Workspace, Project } from '../types';
 import { apiRequest } from './apiUtils';
 
@@ -22,6 +23,7 @@ export function updateProject(project: Project): Promise<void> {
     });
 }
 
+// FIX: Replaced incorrect UI logic with a proper API call.
 export function deleteProject(projectId: string): Promise<void> {
     return apiRequest<void>(`/api/projects/${projectId}`, {
         method: 'DELETE',

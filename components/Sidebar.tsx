@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Icon } from './Icon';
 import { Logo } from './Logo';
@@ -16,6 +17,8 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ projects, activeProjectId, onSelectProject, onNewProject, onDeleteProject, user, onSignOut, isMobile, onClose }) => {
+  const isGuest = user.email === 'Guest';
+  
   return (
     <aside className="w-64 h-full bg-black/30 backdrop-blur-xl border-r border-white/10 flex flex-col flex-shrink-0">
       <div className="p-4 border-b border-white/10 flex items-center justify-between">
@@ -72,9 +75,11 @@ const Sidebar: React.FC<SidebarProps> = ({ projects, activeProjectId, onSelectPr
                 </div>
                 <p className="text-sm text-gray-300 truncate">{user.email}</p>
             </div>
-            <button onClick={onSignOut} className="p-2 rounded-lg text-gray-400 hover:bg-white/10 hover:text-white transition-colors flex-shrink-0" aria-label="Sign out">
-                <Icon name="logout" className="w-5 h-5" />
-            </button>
+            {!isGuest && (
+              <button onClick={onSignOut} className="p-2 rounded-lg text-gray-400 hover:bg-white/10 hover:text-white transition-colors flex-shrink-0" aria-label="Sign out">
+                  <Icon name="logout" className="w-5 h-5" />
+              </button>
+            )}
           </div>
       </div>
     </aside>

@@ -1,3 +1,4 @@
+
 import { sql } from '../../lib/db.js';
 import { getUserFromRequest } from '../../lib/auth.js';
 import type { Project } from '../../types.js';
@@ -13,7 +14,7 @@ export default async function handler(req: any, res: any) {
   try {
     // First, verify the project belongs to the user for all methods
     const { rows } = await sql`SELECT id FROM projects WHERE id = ${id} AND user_email = ${user.email}`;
-    if (rows.length === 0 && req.method !== 'PUT') { // PUT creates if not exists implicitly in this logic, but lets be safer
+    if (rows.length === 0) {
          return res.status(404).json({ message: 'Project not found or you do not have permission to access it.' });
     }
 
