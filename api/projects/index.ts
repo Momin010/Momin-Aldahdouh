@@ -1,3 +1,4 @@
+
 import { sql } from '../../lib/db.js';
 import { getUserFromRequest } from '../../lib/auth.js';
 import type { Project, Workspace, AppState } from '../../types.js';
@@ -42,6 +43,9 @@ export default async function handler(req: any, res: any) {
        const initialAppState: AppState = {
             files: {},
             previewHtml: '',
+            // FIX: Add missing properties to conform to AppState type
+            frozenPrototypeHtml: null,
+            projectPhase: 'planning',
             chatMessages: [INITIAL_CHAT_MESSAGE],
             hasGeneratedCode: false,
             projectName: projectName,

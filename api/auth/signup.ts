@@ -57,6 +57,8 @@ export default async function handler(req: any, res: any) {
     const initialAppState: AppState = {
         files: {},
         previewHtml: '',
+        frozenPrototypeHtml: null,
+        projectPhase: 'planning',
         chatMessages: [INITIAL_CHAT_MESSAGE],
         hasGeneratedCode: false,
         projectName: 'Untitled Project',

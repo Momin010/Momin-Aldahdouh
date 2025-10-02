@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import type { Files } from '../types';
 import { Icon } from './Icon';
@@ -48,7 +47,7 @@ const buildFileTree = (files: Files): TreeNode[] => {
   });
 
   // Recursively convert the object structure to a sorted array
-  const convertToArray = (nodes: { [key: string]: any }): TreeNode[] => {
+  const convertToArray = (nodes: { [key:string]: any }): TreeNode[] => {
     return Object.values(nodes)
       .map(node => {
         if (node.type === 'folder') {
@@ -130,9 +129,10 @@ interface FileExplorerProps {
   files: Files;
   activeFile: string;
   onSelectFile: (path: string) => void;
+  projectPhase: 'planning' | 'prototyping' | 'building';
 }
 
-const FileExplorer: React.FC<FileExplorerProps> = ({ files, activeFile, onSelectFile }) => {
+const FileExplorer: React.FC<FileExplorerProps> = ({ files, activeFile, onSelectFile, projectPhase }) => {
   const fileTree = useMemo(() => buildFileTree(files), [files]);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
@@ -148,6 +148,39 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, activeFile, onSelect
     });
   };
 
+  const renderContent = () => {
+    if (projectPhase === 'prototyping') {
+      return (
+        <div className="p-4 text-center text-gray-400 text-sm">
+          <Icon name="eye" className="w-8 h-8 mx-auto mb-2 text-purple-400" />
+          <h3 className="font-semibold text-gray-200">Prototype Phase</h3>
+          <p className="mt-1">
+            The full source code will be generated here after you approve the interactive prototype.
+          </p>
+        </div>
+      );
+    }
+    
+    if (fileTree.length === 0) {
+      return <p className="text-gray-500 px-2 text-sm">No files generated yet.</p>;
+    }
+    
+    return (
+      <ul>
+        {fileTree.map(node => (
+          <TreeNodeComponent
+            key={node.path}
+            node={node}
+            activeFile={activeFile}
+            onSelectFile={onSelectFile}
+            expandedFolders={expandedFolders}
+            onToggleFolder={handleToggleFolder}
+          />
+        ))}
+      </ul>
+    );
+  };
+  
   return (
     <div className="flex flex-col h-full bg-black/10">
        <div className="flex-shrink-0 p-3 border-b border-white/10">
@@ -157,22 +190,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, activeFile, onSelect
         </h2>
       </div>
       <div className="flex-grow p-2 overflow-y-auto">
-        {fileTree.length === 0 ? (
-          <p className="text-gray-500 px-2 text-sm">No files generated yet.</p>
-        ) : (
-          <ul>
-            {fileTree.map(node => (
-              <TreeNodeComponent
-                key={node.path}
-                node={node}
-                activeFile={activeFile}
-                onSelectFile={onSelectFile}
-                expandedFolders={expandedFolders}
-                onToggleFolder={handleToggleFolder}
-              />
-            ))}
-          </ul>
-        )}
+        {renderContent()}
       </div>
     </div>
   );

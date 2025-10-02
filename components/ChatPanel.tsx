@@ -96,6 +96,16 @@ const LOADING_TEXTS: Record<string, string[]> = {
     'Booting up the simulation...',
     'Polishing the final preview...',
   ],
+   'Generating interactive prototype...': [
+    'Crafting the interactive mirage...',
+    'Simulating user experience...',
+    'Building a functional prototype...'
+  ],
+  'Generating full source code...': [
+    'Translating prototype to production code...',
+    'Building the React component tree...',
+    'Finalizing file structure...'
+  ],
   'Verifying generated code...': [
     'Running diagnostics...',
     'Checking for syntax ghosts...',
@@ -342,10 +352,18 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                       {!msg.streaming && msg.plan && <PlanDisplay plan={msg.plan} />}
                       {!msg.streaming && msg.action === 'AWAITING_PLAN_APPROVAL' && (
                         <div className="mt-4 flex flex-col sm:flex-row gap-2">
-                          <button onClick={() => onSendMessage("Looks good, proceed with building the project.")} disabled={isLoading} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 transition-colors disabled:bg-gray-600">
-                            <Icon name="lightning" className="w-4 h-4" /> Accept & Build
+                          <button onClick={() => onSendMessage("Looks good, proceed.")} disabled={isLoading} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 transition-colors disabled:bg-gray-600">
+                            <Icon name="lightning" className="w-4 h-4" /> Accept & Continue
                           </button>
                           <button onClick={() => inputRef.current?.focus()} disabled={isLoading} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-50">Suggest Changes</button>
+                        </div>
+                      )}
+                      {!msg.streaming && msg.action === 'AWAITING_BUILD_APPROVAL' && (
+                        <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                          <button onClick={() => onSendMessage("The prototype looks great! Please build the full application source code now.")} disabled={isLoading} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 transition-colors disabled:bg-gray-600">
+                            <Icon name="code" className="w-4 h-4" /> Build Full Application
+                          </button>
+                          <button onClick={() => inputRef.current?.focus()} disabled={isLoading} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-50">Request Changes</button>
                         </div>
                       )}
                       {!msg.streaming && showStarterPrompts && originalIndex === 0 && (
