@@ -499,7 +499,7 @@ export default async function handler(req: any, res: any) {
     }
 
     // Set headers for streaming
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, must-revalidate');
     res.setHeader('Connection', 'keep-alive');
     // VITAL for Vercel: Disables response buffering to allow streaming
@@ -538,7 +538,7 @@ export default async function handler(req: any, res: any) {
             },
         });
 
-        for await (const chunk of resultStream.response) {
+        for await (const chunk of resultStream) {
             const text = chunk.text;
             if (text) {
                 // Write each chunk of the JSON string directly to the response stream
