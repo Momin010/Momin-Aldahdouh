@@ -449,14 +449,34 @@ const RESPONSE_SCHEMA = {
 
 // State for key rotation
 let keyIndex = 0;
-const apiKeys: string[] = (process.env.GEMINI_API_KEYS || process.env.API_KEY || '')
-    .split(',')
-    .map(key => key.trim())
-    .filter(Boolean);
+const apiKeys: string[] = [];
+
+// Find all numbered VITE_GEMINI_API_KEY_... variables
+const numberedApiKeys = Object.keys(process.env)
+    .filter(key => /^VITE_GEMINI_API_KEY_\d+$/.test(key))
+    .sort((a, b) => {
+        const numA = parseInt(a.match(/\d+$/)?.[0] || '0', 10);
+        const numB = parseInt(b.match(/\d+$/)?.[0] || '0', 10);
+        return numA - numB;
+    })
+    .map(key => process.env[key])
+    .filter((key): key is string => Boolean(key));
+
+if (numberedApiKeys.length > 0) {
+    apiKeys.push(...numberedApiKeys);
+} else {
+    // Fallback to the original comma-separated list or single key
+    const fallbackKeys = (process.env.GEMINI_API_KEYS || process.env.API_KEY || '')
+        .split(',')
+        .map(key => key.trim())
+        .filter(Boolean);
+    apiKeys.push(...fallbackKeys);
+}
 
 if (apiKeys.length === 0) {
-    console.error("No Gemini API keys found in environment variables 'GEMINI_API_KEYS' or 'API_KEY'.");
+    console.error("No Gemini API keys found. Please set VITE_GEMINI_API_KEY_n, GEMINI_API_KEYS, or API_KEY environment variables.");
 }
+
 
 function getNextApiKey() {
     if (apiKeys.length === 0) {
