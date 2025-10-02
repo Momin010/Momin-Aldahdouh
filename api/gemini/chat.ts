@@ -146,13 +146,13 @@ This prototype is a standalone, deeply interactive, and richly animated applicat
         // --- RENDERING ---
         function render() {
             // Main render function, composes the UI from smaller render functions
-// Fix: Escaped nested template literal to prevent syntax error.
-            app.innerHTML = \\\`
-                \\\${renderSidebar()}
+// Fix: Correctly escaped nested template literal to prevent syntax error.
+            app.innerHTML = \`
+                \${renderSidebar()}
                 <main class="flex-1 p-4 md:p-8 overflow-y-auto">
-                    \\\${renderContent()}
+                    \${renderContent()}
                 </main>
-            \\\`;
+            \`;
             setupEventListeners();
         }
 
@@ -160,8 +160,8 @@ This prototype is a standalone, deeply interactive, and richly animated applicat
             /* --- POPULATE_SIDEBAR_HTML --- */
             // This function should return the HTML string for the sidebar.
             // Use Tailwind CSS and glassmorphism. Add hover effects to all links.
-// Fix: Escaped nested template literal to prevent syntax error.
-            return \\\`
+// Fix: Correctly escaped nested template literal to prevent syntax error.
+            return \`
                 <aside class="w-64 bg-gray-900/30 backdrop-blur-xl border-r border-white/10 p-4 md:p-6 flex-col flex-shrink-0 hidden md:flex">
                     <h1 class="text-2xl font-bold mb-8 text-white">/* APP_TITLE */</h1>
                     <nav class="flex flex-col space-y-2">
@@ -169,23 +169,23 @@ This prototype is a standalone, deeply interactive, and richly animated applicat
                         <a href="#tasks" class="text-gray-300 hover:bg-gray-700/50 hover:text-white p-2 rounded-lg transition-colors">Tasks</a>
                     </nav>
                 </aside>
-            \\\`;
+            \`;
         }
 
         function renderContent() {
             /* --- POPULATE_CONTENT_HTML --- */
             // This function should return the HTML string for the main content area.
             // Ensure any elements that need a tooltip have a 'has-tooltip' class and a 'data-tooltip' attribute.
-// Fix: Escaped nested template literal to prevent syntax error.
-            return \\\`<h2>Content Area</h2><p>Implement view rendering here.</p>
-                    <button class="has-tooltip bg-purple-600 p-2 rounded-lg" data-tooltip="This is a tooltip!">Hover Me</button>\\\`;
+// Fix: Correctly escaped nested template literal to prevent syntax error.
+            return \`<h2>Content Area</h2><p>Implement view rendering here.</p>
+                    <button class="has-tooltip bg-purple-600 p-2 rounded-lg" data-tooltip="This is a tooltip!">Hover Me</button>\`;
         }
         
         function renderTooltip() {
             if (state.tooltip.visible) {
                 tooltipEl.innerHTML = state.tooltip.content;
-// Fix: Escaped nested template literal to prevent syntax error.
-                tooltipEl.style.transform = \\\`translate(\\\${state.tooltip.x}px, \\\${state.tooltip.y}px)\\\`;
+// Fix: Correctly escaped nested template literal to prevent syntax error.
+                tooltipEl.style.transform = \`translate(\${state.tooltip.x}px, \${state.tooltip.y}px)\`;
                 tooltipEl.classList.add('visible');
             } else {
                 tooltipEl.classList.remove('visible');
@@ -194,6 +194,19 @@ This prototype is a standalone, deeply interactive, and richly animated applicat
 
         // --- EVENT LISTENERS ---
         function setupEventListeners() {
+            // --- Event Listener for hash-based navigation (MANDATORY FIX) ---
+            app.addEventListener('click', e => {
+                const target = e.target.closest('a');
+
+                // If the link is for hash-based routing, prevent default and handle it manually.
+                if (target && target.getAttribute('href')?.startsWith('#')) {
+                    e.preventDefault();
+                    // Manually update the hash to trigger the router.
+                    // This prevents the iframe from reloading the parent application.
+                    window.location.hash = target.getAttribute('href');
+                }
+            });
+
             /* --- POPULATE_EVENT_LISTENERS --- */
             // Use event delegation on the 'app' container for performance.
             
@@ -276,7 +289,17 @@ Your core mission is to deliver an experience that feels like it's from another 
 When the user requests a "website" (e.g., a landing page, marketing site, a portfolio), you MUST create a visually stunning and immersive experience. These standards apply EQUALLY to the final source code and the \`previewHtml\` prototype.
 
 *   **High-Impact Hero Sections:** This is the most critical part of a modern website. You MUST create a full-screen (\`h-screen\`) hero section that immediately captures attention, just like on world-class sites (e.g., Apple, Ford). This section MUST use a large, high-quality, contextually relevant background image overlaid with large, elegant, and bold typography.
-*   **Automated, Context-Aware Imagery:** To fulfill the hero section requirement, you MUST use the Unsplash API to source relevant images. For example, if the user asks for a car dealership website, use a URL like \`https://source.unsplash.com/1920x1080/?luxury,car\`. If they ask for a nature photography portfolio, use \`https://source.unsplash.com/1920x1080/?nature,photography\`. You must select relevant, comma-separated keywords. The image must be large and stunning. This is not optional.
+*   **High-Quality, Curated Imagery:** To ensure every website is stunning and reliable, you MUST use one of the following curated, high-quality background images for the hero section. The dynamic \`source.unsplash.com\` API is no longer permitted due to reliability issues. Analyze the user's request and choose the URL from the list below that best matches the project's theme. This is not optional; you must use one of these exact URLs.
+
+    **Curated Image Library:**
+    *   **Tech/Corporate/Modern:** \`https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&dpr=1\`
+    *   **Architecture/Sleek/Minimal:** \`https://images.pexels.com/photos/128817/pexels-photo-128817.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&dpr=1\`
+    *   **Nature/Travel/Photography:** \`https://images.pexels.com/photos/3225517/pexels-photo-3225517.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&dpr=1\`
+    *   **Food/Restaurant/Lifestyle:** \`https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&dpr=1\`
+    *   **Creative/Portfolio/Artistic:** \`https://images.pexels.com/photos/1037992/pexels-photo-1037992.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&dpr=1\`
+    *   **General Purpose/Abstract:** \`https://i.pinimg.com/736x/c3/28/e8/c328e8cd93acc362efd2f7a1d9f2b1f3.jpg\`
+
+    You MUST embed the selected URL directly into the HTML/CSS (e.g., \`background-image: url('THE_CHOSEN_URL');\`).
 *   **Visual Richness:** Do not create sterile, text-heavy pages. Integrate relevant, high-quality imagery throughout all sections to create a rich, engaging feel. Use cards, grids, and galleries to showcase content.
 *   **Pervasive, Tasteful Animation:** The site must feel alive. Use the provided animation utility classes (e.g., '.animate-fadeInUp', '.delay-200') to add subtle, professional animations to elements as they load or are scrolled into view. Apply hover effects (e.g., \`hover:scale-105\`, \`hover:shadow-lg\`) to all interactive elements. The prototype must feel just as alive as the real site.
 *   **Cohesive & Modern Color Palette:** Avoid jarring color combinations like a pure black hero section with a dark blue navigation bar. Strive for a harmonious and professional color scheme. Use a consistent palette throughout the entire website, ensuring excellent contrast and readability.
@@ -424,25 +447,25 @@ const RESPONSE_SCHEMA = {
     required: ['responseType']
 };
 
+// State for key rotation
+let keyIndex = 0;
+const apiKeys: string[] = (process.env.GEMINI_API_KEYS || process.env.API_KEY || '')
+    .split(',')
+    .map(key => key.trim())
+    .filter(Boolean);
 
-// Helper to get available API keys from environment variables
-function getApiKeys(): string[] {
-    const keys: string[] = [];
-    // Vercel environment variables are available under process.env.
-    // The user has requested to use the 'VITE_' prefix for these keys.
-    for (let i = 1; i <= 10; i++) {
-        const key = process.env[`VITE_GEMINI_API_KEY_${i}`];
-        if (key) {
-            keys.push(key);
-        }
-    }
-    // For backward compatibility with a single key setup.
-    if (keys.length === 0 && process.env.VITE_API_KEY) {
-        keys.push(process.env.VITE_API_KEY);
-    }
-    return keys;
+if (apiKeys.length === 0) {
+    console.error("No Gemini API keys found in environment variables 'GEMINI_API_KEYS' or 'API_KEY'.");
 }
 
+function getNextApiKey() {
+    if (apiKeys.length === 0) {
+        return null;
+    }
+    const key = apiKeys[keyIndex];
+    keyIndex = (keyIndex + 1) % apiKeys.length;
+    return key;
+}
 
 // Main handler for the serverless function
 export default async function handler(req: any, res: any) {
@@ -462,9 +485,9 @@ export default async function handler(req: any, res: any) {
         attachment: FileAttachment | null;
     };
 
-    const apiKeys = getApiKeys();
-    if (apiKeys.length === 0) {
-        console.error("No Gemini API keys found in environment variables (e.g., VITE_GEMINI_API_KEY_1 or VITE_API_KEY).");
+    const apiKey = getNextApiKey();
+    if (!apiKey) {
+        console.error("Gemini API key not found. Please set GEMINI_API_KEYS or API_KEY environment variable.");
         return res.status(500).json({ message: 'Server configuration error: API key not found.' });
     }
 
@@ -484,65 +507,42 @@ export default async function handler(req: any, res: any) {
     }
 
     if (files && Object.keys(files).length > 0 && latestMessage.role !== 'correction') {
-        const fileContents = Object.entries(files).map(([path, content]) => `// File: ${path}\n\n${content}`).join('\\n\\n---\\n\\n');
-        parts.push({ text: `\n\n### Current Project Files:\n${fileContents}` });
+        const fileContents = Object.entries(files).map(([path, content]) => `// File: ${path}\\n\\n${content}`).join('\\n\\n---\\n\\n');
+        parts.push({ text: `\\n\\n### Current Project Files:\\n${fileContents}` });
     }
     
-    let lastError: any = null;
+    try {
+        const ai = new GoogleGenAI({ apiKey });
+        
+        const result: GenerateContentResponse = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [...history, { role: 'user', parts }],
+            config: {
+                systemInstruction: SYSTEM_INSTRUCTION,
+                responseMimeType: 'application/json',
+                responseSchema: RESPONSE_SCHEMA,
+            },
+        });
 
-    // Shuffle keys to distribute load randomly in a serverless environment
-    const shuffledKeys = apiKeys.sort(() => 0.5 - Math.random());
-
-    for (const key of shuffledKeys) {
-        try {
-            const ai = new GoogleGenAI({ apiKey: key });
-            
-            const result: GenerateContentResponse = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: [...history, { role: 'user', parts }],
-                config: {
-                    systemInstruction: SYSTEM_INSTRUCTION,
-                    responseMimeType: 'application/json',
-                    responseSchema: RESPONSE_SCHEMA,
-                },
-            });
-
-            const responseText = result.text;
-            if (!responseText.trim()) {
-                throw new Error(`The AI returned an empty response. This could be due to a content safety filter or an internal error.`);
-            }
-
-            let jsonResponse: ApiResponse;
-            try {
-                 jsonResponse = JSON.parse(responseText);
-            } catch (parseError) {
-                 console.error("Failed to parse AI JSON response:", responseText);
-                 throw new Error("The AI returned a malformed JSON response.");
-            }
-             
-            return res.status(200).json(jsonResponse);
-
-        } catch (error: any) {
-            lastError = error;
-            const errorMessage = error.message || String(error);
-            console.warn(`API call failed with key ending in ...${key.slice(-4)}: ${errorMessage}`);
-            
-            // Check for specific errors to rotate keys on
-            const isRateLimitError = errorMessage.includes('429');
-            const isServerError = /5\\d{2}/.test(errorMessage); // Regex for 5xx errors
-
-            if (isRateLimitError || isServerError) {
-                // It's a key-specific or temporary server issue, try the next key.
-                continue; 
-            } else {
-                // It's a different kind of error (e.g., 400 Bad Request), so we should stop and report it.
-                return res.status(500).json({ message: `An unrecoverable AI error occurred: ${errorMessage}` });
-            }
+        const responseText = result.text;
+        if (!responseText.trim()) {
+            throw new Error(`The AI returned an empty response. This could be due to a content safety filter or an internal error.`);
         }
+
+        let jsonResponse: ApiResponse;
+        try {
+             jsonResponse = JSON.parse(responseText);
+        } catch (parseError) {
+             console.error("Failed to parse AI JSON response:", responseText);
+             throw new Error("The AI returned a malformed JSON response.");
+        }
+         
+        return res.status(200).json(jsonResponse);
+
+    } catch (error: any) {
+        const errorMessage = error.message || String(error);
+        console.error(`Gemini API call failed: ${errorMessage}`);
+        // Provide a more generic message to the client for security.
+        return res.status(500).json({ message: `An error occurred while communicating with the AI service.` });
     }
-    
-    // If all keys failed
-    console.error("All Gemini API keys failed.", lastError);
-    const finalErrorMessage = lastError?.message || 'All available API keys are either rate-limited or the service is unavailable.';
-    return res.status(503).json({ message: `Service Unavailable: ${finalErrorMessage}` });
 }
