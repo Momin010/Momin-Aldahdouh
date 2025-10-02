@@ -69,13 +69,44 @@ interface ChatPanelProps {
   isStopwatchRunning: boolean;
 }
 
-// A list of AI statuses that indicate a "loading" or "working" state.
-const LOADING_STATUSES = [
-  'MominAI is working...',
-  'Generating files...',
-  'Verifying generated code...',
-  'Errors detected. Attempting to fix...'
-];
+const LOADING_TEXTS: Record<string, string[]> = {
+  'MominAI is working...': [
+    'Thinking...',
+    'Analyzing your request...',
+    'Consulting the digital muses...',
+    'Warming up the circuits...',
+  ],
+  'Applying changes...': [
+    'Integrating new code...',
+    'Applying modifications...',
+    'Updating file structure...',
+  ],
+  'Phase 1/3: Generating project structure...': [
+    'Sketching architectural blueprints...',
+    'Laying the digital foundation...',
+    'Scaffolding the core structure...',
+  ],
+  'Phase 2/3: Building UI components...': [
+    'Assembling UI components...',
+    'Crafting interactive elements...',
+    'Weaving the component fabric...',
+  ],
+  'Phase 3/3: Creating interactive preview...': [
+    'Rendering the interactive mirage...',
+    'Booting up the simulation...',
+    'Polishing the final preview...',
+  ],
+  'Verifying generated code...': [
+    'Running diagnostics...',
+    'Checking for syntax ghosts...',
+    'Ensuring everything is pixel-perfect...',
+  ],
+   'Errors detected. Attempting to fix...': [
+    'Engaging self-correction protocols...',
+    'Debugging the anomalies...',
+    'Rerouting neural pathways...',
+  ]
+};
 
 const PlanDisplay: React.FC<{ plan: Plan }> = ({ plan }) => (
     <div className="border-t border-white/10 mt-4 pt-4">
@@ -112,14 +143,37 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const [input, setInput] = useState('');
   const [attachment, setAttachment] = useState<FileAttachment | null>(null);
   const [editingText, setEditingText] = useState('');
+  const [dynamicStatus, setDynamicStatus] = useState<string | null>(aiStatus);
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const longPressTimerRef = useRef<number | null>(null);
 
-  const isLoading = (aiStatus !== null && LOADING_STATUSES.includes(aiStatus));
+  const isLoading = (aiStatus !== null && Object.keys(LOADING_TEXTS).includes(aiStatus));
   const showStarterPrompts = !hasGeneratedCode && messages.length <= 1;
+
+  useEffect(() => {
+    let intervalId: number | undefined;
+
+    if (aiStatus && LOADING_TEXTS[aiStatus]) {
+      const messages = LOADING_TEXTS[aiStatus];
+      setDynamicStatus(messages[0]); // Set initial text immediately
+      if (messages.length > 1) {
+        let index = 0;
+        intervalId = window.setInterval(() => {
+          index = (index + 1) % messages.length;
+          setDynamicStatus(messages[index]);
+        }, 2500);
+      }
+    } else {
+      setDynamicStatus(aiStatus);
+    }
+    
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [aiStatus]);
 
   useEffect(() => {
     if (scrollContainerRef.current) {
@@ -226,15 +280,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                  <div className="absolute inset-0 rounded-full border border-purple-400 animate-pulse"></div>
               </div>
               <div className="max-w-md p-3 rounded-xl bg-black/30 text-gray-200 rounded-bl-none">
-                <div className="flex items-center space-x-2">
-                  <p className="text-sm text-gray-300">{aiStatus}</p>
-                  {isLoading && (
-                    <div className="dot-pulse flex space-x-1">
-                      <span className="w-1.5 h-1.5 bg-purple-300 rounded-full"></span>
-                      <span className="w-1.5 h-1.5 bg-purple-300 rounded-full"></span>
-                      <span className="w-1.5 h-1.5 bg-purple-300 rounded-full"></span>
-                    </div>
-                  )}
+                <div className="flex items-center space-x-3">
+                  {isLoading && <div className="loader-atom"></div>}
+                  <p className="text-sm text-gray-300">{dynamicStatus}</p>
                 </div>
               </div>
             </div>
