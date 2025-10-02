@@ -13,17 +13,20 @@ import { Icon } from './Icon';
 import MessageContextMenu from './MessageContextMenu';
 import type { Message, Files, Change, FileAttachment, History, AppState, ConsoleMessage, Plan, Workspace, Project, User } from '../types';
 import { sendAiChatRequest, resetChat } from '../services/geminiService';
-import * as projectService from '../services/projectService';
 import { downloadProjectAsZip } from '../services/zipService';
-import { INITIAL_CHAT_MESSAGE } from '../constants';
-import { useDebounce } from '../hooks/useDebounce';
+// FIX: Import projectService for API calls.
+import * as projectService from '../services/projectService';
+// FIX: Import uuidv4 to fix 'Cannot find name' error.
+import { v4 as uuidv4 } from 'uuid';
 
 type MobileView = 'chat' | 'preview';
 
 interface IdeWorkspaceProps {
-    user: User;
-    initialWorkspace: Workspace;
+    user: User | null;
+    workspace: Workspace;
+    onWorkspaceChange: (updater: React.SetStateAction<Workspace | null>) => void;
     onSignOut: () => void;
+    onSignUpClick: () => void;
     initialPrompt: string | null;
     clearInitialPrompt: () => void;
     initialAttachment: FileAttachment | null;
@@ -38,19 +41,17 @@ interface ContextMenuState {
   message: Message | null;
 }
 
-// New interface for transient, per-project operational state
 interface ProjectRunState {
   aiStatus: string | null;
   isVerifying: boolean;
   abortController: AbortController | null;
 }
 
-const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, initialWorkspace, onSignOut, initialPrompt, clearInitialPrompt, initialAttachment, clearInitialAttachment }) => {
-  const [workspace, setWorkspace] = useState<Workspace>(initialWorkspace);
-  const storageKey = `mominai_activeFile_${user.email}`;
+const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspaceChange, onSignOut, onSignUpClick, initialPrompt, clearInitialPrompt, initialAttachment, clearInitialAttachment }) => {
+  const isGuest = !user;
+  const storageKey = isGuest ? 'mominai_guest_activeFile' : `mominai_activeFile_${user?.email}`;
   const [activeFile, setActiveFile] = useState<string>(() => localStorage.getItem(storageKey) || '');
   
-  // Per-project state for AI operations
   const [projectRunStates, setProjectRunStates] = useState<Record<string, ProjectRunState>>({});
   
   const [mobileView, setMobileView] = useState<MobileView>('chat');
@@ -66,22 +67,6 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, initialWorkspace, onS
 
   const activeProject = workspace.projects.find(p => p.id === workspace.activeProjectId);
   const activeProjectRunState = activeProject ? projectRunStates[activeProject.id] : undefined;
-
-  const debouncedProject = useDebounce(activeProject, 2000);
-  const isInitialMountRef = useRef(true);
-
-  // Auto-save debounced project changes
-  useEffect(() => {
-    if (isInitialMountRef.current) {
-        isInitialMountRef.current = false;
-        return;
-    }
-    if (debouncedProject) {
-        projectService.updateProject(debouncedProject).catch(err => {
-            console.error("Failed to auto-save project:", err);
-        });
-    }
-  }, [debouncedProject]);
 
   // Initialize/update run states when projects change
   useEffect(() => {
@@ -101,9 +86,9 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, initialWorkspace, onS
   // Activate the first project on initial load if none is active
   useEffect(() => {
     if (!workspace.activeProjectId && workspace.projects.length > 0) {
-        setWorkspace(ws => ({ ...ws, activeProjectId: ws.projects[0].id }));
+        onWorkspaceChange(ws => ws ? ({ ...ws, activeProjectId: ws.projects[0].id }) : null);
     }
-  }, [workspace.activeProjectId, workspace.projects]);
+  }, [workspace.activeProjectId, workspace.projects, onWorkspaceChange]);
 
   useEffect(() => {
     // Set default device to mobile on smaller screens for a better initial experience.
@@ -152,9 +137,9 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, initialWorkspace, onS
     }
   }, [files, activeFile, currentState, storageKey]);
 
-  // Updater function that targets a specific project by its ID
   const updateProjectById = useCallback((projectId: string, updater: (project: Project) => Project) => {
-    setWorkspace(prevWorkspace => {
+    onWorkspaceChange(prevWorkspace => {
+        if (!prevWorkspace) return null;
         const newProjects = prevWorkspace.projects.map(p => {
             if (p.id === projectId) {
                 return updater(p);
@@ -163,8 +148,8 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, initialWorkspace, onS
         });
         return { ...prevWorkspace, projects: newProjects };
     });
-  }, []);
-
+  }, [onWorkspaceChange]);
+  
   const addHistoryStateForProject = useCallback((projectId: string, updater: (prevState: AppState) => AppState) => {
     updateProjectById(projectId, project => {
         const currentVersion = project.history.versions[project.history.currentIndex];
@@ -271,14 +256,24 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, initialWorkspace, onS
   }, [activeProject, currentState, addHistoryStateForProject, triggerAiResponse]);
 
   const handleNewProject = useCallback(async (name: string = 'New Project', andThenSend?: {prompt: string, attachment: FileAttachment | null}) => {
-      try {
-          const newProject = await projectService.createProject(name);
-          setWorkspace(ws => ({ projects: [...ws.projects, newProject], activeProjectId: newProject.id }));
-          if (andThenSend) setTimeout(() => handleSendMessage(andThenSend.prompt, andThenSend.attachment), 0);
-      } catch (error) {
-          console.error("Failed to create new project:", error);
+      const newProject: Project = {
+        id: uuidv4(),
+        projectName: name,
+        history: {
+          versions: [{
+            files: {}, previewHtml: '', chatMessages: [ { role: 'model', content: "Hello! I'm MominAI. How can I help you build something amazing today?" } ],
+            hasGeneratedCode: false, projectName: name, projectPlan: null,
+          }],
+          currentIndex: 0
+        }
+      };
+      
+      onWorkspaceChange(ws => ws ? ({ projects: [...ws.projects, newProject], activeProjectId: newProject.id }) : null);
+
+      if (andThenSend) {
+          setTimeout(() => handleSendMessage(andThenSend.prompt, andThenSend.attachment), 0);
       }
-  }, [handleSendMessage]);
+  }, [handleSendMessage, onWorkspaceChange]);
 
   useEffect(() => {
       if ((initialPrompt || initialAttachment) && currentState) {
@@ -380,13 +375,9 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, initialWorkspace, onS
     handleCloseContextMenu();
   }, [contextMenu.messageIndex, handleCloseContextMenu]);
 
-  const updateActiveProjectState = useCallback((updater: (project: Project) => Project) => {
-    if (!workspace.activeProjectId) return;
-    updateProjectById(workspace.activeProjectId, updater);
-  }, [workspace.activeProjectId, updateProjectById]);
-
   const handleCodeChange = useCallback((newContent: string) => {
-    updateActiveProjectState(project => {
+    if (!activeProject) return;
+    updateProjectById(activeProject.id, project => {
         const newHistory = { ...project.history };
         const newVersions = [...newHistory.versions];
         const currentVersion = { ...newVersions[project.history.currentIndex] };
@@ -395,7 +386,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, initialWorkspace, onS
         newHistory.versions = newVersions;
         return { ...project, history: newHistory };
     });
-  }, [activeFile, updateActiveProjectState]);
+  }, [activeFile, activeProject, updateProjectById]);
 
   const handleRenameProject = useCallback((newName: string) => {
     if (!activeProject) return;
@@ -407,32 +398,47 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, initialWorkspace, onS
   };
 
   const handleUndo = useCallback(() => {
-    if (canUndo) updateActiveProjectState(p => ({ ...p, history: { ...p.history, currentIndex: p.history.currentIndex - 1 }}));
-  }, [canUndo, updateActiveProjectState]);
+    if (canUndo) updateProjectById(activeProject!.id, p => ({ ...p, history: { ...p.history, currentIndex: p.history.currentIndex - 1 }}));
+  }, [canUndo, activeProject, updateProjectById]);
 
   const handleRedo = useCallback(() => {
-    if (canRedo) updateActiveProjectState(p => ({ ...p, history: { ...p.history, currentIndex: p.history.currentIndex + 1 }}));
-  }, [canRedo, updateActiveProjectState]);
+    if (canRedo) updateProjectById(activeProject!.id, p => ({ ...p, history: { ...p.history, currentIndex: p.history.currentIndex + 1 }}));
+  }, [canRedo, activeProject, updateProjectById]);
 
   const handleToggleFullscreen = useCallback(() => setIsPreviewFullscreen(prev => !prev), []);
   const handleNavigateToPreview = useCallback(() => setMobileView('preview'), []);
   const handleNewLog = useCallback((log: ConsoleMessage) => setConsoleLogs(prev => [...prev, log]), []);
+  
   const handleSelectProject = useCallback((id: string) => {
-    setWorkspace(ws => ({ ...ws, activeProjectId: id }));
+    onWorkspaceChange(ws => ws ? ({ ...ws, activeProjectId: id }) : null);
     setMobileSidebarOpen(false); // Close sidebar on selection
-  }, []);
+  }, [onWorkspaceChange]);
 
+  // FIX: Updated handleDeleteProject to correctly perform an optimistic UI update and call the server API.
   const handleDeleteProject = useCallback(async (id: string) => {
     if (!window.confirm("Are you sure? This cannot be undone.")) return;
-    try {
-        await projectService.deleteProject(id);
-        setWorkspace(ws => {
-            const newProjects = ws.projects.filter(p => p.id !== id);
-            let newActiveId = ws.activeProjectId === id ? (newProjects[0]?.id || null) : ws.activeProjectId;
-            return { projects: newProjects, activeProjectId: newActiveId };
+
+    onWorkspaceChange(ws => {
+      if (!ws) return null;
+
+      const newProjects = ws.projects.filter(p => p.id !== id);
+      const newActiveId = ws.activeProjectId === id ? (newProjects[0]?.id || null) : ws.activeProjectId;
+      
+      if (user) {
+        projectService.deleteProject(id).catch(error => {
+          console.error("Failed to delete project on server:", error);
+          alert("Failed to delete project on the server. Your local view has been updated, but you may need to refresh to sync with the server.");
+          // A more robust implementation would roll back the change here.
         });
-    } catch (error) { console.error("Failed to delete project:", error); }
-  }, []);
+      }
+      
+      return { projects: newProjects, activeProjectId: newActiveId };
+    });
+  }, [onWorkspaceChange, user]);
+  
+  const handleCreateNewProject = () => {
+      handleNewProject();
+  };
 
   if (isPreviewFullscreen) {
     return (
@@ -446,10 +452,12 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, initialWorkspace, onS
     projects: workspace.projects,
     activeProjectId: workspace.activeProjectId,
     onSelectProject: handleSelectProject,
-    onNewProject: () => handleNewProject(),
+    onNewProject: handleCreateNewProject,
     onDeleteProject: handleDeleteProject,
-    user: user,
-    onSignOut: onSignOut
+    user: user || { email: 'Guest' },
+    onSignOut: onSignOut,
+    isMobile: false,
+    onClose: () => {}
   };
 
   const renderWorkspaceContent = () => {
@@ -469,7 +477,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, initialWorkspace, onS
             projectName={projectName} 
             onRenameProject={handleRenameProject} 
             onDownloadProject={handleDownloadProject} 
-            onPublish={() => setPublishModalOpen(true)} 
+            onPublish={isGuest ? onSignUpClick : () => setPublishModalOpen(true)} 
             mobileView={mobileView} 
             isProjectLoaded={isProjectLoaded} 
             onToggleView={() => setMobileView(prev => prev === 'chat' ? 'preview' : 'chat')} 
@@ -501,9 +509,21 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, initialWorkspace, onS
   
   return (
     <div className="h-screen bg-transparent text-gray-200 font-sans flex overflow-hidden relative" onClick={handleCloseContextMenu}>
+      {isGuest && (
+        <div className="absolute top-0 left-0 right-0 z-30 bg-yellow-500/20 backdrop-blur-md border-b border-yellow-400/30 text-yellow-100 text-sm p-2 text-center flex items-center justify-center gap-4 animate-fadeInUp">
+            <Icon name="help" className="w-5 h-5 text-yellow-300 flex-shrink-0" />
+            <p>
+                <span className="font-bold">Temporary Session:</span> Your work is stored in your browser and will be lost if you clear your data.
+            </p>
+            <button onClick={onSignUpClick} className="px-4 py-1.5 text-xs font-semibold rounded-md bg-white text-yellow-900 hover:bg-yellow-50 transition-colors flex-shrink-0">
+                Sign Up to Save
+            </button>
+        </div>
+      )}
+
       {/* Desktop Sidebar (Overlay) */}
       <div 
-        className={`hidden md:block absolute top-0 left-0 h-full z-40 transition-transform duration-300 ease-in-out ${isSidebarHovered ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`hidden md:block absolute top-0 h-full z-40 transition-transform duration-300 ease-in-out ${isSidebarHovered ? 'translate-x-0' : '-translate-x-full'} ${isGuest ? 'pt-10' : ''}`}
         onMouseEnter={() => setIsSidebarHovered(true)}
         onMouseLeave={() => setIsSidebarHovered(false)}
       >
@@ -529,12 +549,12 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, initialWorkspace, onS
       </div>
       
       {/* Main Content */}
-      <div className="flex-grow h-full">
+      <div className={`flex-grow h-full ${isGuest ? 'pt-10' : ''}`}>
         {renderWorkspaceContent()}
       </div>
 
       {isPublishModalOpen && activeProject && <PublishModal projectName={projectName} files={files} onClose={() => setPublishModalOpen(false)} />}
-      <CommandPalette isOpen={isCommandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} files={files} onSelectFile={setActiveFile} onDownloadProject={handleDownloadProject} onPublish={() => setPublishModalOpen(true)} />
+      <CommandPalette isOpen={isCommandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} files={files} onSelectFile={setActiveFile} onDownloadProject={handleDownloadProject} onPublish={isGuest ? onSignUpClick : () => setPublishModalOpen(true)} />
       <MessageContextMenu {...contextMenu} onClose={handleCloseContextMenu} onDelete={() => handleDeleteMessage(contextMenu.messageIndex)} onEdit={handleEditMessage} />
     </div>
   );
