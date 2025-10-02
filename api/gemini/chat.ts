@@ -146,10 +146,11 @@ This prototype is a standalone, deeply interactive, and richly animated applicat
         // --- RENDERING ---
         function render() {
             // Main render function, composes the UI from smaller render functions
+// Fix: Correctly escaped nested template literal to prevent syntax error.
             app.innerHTML = \`
-                \${renderSidebar()}
+                \\\${renderSidebar()}
                 <main class="flex-1 p-4 md:p-8 overflow-y-auto">
-                    \${renderContent()}
+                    \\\${renderContent()}
                 </main>
             \`;
             setupEventListeners();
@@ -159,6 +160,7 @@ This prototype is a standalone, deeply interactive, and richly animated applicat
             /* --- POPULATE_SIDEBAR_HTML --- */
             // This function should return the HTML string for the sidebar.
             // Use Tailwind CSS and glassmorphism. Add hover effects to all links.
+// Fix: Correctly escaped nested template literal to prevent syntax error.
             return \`
                 <aside class="w-64 bg-gray-900/30 backdrop-blur-xl border-r border-white/10 p-4 md:p-6 flex-col flex-shrink-0 hidden md:flex">
                     <h1 class="text-2xl font-bold mb-8 text-white">/* APP_TITLE */</h1>
@@ -174,6 +176,7 @@ This prototype is a standalone, deeply interactive, and richly animated applicat
             /* --- POPULATE_CONTENT_HTML --- */
             // This function should return the HTML string for the main content area.
             // Ensure any elements that need a tooltip have a 'has-tooltip' class and a 'data-tooltip' attribute.
+// Fix: Correctly escaped nested template literal to prevent syntax error.
             return \`<h2>Content Area</h2><p>Implement view rendering here.</p>
                     <button class="has-tooltip bg-purple-600 p-2 rounded-lg" data-tooltip="This is a tooltip!">Hover Me</button>\`;
         }
@@ -181,7 +184,8 @@ This prototype is a standalone, deeply interactive, and richly animated applicat
         function renderTooltip() {
             if (state.tooltip.visible) {
                 tooltipEl.innerHTML = state.tooltip.content;
-                tooltipEl.style.transform = \`translate(\${state.tooltip.x}px, \${state.tooltip.y}px)\`;
+// Fix: Correctly escaped nested template literal to prevent syntax error.
+                tooltipEl.style.transform = \`translate(\\\${state.tooltip.x}px, \\\${state.tooltip.y}px)\`;
                 tooltipEl.classList.add('visible');
             } else {
                 tooltipEl.classList.remove('visible');
