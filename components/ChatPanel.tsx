@@ -17,29 +17,29 @@ const ModelMessageContent: React.FC<{
   onComplete: (index: number) => void;
 }> = React.memo(({ message, index, onComplete }) => {
   const [animatedText, setAnimatedText] = useState(message.streaming ? '' : message.content);
-  // Use a ref to prevent re-triggering the effect after completion
   const animationCompletedRef = useRef(!message.streaming);
+  const contentRef = useRef(message.content);
 
   useEffect(() => {
+    contentRef.current = message.content;
+    
     if (message.streaming && !animationCompletedRef.current) {
       let charIndex = 0;
       const intervalId = setInterval(() => {
         charIndex++;
-        setAnimatedText(message.content.substring(0, charIndex));
-        if (charIndex >= message.content.length) {
+        setAnimatedText(contentRef.current.substring(0, charIndex));
+        if (charIndex >= contentRef.current.length) {
           clearInterval(intervalId);
           animationCompletedRef.current = true;
-          // Notify parent that this specific message is done streaming
           setTimeout(() => onComplete(index), 100);
         }
-      }, 20); // Typing speed
+      }, 20);
       return () => clearInterval(intervalId);
     } else if (!message.streaming && !animationCompletedRef.current) {
-        // Ensure final content is displayed if streaming is false from the start
         setAnimatedText(message.content);
         animationCompletedRef.current = true;
     }
-  }, [message.streaming, index, onComplete]);
+  }, [message.streaming]);
 
   const isStreaming = message.streaming && animatedText.length < message.content.length;
 
