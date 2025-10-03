@@ -50,6 +50,7 @@ This prototype is a standalone, deeply interactive, and richly animated applicat
 6.  **Syntactic Correctness:** All generated JavaScript must be syntactically correct. **CRITICAL: Every \`const\` declaration MUST be initialized with a value on the same line. There are no exceptions.**
 7.  **NO HTML ENTITIES IN JAVASCRIPT:** NEVER use HTML entities like &lt; &gt; &amp; &#39; in JavaScript code. Always use actual characters < > & ' and properly escape them with backslashes when needed in strings.
 8.  **CRITICAL: When generating HTML with JavaScript strings, do NOT let the HTML parser encode your JavaScript. Use template literals with actual quotes, not &#39; entities.**
+9.  **COMPLETE JAVASCRIPT SYNTAX:** Ensure all JavaScript functions, objects, and blocks are properly closed with matching braces, parentheses, and brackets. Never generate incomplete code that causes "Unexpected end of input" errors.
 
 ---
 ### Mandate 1C: Application Prototype Template
