@@ -395,8 +395,8 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
     
     const currentProjectState = projectForRequest.history.versions[projectForRequest.history.currentIndex];
     const messagesForCorrection = [...currentProjectState.chatMessages, correctionMessage];
-    const filesForContext = currentProjectState.projectPhase === 'building' ? currentProjectState.files : null;
-    const prototypeForContext = currentProjectState.projectPhase === 'prototyping' ? currentProjectState.previewHtml : null;
+    const filesForContext = currentProjectState.hasGeneratedCode ? currentProjectState.files : null;
+    const prototypeForContext = null;
 
     const response = await makeAiRequest(projectId, messagesForCorrection, filesForContext, null, prototypeForContext);
     if (!response) return;
@@ -421,7 +421,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
       } else {
         setProjectRunStates(prev => ({...prev, [projectToVerifyId]: {...prev[projectToVerifyId], aiStatus: null, isStopwatchRunning: false}}));
       }
-    }, 3000);
+    }, 1000);
     return () => clearTimeout(verificationTimeout);
   }, [projectRunStates, consoleLogs, triggerSelfCorrection]);
 
