@@ -48,7 +48,7 @@ const Header: React.FC<HeaderProps> = ({
   };
   
   return (
-    <header className="relative z-30 flex items-center justify-between py-2 px-4 bg-black/20 backdrop-blur-lg border-b border-white/10 flex-shrink-0">
+    <header className="relative z-30 flex items-center justify-between py-2 px-3 md:px-4 bg-black/20 backdrop-blur-lg border-b border-white/10 flex-shrink-0">
       <div className="flex-1 min-w-0 flex items-center gap-2">
         <button onClick={onToggleSidebar} className="p-2 -ml-2 rounded-lg md:hidden text-gray-300 hover:bg-white/10" aria-label="Toggle sidebar">
             <Icon name="menu" className="w-6 h-6" />
@@ -67,7 +67,7 @@ const Header: React.FC<HeaderProps> = ({
           ) : (
              <h1 
                 onDoubleClick={() => setRenaming(true)} 
-                className="font-semibold text-lg cursor-pointer ml-2 truncate"
+                className="font-semibold text-base md:text-lg cursor-pointer ml-1 md:ml-2 truncate"
                 title="Double-click to rename"
               >
                 {projectName}
@@ -82,15 +82,15 @@ const Header: React.FC<HeaderProps> = ({
       <div className="flex-1 flex justify-end items-center gap-4">
         {isProjectLoaded && (
            <div className="md:hidden">
-            <button onClick={onToggleView} className="px-3 py-2 text-sm font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 transition-colors flex items-center gap-2">
+            <button onClick={onToggleView} className="px-2 py-1.5 text-xs font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 transition-colors flex items-center gap-1">
               {mobileView === 'chat' ? (
                 <>
-                  <Icon name="eye" className="w-4 h-4" />
+                  <Icon name="eye" className="w-3 h-3" />
                   <span>View</span>
                 </>
               ) : (
                 <>
-                   <Icon name="chat" className="w-4 h-4" />
+                   <Icon name="chat" className="w-3 h-3" />
                   <span>Chat</span>
                 </>
               )}
@@ -98,7 +98,7 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         )}
        
-        <div className="hidden md:flex items-center gap-4">
+        <div className="hidden md:flex items-center gap-2 md:gap-4">
           <a 
             href="https://github.com/Momin-Ai/Momin-AI-IDE" 
             target="_blank" 

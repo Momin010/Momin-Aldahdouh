@@ -270,7 +270,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
-      <div ref={scrollContainerRef} className="flex-grow p-4 overflow-y-auto">
+      <div ref={scrollContainerRef} className="flex-grow p-3 md:p-4 overflow-y-auto">
         <div className="flex flex-col-reverse gap-6">
           {aiStatus && (
             <div className="flex items-start gap-3">
@@ -313,7 +313,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                     <div className="w-full h-full rounded-full bg-gradient-to-br from-purple-500 to-cyan-400 opacity-50" />
                   </div>
                 }
-                 <div className={`max-w-md p-4 rounded-2xl ${msg.role === 'user' ? 'bg-purple-600 text-white rounded-br-none' : 'bg-black/30 text-gray-200 rounded-bl-none'}`}
+                 <div className={`max-w-xs md:max-w-md p-3 md:p-4 rounded-2xl ${msg.role === 'user' ? 'bg-purple-600 text-white rounded-br-none' : 'bg-black/30 text-gray-200 rounded-bl-none'}`}
                     onClick={(e) => isEditing && e.stopPropagation()}
                 >
                   {isEditing ? (
@@ -393,7 +393,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
           })}
         </div>
       </div>
-      <div className="p-4 border-t border-white/10">
+      <div className="p-3 md:p-4 border-t border-white/10">
         {attachments.length > 0 && (
            <div className="pb-2">
             <div className="flex flex-wrap gap-2">
@@ -425,11 +425,11 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Describe your web app or attach an image reference..."
-            className="w-full bg-black/40 rounded-xl p-3 pr-20 sm:pr-24 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-gray-500 transition-shadow"
+            className="w-full bg-black/40 rounded-xl p-2.5 md:p-3 pr-16 sm:pr-20 md:pr-24 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-gray-500 transition-shadow"
             rows={1}
             disabled={isLoading || isCancelling}
           />
-          <div className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+          <div className="absolute right-1 sm:right-1.5 md:right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 md:gap-1">
             {isCancelling ? (
                 <button className="px-3 py-2 text-xs font-semibold rounded-lg bg-yellow-600 text-white" aria-label="Cancelling generation">
                     Cancelling...
@@ -440,9 +440,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                 </button>
             ) : (
                 <>
-                    <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10" aria-label="Attach file" disabled={isLoading}><Icon name="paperclip" className="w-5 h-5"/></button>
-                    <button onClick={handleSend} disabled={isLoading || (!input.trim() && attachments.length === 0)} className="p-2 rounded-lg text-white bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors" aria-label="Send message">
-                    <Icon name="send" className="w-5 h-5" />
+                    <button onClick={() => fileInputRef.current?.click()} className="p-1.5 md:p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10" aria-label="Attach file" disabled={isLoading}><Icon name="paperclip" className="w-4 h-4 md:w-5 md:h-5"/></button>
+                    <button onClick={handleSend} disabled={isLoading || (!input.trim() && attachments.length === 0)} className="p-1.5 md:p-2 rounded-lg text-white bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors" aria-label="Send message">
+                    <Icon name="send" className="w-4 h-4 md:w-5 md:h-5" />
                     </button>
                 </>
             )}
