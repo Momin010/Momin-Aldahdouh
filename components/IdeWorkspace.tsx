@@ -599,19 +599,19 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
   return (
     <div className="h-screen bg-transparent text-gray-200 font-sans flex overflow-hidden relative" onClick={handleCloseContextMenu}>
       {isGuest && (
-        <div className="absolute top-0 left-0 right-0 z-30 bg-yellow-500/20 backdrop-blur-md border-b border-yellow-400/30 text-yellow-100 text-sm p-2 text-center flex items-center justify-center gap-4 animate-fadeInUp">
-            <Icon name="help" className="w-5 h-5 text-yellow-300 flex-shrink-0" />
-            <p>
-                <span className="font-bold">Temporary Session:</span> Your work is stored in your browser and will be lost if you clear your data.
+        <div className="absolute top-0 left-0 right-0 z-30 bg-yellow-500/20 backdrop-blur-md border-b border-yellow-400/30 text-yellow-100 text-xs md:text-sm p-2 md:p-3 text-center flex items-center justify-center gap-2 md:gap-4 animate-fadeInUp">
+            <Icon name="help" className="w-4 h-4 md:w-5 md:h-5 text-yellow-300 flex-shrink-0" />
+            <p className="flex-1 min-w-0">
+                <span className="font-bold">Temporary Session:</span> <span className="hidden sm:inline">Your work is stored in your browser and will be lost if you clear your data.</span><span className="sm:hidden">Data not saved permanently.</span>
             </p>
-            <button onClick={onSignUpClick} className="px-4 py-1.5 text-xs font-semibold rounded-md bg-white text-yellow-900 hover:bg-yellow-50 transition-colors flex-shrink-0">
-                Sign Up to Save
+            <button onClick={onSignUpClick} className="px-3 py-1 md:px-4 md:py-1.5 text-xs font-semibold rounded-md bg-white text-yellow-900 hover:bg-yellow-50 transition-colors flex-shrink-0">
+                Sign Up
             </button>
         </div>
       )}
 
       <div 
-        className={`hidden md:block absolute top-0 h-full z-40 transition-transform duration-300 ease-in-out ${isSidebarHovered ? 'translate-x-0' : '-translate-x-full'} ${isGuest ? 'pt-10' : ''}`}
+        className={`hidden md:block absolute top-0 h-full z-40 transition-transform duration-300 ease-in-out ${isSidebarHovered ? 'translate-x-0' : '-translate-x-full'} ${isGuest ? 'pt-12 md:pt-14' : ''}`}
         onMouseEnter={() => setIsSidebarHovered(true)}
         onMouseLeave={() => setIsSidebarHovered(false)}
       >
@@ -634,7 +634,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
           </div>
       </div>
       
-      <div className={`flex-grow h-full ${isGuest ? 'pt-10' : ''}`}>
+      <div className={`flex-grow h-full ${isGuest ? 'pt-12 md:pt-14' : ''}`}>
         {renderWorkspaceContent()}
       </div>
 
