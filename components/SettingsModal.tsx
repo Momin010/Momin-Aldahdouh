@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Icon } from './Icon';
-import type { User, Project } from '../types';
+import { User, History, Download, Bell, Shield, Palette, Key, Globe, Database, Info, X, Brain, Github, HelpCircle } from 'lucide-react';
+import type { User as UserType, Project } from '../types';
 
 interface SettingsModalProps {
   user: User | null;
@@ -74,7 +74,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ user, project, onClose, o
                     {Object.keys(version.files).length} files • {version.chatMessages.length} messages
                   </div>
                 </div>
-                <Icon name="history" className="w-4 h-4 text-gray-400" />
+                <History className="w-4 h-4 text-gray-400" />
               </div>
             </div>
           ))}
@@ -332,7 +332,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ user, project, onClose, o
       <div className="space-y-4">
         <div className="p-4 bg-gray-800 rounded-lg border border-gray-600">
           <div className="flex items-center gap-3 mb-3">
-            <Icon name="brain" className="w-8 h-8 text-purple-400" />
+            <Brain className="w-8 h-8 text-purple-400" />
             <div>
               <span className="font-medium text-white">AI Studio</span>
               <p className="text-sm text-gray-400">Version 2.1.0</p>
@@ -346,15 +346,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ user, project, onClose, o
           <span className="font-medium text-white mb-3 block">Links</span>
           <div className="space-y-2">
             <a href="#" className="flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm">
-              <Icon name="github" className="w-4 h-4" />
+              <Github className="w-4 h-4" />
               GitHub Repository
             </a>
             <a href="#" className="flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm">
-              <Icon name="help" className="w-4 h-4" />
+              <HelpCircle className="w-4 h-4" />
               Documentation
             </a>
             <a href="#" className="flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm">
-              <Icon name="discord" className="w-4 h-4" />
+              <HelpCircle className="w-4 h-4" />
               Discord Community
             </a>
           </div>
@@ -381,121 +381,121 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ user, project, onClose, o
             onClick={onClose}
             className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
           >
-            <Icon name="x" className="w-5 h-5" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="flex">
           <div className="w-48 border-r border-gray-700">
-            <nav className="p-4 space-y-1 max-h-96 overflow-y-auto">
+            <nav className="p-2 space-y-0.5">
               <button
                 onClick={() => setActiveTab('account')}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`w-full text-left px-2 py-1 rounded text-xs font-medium transition-colors ${
                   activeTab === 'account'
                     ? 'bg-purple-600 text-white'
                     : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                 }`}
               >
-                <Icon name="user" className="w-3 h-3 inline mr-2" />
+                <User className="w-3 h-3 inline mr-1" />
                 Account
               </button>
               <button
                 onClick={() => setActiveTab('versions')}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`w-full text-left px-2 py-1 rounded text-xs font-medium transition-colors ${
                   activeTab === 'versions'
                     ? 'bg-purple-600 text-white'
                     : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                 }`}
               >
-                <Icon name="history" className="w-3 h-3 inline mr-2" />
+                <History className="w-3 h-3 inline mr-1" />
                 Versions
               </button>
               <button
                 onClick={() => setActiveTab('backups')}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`w-full text-left px-2 py-1 rounded text-xs font-medium transition-colors ${
                   activeTab === 'backups'
                     ? 'bg-purple-600 text-white'
                     : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                 }`}
               >
-                <Icon name="download" className="w-3 h-3 inline mr-2" />
+                <Download className="w-3 h-3 inline mr-1" />
                 Backups
               </button>
               <button
                 onClick={() => setActiveTab('notifications')}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`w-full text-left px-2 py-1 rounded text-xs font-medium transition-colors ${
                   activeTab === 'notifications'
                     ? 'bg-purple-600 text-white'
                     : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                 }`}
               >
-                <Icon name="bell" className="w-3 h-3 inline mr-2" />
+                <Bell className="w-3 h-3 inline mr-1" />
                 Notifications
               </button>
               <button
                 onClick={() => setActiveTab('security')}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`w-full text-left px-2 py-1 rounded text-xs font-medium transition-colors ${
                   activeTab === 'security'
                     ? 'bg-purple-600 text-white'
                     : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                 }`}
               >
-                <Icon name="shield" className="w-3 h-3 inline mr-2" />
+                <Shield className="w-3 h-3 inline mr-1" />
                 Security
               </button>
               <button
                 onClick={() => setActiveTab('themes')}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`w-full text-left px-2 py-1 rounded text-xs font-medium transition-colors ${
                   activeTab === 'themes'
                     ? 'bg-purple-600 text-white'
                     : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                 }`}
               >
-                <Icon name="palette" className="w-3 h-3 inline mr-2" />
+                <Palette className="w-3 h-3 inline mr-1" />
                 Themes
               </button>
               <button
                 onClick={() => setActiveTab('api')}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`w-full text-left px-2 py-1 rounded text-xs font-medium transition-colors ${
                   activeTab === 'api'
                     ? 'bg-purple-600 text-white'
                     : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                 }`}
               >
-                <Icon name="key" className="w-3 h-3 inline mr-2" />
+                <Key className="w-3 h-3 inline mr-1" />
                 API Keys
               </button>
               <button
                 onClick={() => setActiveTab('language')}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`w-full text-left px-2 py-1 rounded text-xs font-medium transition-colors ${
                   activeTab === 'language'
                     ? 'bg-purple-600 text-white'
                     : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                 }`}
               >
-                <Icon name="globe" className="w-3 h-3 inline mr-2" />
+                <Globe className="w-3 h-3 inline mr-1" />
                 Language
               </button>
               <button
                 onClick={() => setActiveTab('data')}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`w-full text-left px-2 py-1 rounded text-xs font-medium transition-colors ${
                   activeTab === 'data'
                     ? 'bg-purple-600 text-white'
                     : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                 }`}
               >
-                <Icon name="database" className="w-3 h-3 inline mr-2" />
+                <Database className="w-3 h-3 inline mr-1" />
                 Data
               </button>
               <button
                 onClick={() => setActiveTab('about')}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`w-full text-left px-2 py-1 rounded text-xs font-medium transition-colors ${
                   activeTab === 'about'
                     ? 'bg-purple-600 text-white'
                     : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                 }`}
               >
-                <Icon name="info" className="w-3 h-3 inline mr-2" />
+                <Info className="w-3 h-3 inline mr-1" />
                 About
               </button>
             </nav>
