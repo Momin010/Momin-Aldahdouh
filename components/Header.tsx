@@ -111,7 +111,7 @@ const Header: React.FC<HeaderProps> = ({
           <button 
             onClick={onSettings}
             disabled={!isProjectLoaded}
-            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors disabled:text-gray-600 disabled:cursor-not-allowed"
+            className="p-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/20 bg-white/10 transition-colors disabled:text-gray-600 disabled:cursor-not-allowed"
             aria-label="Settings"
           >
             <Icon name="settings" className="w-5 h-5" />

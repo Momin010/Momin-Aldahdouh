@@ -7,11 +7,12 @@ interface SettingsModalProps {
   project: Project;
   onClose: () => void;
   onRestoreVersion: (versionIndex: number) => void;
+  onDownloadProject: () => void;
 }
 
 type SettingsTab = 'account' | 'versions' | 'backups';
 
-const SettingsModal: React.FC<SettingsModalProps> = ({ user, project, onClose, onRestoreVersion }) => {
+const SettingsModal: React.FC<SettingsModalProps> = ({ user, project, onClose, onRestoreVersion, onDownloadProject }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('account');
 
   const formatDate = (timestamp: number) => {
@@ -126,7 +127,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ user, project, onClose, o
             <p className="text-sm text-gray-400 mb-3">
               Download your project files as a ZIP archive.
             </p>
-            <button className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-sm font-medium transition-colors">
+            <button 
+              onClick={onDownloadProject}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-sm font-medium transition-colors"
+            >
               Download Project
             </button>
           </div>
