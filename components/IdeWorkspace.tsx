@@ -409,20 +409,27 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
     setProjectRunStates(prev => ({...prev, [projectId]: {...prev[projectId], aiStatus: null, isStopwatchRunning: false}}));
   }, [addHistoryStateForProject, workspace.projects, makeAiRequest, applyModification]);
 
+  // Instant error detection with fallback timeout
   useEffect(() => {
     const projectToVerifyId = Object.keys(projectRunStates).find(id => projectRunStates[id].isVerifying);
     if (!projectToVerifyId) return;
 
-    const verificationTimeout = setTimeout(() => {
-      const errors = consoleLogs.filter(log => log.level === 'error');
-       setProjectRunStates(prev => ({...prev, [projectToVerifyId]: {...prev[projectToVerifyId], isVerifying: false}}));
-      if (errors.length > 0) {
-        triggerSelfCorrection(projectToVerifyId, errors);
-      } else {
-        setProjectRunStates(prev => ({...prev, [projectToVerifyId]: {...prev[projectToVerifyId], aiStatus: null, isStopwatchRunning: false}}));
-      }
-    }, 1000);
-    return () => clearTimeout(verificationTimeout);
+    const errors = consoleLogs.filter(log => log.level === 'error');
+    
+    if (errors.length > 0) {
+      // Errors detected - fix immediately
+      setProjectRunStates(prev => ({...prev, [projectToVerifyId]: {...prev[projectToVerifyId], isVerifying: false}}));
+      triggerSelfCorrection(projectToVerifyId, errors);
+    } else if (consoleLogs.length > 0) {
+      // No errors but console logs exist - code is working
+      setProjectRunStates(prev => ({...prev, [projectToVerifyId]: {...prev[projectToVerifyId], isVerifying: false, aiStatus: null, isStopwatchRunning: false}}));
+    } else {
+      // Fallback: if no logs after 2 seconds, assume code is working
+      const fallbackTimeout = setTimeout(() => {
+        setProjectRunStates(prev => ({...prev, [projectToVerifyId]: {...prev[projectToVerifyId], isVerifying: false, aiStatus: null, isStopwatchRunning: false}}));
+      }, 2000);
+      return () => clearTimeout(fallbackTimeout);
+    }
   }, [projectRunStates, consoleLogs, triggerSelfCorrection]);
 
   const handleResubmitMessage = useCallback(async (messageIndex: number, newContent: string) => {
