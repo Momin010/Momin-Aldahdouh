@@ -245,7 +245,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
     projectId: string,
     messagesForAI: Message[],
     filesForContext: Files | null,
-    attachment: FileAttachment | null = null,
+    attachments: FileAttachment[] | null = null,
     prototypeContext: string | null = null
   ): Promise<ApiResponse | null> => {
     const controller = new AbortController();
@@ -261,7 +261,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
     }
 
     try {
-        return await sendAiChatRequest(messagesForAI, filesForContext, attachment, controller.signal);
+        return await sendAiChatRequest(messagesForAI, filesForContext, attachments, controller.signal);
     } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
             addHistoryStateForProject(projectId, prev => ({...prev, chatMessages: [...prev.chatMessages, { role: 'model', content: 'AI generation cancelled.' }]}));
@@ -276,7 +276,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
     }
   }, [addHistoryStateForProject]);
 
-  const triggerAiResponse = useCallback(async (projectId: string, messagesForAI: Message[], attachment: FileAttachment | null = null) => {
+  const triggerAiResponse = useCallback(async (projectId: string, messagesForAI: Message[], attachments: FileAttachment[] | null = null) => {
     const projectForRequest = workspace.projects.find(p => p.id === projectId);
     if (!projectForRequest) return;
     
@@ -300,7 +300,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
         ...prev, [projectId]: { aiStatus: status, isVerifying: false, abortController: null, isStopwatchRunning: true, stopwatchSeconds: 0 }
     }));
 
-    const response = await makeAiRequest(projectId, messagesForAI, filesForContext, attachment, null);
+    const response = await makeAiRequest(projectId, messagesForAI, filesForContext, attachments, null);
     if (!response) return;
 
     setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], aiStatus: null } }));
@@ -322,19 +322,19 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
     }
   }, [workspace.projects, addHistoryStateForProject, makeAiRequest, applyModification]);
   
-  const handleSendMessage = useCallback(async (message: string, attachment?: FileAttachment | null) => {
+  const handleSendMessage = useCallback(async (message: string, attachments?: FileAttachment[]) => {
     if (!activeProject || !currentState) return;
     const projectId = activeProject.id;
     
     const userMessage: Message = { 
       role: 'user', 
       content: message,
-      attachments: attachment ? [attachment] : undefined
+      attachments: attachments
     };
     addHistoryStateForProject(projectId, prev => ({ ...prev, chatMessages: [...prev.chatMessages, userMessage] }));
     
     const messagesForAI = [...currentState.chatMessages, userMessage];
-    triggerAiResponse(projectId, messagesForAI, attachment);
+    triggerAiResponse(projectId, messagesForAI, attachments || null);
 
   }, [activeProject, currentState, addHistoryStateForProject, triggerAiResponse]);
 

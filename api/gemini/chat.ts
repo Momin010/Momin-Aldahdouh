@@ -363,10 +363,10 @@ export default async function handler(req: any, res: any) {
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
-    const { messages, files, attachment } = req.body as {
+    const { messages, files, attachments } = req.body as {
         messages: Message[];
         files: Files | null;
-        attachment: FileAttachment | null;
+        attachments: FileAttachment[] | null;
     };
 
     const apiKey = getRandomApiKey();
@@ -392,9 +392,11 @@ export default async function handler(req: any, res: any) {
     const latestMessage = messages[messages.length - 1];
     const parts: any[] = [{ text: latestMessage.content }];
 
-    if (attachment) {
-        parts.push({ inlineData: { mimeType: attachment.type, data: attachment.content } });
-        parts.push({ text: `An image named ${attachment.name} was attached as a reference.` });
+    if (attachments && attachments.length > 0) {
+        attachments.forEach((attachment, index) => {
+            parts.push({ inlineData: { mimeType: attachment.type, data: attachment.content } });
+            parts.push({ text: `Image ${index + 1} named ${attachment.name} was attached as a reference.` });
+        });
     }
 
     if (files && Object.keys(files).length > 0 && latestMessage.role !== 'correction') {
