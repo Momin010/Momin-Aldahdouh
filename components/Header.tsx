@@ -6,13 +6,10 @@ interface HeaderProps {
   onRenameProject: (name: string) => void;
   onDownloadProject: () => void;
   onPublish: () => void;
+  onSettings: () => void;
   mobileView: 'chat' | 'preview';
   isProjectLoaded: boolean;
   onToggleView: () => void;
-  onUndo: () => void;
-  onRedo: () => void;
-  canUndo: boolean;
-  canRedo: boolean;
   onToggleSidebar: () => void;
 }
 
@@ -21,13 +18,10 @@ const Header: React.FC<HeaderProps> = ({
   onRenameProject,
   onDownloadProject,
   onPublish,
+  onSettings,
   mobileView, 
   isProjectLoaded, 
   onToggleView,
-  onUndo,
-  onRedo,
-  canUndo,
-  canRedo,
   onToggleSidebar
 }) => {
   const [isRenaming, setRenaming] = useState(false);
@@ -82,26 +76,7 @@ const Header: React.FC<HeaderProps> = ({
       </div>
       
       <div className="hidden md:flex flex-1 justify-center items-center gap-2">
-         {isProjectLoaded && (
-            <>
-              <button 
-                onClick={onUndo} 
-                disabled={!canUndo} 
-                className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 disabled:text-gray-600 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors" 
-                aria-label="Undo"
-              >
-                <Icon name="undo" className="w-5 h-5" />
-              </button>
-              <button 
-                onClick={onRedo} 
-                disabled={!canRedo} 
-                className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 disabled:text-gray-600 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors" 
-                aria-label="Redo"
-              >
-                <Icon name="redo" className="w-5 h-5" />
-              </button>
-            </>
-         )}
+        {/* Center space for future features */}
       </div>
 
       <div className="flex-1 flex justify-end items-center gap-4">
@@ -133,6 +108,14 @@ const Header: React.FC<HeaderProps> = ({
           >
             <Icon name="github" className="w-6 h-6" />
           </a>
+          <button 
+            onClick={onSettings}
+            disabled={!isProjectLoaded}
+            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors disabled:text-gray-600 disabled:cursor-not-allowed"
+            aria-label="Settings"
+          >
+            <Icon name="settings" className="w-5 h-5" />
+          </button>
           <button 
             onClick={onPublish}
             disabled={!isProjectLoaded}
