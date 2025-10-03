@@ -48,6 +48,7 @@ This prototype is a standalone, deeply interactive, and richly animated applicat
 4.  **Full Data Simulation & \`localStorage\` Persistence:** All CRUD (Create, Read, Update, Delete) operations for the application's data must be fully functional. Every state change that modifies data MUST be saved to \`localStorage\` immediately so the user's work persists on reload.
 5.  **Pervasive, Butter-Smooth Animations:** The prototype MUST NOT be static. It must feel alive. Use CSS transitions and keyframe animations extensively. Elements should animate into view. State changes (like adding an item to a list) should be accompanied by subtle animations.
 6.  **Syntactic Correctness:** All generated JavaScript must be syntactically correct. **CRITICAL: Every \`const\` declaration MUST be initialized with a value on the same line. There are no exceptions.**
+7.  **NO HTML ENTITIES IN JAVASCRIPT:** NEVER use HTML entities like &lt; &gt; &amp; &#39; in JavaScript code. Always use actual characters < > & ' and properly escape them with backslashes when needed in strings.
 
 ---
 ### Mandate 1C: Application Prototype Template
