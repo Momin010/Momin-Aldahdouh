@@ -118,8 +118,8 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
 
   const currentState = activeProject?.history.versions[activeProject.history.currentIndex];
   
-  const { files, previewHtml, frozenPrototypeHtml, projectPhase, chatMessages, hasGeneratedCode, projectName, projectPlan } = currentState || {
-    files: {}, previewHtml: '', frozenPrototypeHtml: null, projectPhase: 'planning' as const, chatMessages: [], hasGeneratedCode: false, projectName: 'Loading...', projectPlan: null
+  const { files, previewHtml, standaloneHtml, chatMessages, hasGeneratedCode, projectName, projectPlan } = currentState || {
+    files: {}, previewHtml: '', standaloneHtml: '', chatMessages: [], hasGeneratedCode: false, projectName: 'Loading...', projectPlan: null
   };
   
   const isProjectLoaded = !!activeProject;
@@ -209,50 +209,34 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
 
   const applyModification = useCallback((projectId: string, modification: Modification) => {
     addHistoryStateForProject(projectId, prev => {
-        // This is the new prototype-first logic
-        const isPrototypePhase = !modification.changes.length && !!modification.previewHtml;
-        const isBuildPhase = modification.changes.length > 0;
-
         const updatedFiles = { ...prev.files };
-        if(isBuildPhase) {
-            modification.changes.forEach((change: Change) => {
-                if (change.action === 'delete') {
-                    delete updatedFiles[change.filePath];
-                } else {
-                    updatedFiles[change.filePath] = change.content || '';
-                }
-            });
-        }
+        modification.changes.forEach((change: Change) => {
+            if (change.action === 'delete') {
+                delete updatedFiles[change.filePath];
+            } else {
+                updatedFiles[change.filePath] = change.content || '';
+            }
+        });
         
         let newMessages = [...prev.chatMessages];
         if (modification.reason) {
             newMessages.push({ role: 'model' as const, content: modification.reason });
         }
         
-        if (isPrototypePhase) {
-            newMessages.push({ role: 'system', content: "I've created an interactive prototype for you. When you're ready, tell me to build the full application.", action: 'AWAITING_BUILD_APPROVAL' });
-        } else if (isBuildPhase) {
-             newMessages.push({ role: 'system', content: 'Go to Preview', action: 'GOTO_PREVIEW' });
-        }
+        newMessages.push({ role: 'system', content: 'Go to Preview', action: 'GOTO_PREVIEW' });
 
         return {
             ...prev,
             files: updatedFiles,
-            // If it's a build phase, we clear the live preview to avoid crashes. The prototype is frozen.
-            previewHtml: isBuildPhase ? '' : modification.previewHtml || prev.previewHtml,
-            // If it's the prototype phase, we freeze the prototype.
-            frozenPrototypeHtml: isPrototypePhase ? modification.previewHtml : prev.frozenPrototypeHtml,
-            projectPhase: isPrototypePhase ? 'prototyping' : 'building',
+            previewHtml: modification.previewHtml || prev.previewHtml,
+            standaloneHtml: modification.standaloneHtml || prev.standaloneHtml,
             chatMessages: newMessages,
             hasGeneratedCode: true,
             projectName: modification.projectName || prev.projectName,
-            projectPlan: null, // Plan is consumed after first modification
+            projectPlan: null,
         };
     });
-    // Clear console only when new code/prototype is generated
-    if (modification.changes.length > 0 || modification.previewHtml) {
-        setConsoleLogs([]);
-    }
+    setConsoleLogs([]);
   }, [addHistoryStateForProject]);
 
   const makeAiRequest = useCallback(async (
@@ -295,31 +279,26 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
     if (!projectForRequest) return;
     
     const currentProjectState = projectForRequest.history.versions[projectForRequest.history.currentIndex];
-    const { files: projectFiles, hasGeneratedCode: projectHasCode, projectPhase, frozenPrototypeHtml, projectPlan } = currentProjectState;
+    const { files: projectFiles, hasGeneratedCode: projectHasCode } = currentProjectState;
 
     const lastModelMessage = currentProjectState.chatMessages.slice().reverse().find(m => m.role === 'model' || m.role === 'system');
     const isPlanApproval = lastModelMessage?.action === 'AWAITING_PLAN_APPROVAL';
-    const isBuildApproval = lastModelMessage?.action === 'AWAITING_BUILD_APPROVAL';
     
     let status = 'MominAI is working...';
     let filesForContext: Files | null = null;
-    let prototypeForContext: string | null = null;
 
     if (isPlanApproval) {
-        status = "Generating interactive prototype...";
-    } else if (isBuildApproval) {
-        status = "Generating full source code...";
-        prototypeForContext = frozenPrototypeHtml; // Provide prototype as context for build
-    } else if (projectPhase === 'building') {
+        status = "Generating application...";
+    } else if (projectHasCode) {
         status = "Applying changes...";
-        filesForContext = projectFiles; // Provide source code for edits
+        filesForContext = projectFiles;
     }
 
     setProjectRunStates(prev => ({
         ...prev, [projectId]: { aiStatus: status, isVerifying: false, abortController: null, isStopwatchRunning: true, stopwatchSeconds: 0 }
     }));
 
-    const response = await makeAiRequest(projectId, messagesForAI, filesForContext, attachment, prototypeForContext);
+    const response = await makeAiRequest(projectId, messagesForAI, filesForContext, attachment, null);
     if (!response) return;
 
     setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], aiStatus: null } }));
@@ -331,7 +310,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
         case 'PROJECT_PLAN':
             const { plan } = response;
             const planMessage: Message = { role: 'model', content: `I've drafted a plan for **${plan.projectName}**. Please review it.`, plan: plan, action: 'AWAITING_PLAN_APPROVAL' };
-            addHistoryStateForProject(projectId, prev => ({ ...prev, projectPlan: plan, chatMessages: [...prev.chatMessages, planMessage], projectPhase: 'planning' }));
+            addHistoryStateForProject(projectId, prev => ({ ...prev, projectPlan: plan, chatMessages: [...prev.chatMessages, planMessage] }));
             setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], aiStatus: "Awaiting your approval...", isStopwatchRunning: false }}));
             break;
         case 'MODIFY_CODE':
@@ -370,7 +349,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
             projectName: name,
             history: {
               versions: [{
-                files: {}, previewHtml: '', frozenPrototypeHtml: null, projectPhase: 'planning', chatMessages: [ { role: 'model', content: "Hello! I'm MominAI. How can I help you build something amazing today?" } ],
+                files: {}, previewHtml: '', standaloneHtml: '', chatMessages: [ { role: 'model', content: "Hello! I'm MominAI. How can I help you build something amazing today?" } ],
                 hasGeneratedCode: false, projectName: name, projectPlan: null,
               }],
               currentIndex: 0
@@ -543,7 +522,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
   if (isPreviewFullscreen) {
     return (
       <div className="fixed inset-0 z-[100] bg-black">
-        <LivePreview device={device} htmlContent={previewHtml || frozenPrototypeHtml || ''} isFullscreen onExitFullscreen={handleToggleFullscreen} logs={consoleLogs} onNewLog={handleNewLog} onClearLogs={() => setConsoleLogs([])} />
+        <LivePreview device={device} htmlContent={standaloneHtml || previewHtml || ''} isFullscreen onExitFullscreen={handleToggleFullscreen} logs={consoleLogs} onNewLog={handleNewLog} onClearLogs={() => setConsoleLogs([])} />
       </div>
     );
   }
@@ -591,7 +570,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
         <main className="hidden md:flex flex-grow p-4 gap-4 overflow-hidden">
           <ResizablePanel direction="horizontal" initialSize={450} minSize={320}>
             <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} aiStatus={activeProjectRunState?.aiStatus || null} onStreamingComplete={onStreamingCompleteForActive} hasGeneratedCode={hasGeneratedCode} onNavigateToPreview={handleNavigateToPreview} onCancelRequest={handleCancelRequest} isCancelling={!!activeProjectRunState?.abortController} onContextMenu={handleOpenContextMenu} onDeleteMessage={handleDeleteMessage} onResubmitMessage={handleResubmitMessage} editingIndex={editingMessageIndex} onCancelEditing={() => setEditingMessageIndex(null)} stopwatchSeconds={activeProjectRunState?.stopwatchSeconds || 0} isStopwatchRunning={activeProjectRunState?.isStopwatchRunning || false} />
-            <EditorPreviewPanel device={device} onDeviceChange={setDevice} files={files} activeFile={activeFile} onSelectFile={setActiveFile} onCodeChange={handleCodeChange} previewHtml={previewHtml} frozenPrototypeHtml={frozenPrototypeHtml} projectPhase={projectPhase} onBackToChat={() => {}} onToggleFullscreen={handleToggleFullscreen} consoleLogs={consoleLogs} onNewLog={handleNewLog} onClearConsole={() => setConsoleLogs([])} />
+            <EditorPreviewPanel device={device} onDeviceChange={setDevice} files={files} activeFile={activeFile} onSelectFile={setActiveFile} onCodeChange={handleCodeChange} previewHtml={previewHtml} standaloneHtml={standaloneHtml} onBackToChat={() => {}} onToggleFullscreen={handleToggleFullscreen} consoleLogs={consoleLogs} onNewLog={handleNewLog} onClearConsole={() => setConsoleLogs([])} />
           </ResizablePanel>
         </main>
 
@@ -600,7 +579,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
             <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} aiStatus={activeProjectRunState?.aiStatus || null} onStreamingComplete={onStreamingCompleteForActive} hasGeneratedCode={hasGeneratedCode} onNavigateToPreview={handleNavigateToPreview} onCancelRequest={handleCancelRequest} isCancelling={!!activeProjectRunState?.abortController} onContextMenu={handleOpenContextMenu} onDeleteMessage={handleDeleteMessage} onResubmitMessage={handleResubmitMessage} editingIndex={editingMessageIndex} onCancelEditing={() => setEditingMessageIndex(null)} stopwatchSeconds={activeProjectRunState?.stopwatchSeconds || 0} isStopwatchRunning={activeProjectRunState?.isStopwatchRunning || false} />
           </div>
           <div className={`${mobileView === 'chat' ? 'hidden' : 'flex'} flex-col flex-grow h-full`}>
-            <EditorPreviewPanel device={device} onDeviceChange={setDevice} files={files} activeFile={activeFile} onSelectFile={setActiveFile} onCodeChange={handleCodeChange} previewHtml={previewHtml} frozenPrototypeHtml={frozenPrototypeHtml} projectPhase={projectPhase} onBackToChat={() => setMobileView('chat')} onToggleFullscreen={handleToggleFullscreen} consoleLogs={consoleLogs} onNewLog={handleNewLog} onClearConsole={() => setConsoleLogs([])} />
+            <EditorPreviewPanel device={device} onDeviceChange={setDevice} files={files} activeFile={activeFile} onSelectFile={setActiveFile} onCodeChange={handleCodeChange} previewHtml={previewHtml} standaloneHtml={standaloneHtml} onBackToChat={() => setMobileView('chat')} onToggleFullscreen={handleToggleFullscreen} consoleLogs={consoleLogs} onNewLog={handleNewLog} onClearConsole={() => setConsoleLogs([])} />
           </div>
         </main>
       </div>

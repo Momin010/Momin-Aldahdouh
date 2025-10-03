@@ -12,8 +12,7 @@ interface EditorPreviewPanelProps {
   onSelectFile: (path: string) => void;
   onCodeChange: (newContent: string) => void;
   previewHtml: string;
-  frozenPrototypeHtml: string | null;
-  projectPhase: 'planning' | 'prototyping' | 'building';
+  standaloneHtml: string;
   onBackToChat: () => void; // For mobile view
   onToggleFullscreen: () => void;
   consoleLogs: ConsoleMessage[];
@@ -29,8 +28,7 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
   onSelectFile,
   onCodeChange,
   previewHtml,
-  frozenPrototypeHtml,
-  projectPhase,
+  standaloneHtml,
   onBackToChat,
   onToggleFullscreen,
   consoleLogs,
@@ -47,15 +45,7 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
     { name: 'mobile', icon: 'mobile' },
   ];
   
-  const handleViewPrototype = () => {
-    if (frozenPrototypeHtml) {
-      const newWindow = window.open();
-      if (newWindow) {
-        newWindow.document.write(frozenPrototypeHtml);
-        newWindow.document.close();
-      }
-    }
-  };
+  const displayHtml = standaloneHtml || previewHtml;
 
   return (
     <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
@@ -103,12 +93,7 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
         
         <div className="flex-1" />
 
-        {projectPhase === 'building' && frozenPrototypeHtml && (
-          <button onClick={handleViewPrototype} className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors text-cyan-300 bg-black/20 hover:bg-white/10" title="View the original interactive prototype in a new tab">
-            <Icon name="external-link" className="w-4 h-4" />
-            View Original Prototype
-          </button>
-        )}
+
 
         <button onClick={onToggleFullscreen} className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10" aria-label="Toggle fullscreen">
           <Icon name="fullscreen" className="w-5 h-5" />
@@ -118,7 +103,7 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
       <div className="flex-grow overflow-hidden relative">
         {view === 'preview' && (
           <LivePreview 
-            htmlContent={previewHtml} 
+            htmlContent={displayHtml} 
             device={device}
             logs={consoleLogs}
             onNewLog={onNewLog}
@@ -130,7 +115,7 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
             {/* Desktop: Resizable horizontal panel */}
             <div className="hidden md:flex h-full">
               <ResizablePanel direction="horizontal" initialSize={250} minSize={150}>
-                <FileExplorer files={files} activeFile={activeFile} onSelectFile={onSelectFile} projectPhase={projectPhase} />
+                <FileExplorer files={files} activeFile={activeFile} onSelectFile={onSelectFile} />
                 <CodeEditor
                   filePath={activeFile}
                   code={files[activeFile] || ''}
@@ -141,7 +126,7 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
             {/* Mobile: Vertical stack */}
             <div className="md:hidden flex flex-col h-full">
               <div className="h-2/5 border-b border-white/10 overflow-hidden">
-                <FileExplorer files={files} activeFile={activeFile} onSelectFile={onSelectFile} projectPhase={projectPhase} />
+                <FileExplorer files={files} activeFile={activeFile} onSelectFile={onSelectFile} />
               </div>
               <div className="h-3/5">
                 <CodeEditor

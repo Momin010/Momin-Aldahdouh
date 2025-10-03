@@ -73,6 +73,24 @@ const consoleInterceptorScript = `
   window.addEventListener('unhandledrejection', (e) => {
     window.console.error('Unhandled Promise Rejection:', e.reason);
   });
+  
+  // Prevent navigation that would change the parent URL
+  history.pushState = function() {
+    console.log('Navigation prevented in preview');
+  };
+  
+  history.replaceState = function() {
+    console.log('Navigation prevented in preview');
+  };
+  
+  // Intercept link clicks to prevent navigation
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest('a');
+    if (link && link.href && !link.href.startsWith('#')) {
+      e.preventDefault();
+      console.log('Link navigation prevented in preview:', link.href);
+    }
+  }, true);
 `;
 
 // Utility to decode HTML entities
