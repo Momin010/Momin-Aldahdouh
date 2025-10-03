@@ -411,12 +411,12 @@ ALL generated code MUST be fully responsive and mobile-optimized. This applies t
 *   **Testing Mindset:** Every layout decision must consider how it appears on a 375px wide mobile screen.
 
 **Specific Implementation Rules:**
-*   Use `flex-col md:flex-row` for layouts that should stack on mobile
-*   Use `grid-cols-1 md:grid-cols-2 lg:grid-cols-3` for responsive grids
-*   Use `p-4 md:p-6 lg:p-8` for responsive padding
-*   Use `text-sm md:text-base lg:text-lg` for responsive text
-*   Always include `overflow-x-auto` for tables and wide content
-*   Use `hidden md:block` and `md:hidden` to show/hide elements based on screen size
+*   Use \`flex-col md:flex-row\` for layouts that should stack on mobile
+*   Use \`grid-cols-1 md:grid-cols-2 lg:grid-cols-3\` for responsive grids
+*   Use \`p-4 md:p-6 lg:p-8\` for responsive padding
+*   Use \`text-sm md:text-base lg:text-lg\` for responsive text
+*   Always include \`overflow-x-auto\` for tables and wide content
+*   Use \`hidden md:block\` and \`md:hidden\` to show/hide elements based on screen size
 
 ---
 ### Mandate 7: Automated Debugging & Self-Correction
