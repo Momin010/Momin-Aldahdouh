@@ -133,7 +133,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   stopwatchSeconds, isStopwatchRunning
 }) => {
   const [input, setInput] = useState('');
-  const [attachment, setAttachment] = useState<FileAttachment | null>(null);
+  const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [editingText, setEditingText] = useState('');
   const [dynamicStatus, setDynamicStatus] = useState<string | null>(aiStatus);
   
@@ -180,10 +180,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   }, [editingIndex, messages]);
 
   const handleSend = () => {
-    if ((input.trim() || attachment) && !isLoading) {
-      onSendMessage(input.trim(), attachment);
+    if ((input.trim() || attachments.length > 0) && !isLoading) {
+      onSendMessage(input.trim(), attachments.length > 0 ? attachments[0] : null);
       setInput('');
-      setAttachment(null);
+      setAttachments([]);
       if (fileInputRef.current) {
           fileInputRef.current.value = '';
       }
@@ -191,19 +191,25 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   };
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (loadEvent) => {
-            const base64String = (loadEvent.target?.result as string).split(',')[1];
-            if (base64String) {
-                setAttachment({ name: file.name, type: file.type, content: base64String });
-            }
-        };
-        reader.readAsDataURL(file);
-    } else if (file) {
-        alert("Please select an image file (e.g., PNG, JPG, GIF).");
+    const files = Array.from(e.target.files || []);
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    if (imageFiles.length === 0) {
+      alert("Please select image files (e.g., PNG, JPG, GIF).");
+      return;
     }
+    
+    imageFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (loadEvent) => {
+        const base64String = (loadEvent.target?.result as string).split(',')[1];
+        if (base64String) {
+          const newAttachment = { name: file.name, type: file.type, content: base64String };
+          setAttachments(prev => [...prev, newAttachment]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -328,7 +334,21 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                       {msg.role === 'model' ? (
                         <ModelMessageContent message={msg} index={originalIndex} onComplete={onStreamingComplete} />
                       ) : (
-                         <p className="whitespace-pre-wrap text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(msg.content).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}></p>
+                        <>
+                          <p className="whitespace-pre-wrap text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(msg.content).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}></p>
+                          {msg.attachments && msg.attachments.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {msg.attachments.map((attachment, idx) => (
+                                <img 
+                                  key={idx}
+                                  src={`data:${attachment.type};base64,${attachment.content}`} 
+                                  alt={attachment.name} 
+                                  className="max-w-48 max-h-32 rounded-lg border border-white/20" 
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </>
                       )}
                      
                       {!msg.streaming && msg.plan && <PlanDisplay plan={msg.plan} />}
@@ -372,18 +392,31 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         </div>
       </div>
       <div className="p-4 border-t border-white/10">
-        {attachment && (
+        {attachments.length > 0 && (
            <div className="pb-2">
-            <div className="relative inline-block bg-black/30 rounded-lg p-1.5">
-                <img src={`data:${attachment.type};base64,${attachment.content}`} alt={attachment.name} className="h-16 w-auto rounded" />
-                <button onClick={() => { setAttachment(null); if (fileInputRef.current) { fileInputRef.current.value = ''; } }} className="absolute -top-2 -right-2 bg-gray-800 border border-white/10 rounded-full p-0.5 text-white hover:bg-red-500 transition-colors" aria-label="Remove attachment">
+            <div className="flex flex-wrap gap-2">
+              {attachments.map((attachment, index) => (
+                <div key={index} className="relative inline-block bg-black/30 rounded-lg p-1.5">
+                  <img src={`data:${attachment.type};base64,${attachment.content}`} alt={attachment.name} className="h-16 w-auto rounded" />
+                  <button 
+                    onClick={() => {
+                      setAttachments(prev => prev.filter((_, i) => i !== index));
+                      if (attachments.length === 1 && fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                      }
+                    }} 
+                    className="absolute -top-2 -right-2 bg-gray-800 border border-white/10 rounded-full p-0.5 text-white hover:bg-red-500 transition-colors" 
+                    aria-label="Remove attachment"
+                  >
                     <Icon name="close" className="w-4 h-4" />
-                </button>
+                  </button>
+                </div>
+              ))}
             </div>
            </div>
         )}
         <div className="relative">
-          <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+          <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" multiple className="hidden" />
           <textarea
             ref={inputRef}
             value={input}
@@ -406,7 +439,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             ) : (
                 <>
                     <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10" aria-label="Attach file" disabled={isLoading}><Icon name="paperclip" className="w-5 h-5"/></button>
-                    <button onClick={handleSend} disabled={isLoading || (!input.trim() && !attachment)} className="p-2 rounded-lg text-white bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors" aria-label="Send message">
+                    <button onClick={handleSend} disabled={isLoading || (!input.trim() && attachments.length === 0)} className="p-2 rounded-lg text-white bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors" aria-label="Send message">
                     <Icon name="send" className="w-5 h-5" />
                     </button>
                 </>
