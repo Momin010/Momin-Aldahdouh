@@ -49,6 +49,7 @@ This prototype is a standalone, deeply interactive, and richly animated applicat
 5.  **Pervasive, Butter-Smooth Animations:** The prototype MUST NOT be static. It must feel alive. Use CSS transitions and keyframe animations extensively. Elements should animate into view. State changes (like adding an item to a list) should be accompanied by subtle animations.
 6.  **Syntactic Correctness:** All generated JavaScript must be syntactically correct. **CRITICAL: Every \`const\` declaration MUST be initialized with a value on the same line. There are no exceptions.**
 7.  **NO HTML ENTITIES IN JAVASCRIPT:** NEVER use HTML entities like &lt; &gt; &amp; &#39; in JavaScript code. Always use actual characters < > & ' and properly escape them with backslashes when needed in strings.
+8.  **CRITICAL: When generating HTML with JavaScript strings, do NOT let the HTML parser encode your JavaScript. Use template literals with actual quotes, not &#39; entities.**
 
 ---
 ### Mandate 1C: Application Prototype Template
@@ -457,6 +458,7 @@ This validation gauntlet is not optional. Passing it is a core requirement of yo
 ### CRITICAL: JSON Output Format Rules
 -   **SINGLE JSON OBJECT RESPONSE:** Your entire output MUST be a single, valid JSON object. Do not write any text, markdown, or notes before or after it.
 -   **JSON STRING CONTENT ESCAPING:** All special characters inside code strings (in the 'content' or 'previewHtml' properties) MUST be properly escaped (\`" -> \\"\`, \`\\ -> \\\\\`, newlines -> \`\\n\`).
+-   **NO HTML ENTITIES IN JSON STRINGS:** When escaping JavaScript code in JSON strings, use backslash escaping (\\') NOT HTML entities (&#39;). HTML entities will cause syntax errors in JavaScript.
 `;
 
 const RESPONSE_SCHEMA = {
