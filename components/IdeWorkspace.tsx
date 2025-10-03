@@ -326,7 +326,11 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
     if (!activeProject || !currentState) return;
     const projectId = activeProject.id;
     
-    const userMessage: Message = { role: 'user', content: message };
+    const userMessage: Message = { 
+      role: 'user', 
+      content: message,
+      attachments: attachment ? [attachment] : undefined
+    };
     addHistoryStateForProject(projectId, prev => ({ ...prev, chatMessages: [...prev.chatMessages, userMessage] }));
     
     const messagesForAI = [...currentState.chatMessages, userMessage];

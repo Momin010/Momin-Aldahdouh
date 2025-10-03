@@ -16,6 +16,7 @@ export interface Message {
   action?: 'GOTO_PREVIEW' | 'AWAITING_PLAN_APPROVAL' | 'AWAITING_BUILD_APPROVAL';
   plan?: Plan;
   streaming?: boolean;
+  attachments?: FileAttachment[];
 }
 
 export interface FileAttachment {
