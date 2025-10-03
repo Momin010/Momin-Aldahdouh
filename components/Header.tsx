@@ -79,23 +79,38 @@ const Header: React.FC<HeaderProps> = ({
         {/* Center space for future features */}
       </div>
 
-      <div className="flex-1 flex justify-end items-center gap-4">
+      <div className="flex-1 flex justify-end items-center gap-2">
         {isProjectLoaded && (
-           <div className="md:hidden">
-            <button onClick={onToggleView} className="px-2 py-1.5 text-xs font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 transition-colors flex items-center gap-1">
-              {mobileView === 'chat' ? (
-                <>
-                  <Icon name="eye" className="w-3 h-3" />
-                  <span>View</span>
-                </>
-              ) : (
-                <>
-                   <Icon name="chat" className="w-3 h-3" />
-                  <span>Chat</span>
-                </>
-              )}
-            </button>
-          </div>
+          <>
+            <div className="md:hidden flex items-center gap-1">
+              <button 
+                onClick={onSettings}
+                className="p-1.5 rounded-lg text-gray-300 hover:text-white hover:bg-white/20 bg-white/10 transition-colors"
+                aria-label="Settings"
+              >
+                <Icon name="settings" className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={onPublish}
+                className="px-2 py-1.5 text-xs font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 transition-colors"
+              >
+                Publish
+              </button>
+              <button onClick={onToggleView} className="px-2 py-1.5 text-xs font-semibold rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors flex items-center gap-1">
+                {mobileView === 'chat' ? (
+                  <>
+                    <Icon name="eye" className="w-3 h-3" />
+                    <span>View</span>
+                  </>
+                ) : (
+                  <>
+                     <Icon name="chat" className="w-3 h-3" />
+                    <span>Chat</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </>
         )}
        
         <div className="hidden md:flex items-center gap-2 md:gap-4">
