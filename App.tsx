@@ -10,6 +10,7 @@ import { useDebounce } from './hooks/useDebounce';
 import type { User, Workspace, FileAttachment, Project } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import { INITIAL_CHAT_MESSAGE } from './constants';
+import { ThemeProvider } from './ThemeContext';
 
 const createDefaultWorkspace = (projectName: string): Workspace => {
   const newProject: Project = {
@@ -167,7 +168,7 @@ const App: React.FC = () => {
   const workspaceForRender = currentUser ? userWorkspace : (isGuest ? guestWorkspace : null);
 
   return (
-    <>
+    <ThemeProvider>
       {workspaceForRender ? (
         <IdeWorkspace
           key={currentUser?.email || 'guest'}
@@ -192,7 +193,7 @@ const App: React.FC = () => {
         initialMode={authMode}
         setMode={setAuthMode}
       />
-    </>
+    </ThemeProvider>
   );
 };
 

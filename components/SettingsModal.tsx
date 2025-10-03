@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User, History, Download, Bell, Shield, Palette, Key, Globe, Database, Info, X, Brain, Github, HelpCircle } from 'lucide-react';
 import type { User as UserType, Project } from '../types';
+import { useTheme, type Theme } from '../ThemeContext';
 
 interface SettingsModalProps {
   user: UserType | null;
@@ -14,12 +15,12 @@ type SettingsTab = 'account' | 'versions' | 'backups' | 'notifications' | 'secur
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ user, project, onClose, onRestoreVersion, onDownloadProject }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('account');
+  const { theme, setTheme } = useTheme();
   const [notifications, setNotifications] = useState({
     builds: localStorage.getItem('notifications.builds') !== 'false',
     errors: localStorage.getItem('notifications.errors') !== 'false',
     updates: localStorage.getItem('notifications.updates') === 'true'
   });
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
   const [fontSize, setFontSize] = useState(parseInt(localStorage.getItem('fontSize') || '14'));
   const [language, setLanguage] = useState(localStorage.getItem('language') || 'English');
   const [timezone, setTimezone] = useState(localStorage.getItem('timezone') || 'UTC-8 (Pacific)');
@@ -235,14 +236,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ user, project, onClose, o
         <div className="p-4 bg-gray-800 rounded-lg border border-gray-600">
           <span className="font-medium text-white mb-3 block">Theme</span>
           <div className="grid grid-cols-3 gap-3">
-            {['dark', 'light', 'cosmic'].map((themeOption) => (
+            {(['dark', 'light', 'cosmic'] as Theme[]).map((themeOption) => (
               <div 
                 key={themeOption}
-                onClick={() => {
-                  setTheme(themeOption);
-                  localStorage.setItem('theme', themeOption);
-                  document.documentElement.className = themeOption;
-                }}
+                onClick={() => setTheme(themeOption)}
                 className={`p-3 border-2 rounded-lg cursor-pointer ${
                   theme === themeOption ? 'border-purple-500' : 'border-gray-600'
                 } ${
