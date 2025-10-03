@@ -644,6 +644,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
             updateProjectById(activeProject.id, p => ({ ...p, history: { ...p.history, currentIndex: versionIndex } }));
             setSettingsModalOpen(false);
           }}
+          onDownloadProject={handleDownloadProject}
         />
       )}
       <CommandPalette isOpen={isCommandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} files={files} onSelectFile={setActiveFile} onDownloadProject={handleDownloadProject} onPublish={isGuest ? onSignUpClick : () => setPublishModalOpen(true)} />
