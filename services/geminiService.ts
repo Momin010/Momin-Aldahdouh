@@ -4,7 +4,7 @@ import type { Message, Files, FileAttachment, ApiResponse } from '../types';
 export const sendAiChatRequest = async (
     messages: Message[], 
     files: Files | null, 
-    attachment: FileAttachment | null,
+    attachments: FileAttachment[] | null,
     signal?: AbortSignal
 ): Promise<ApiResponse> => {
     try {
@@ -13,7 +13,7 @@ export const sendAiChatRequest = async (
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ messages, files, attachment }),
+            body: JSON.stringify({ messages, files, attachments }),
             signal,
         });
 

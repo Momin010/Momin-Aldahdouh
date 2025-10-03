@@ -54,7 +54,7 @@ const ModelMessageContent: React.FC<{
 
 interface ChatPanelProps {
   messages: Message[];
-  onSendMessage: (message: string, attachment?: FileAttachment | null) => void;
+  onSendMessage: (message: string, attachments?: FileAttachment[]) => void;
   aiStatus: string | null;
   onStreamingComplete: (index: number) => void;
   hasGeneratedCode: boolean;
@@ -136,6 +136,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [editingText, setEditingText] = useState('');
   const [dynamicStatus, setDynamicStatus] = useState<string | null>(aiStatus);
+  const [imageModal, setImageModal] = useState<{src: string, alt: string} | null>(null);
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -181,7 +182,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
 
   const handleSend = () => {
     if ((input.trim() || attachments.length > 0) && !isLoading) {
-      onSendMessage(input.trim(), attachments.length > 0 ? attachments[0] : null);
+      onSendMessage(input.trim(), attachments.length > 0 ? attachments : undefined);
       setInput('');
       setAttachments([]);
       if (fileInputRef.current) {
@@ -343,7 +344,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                                   key={idx}
                                   src={`data:${attachment.type};base64,${attachment.content}`} 
                                   alt={attachment.name} 
-                                  className="max-w-48 max-h-32 rounded-lg border border-white/20" 
+                                  className="max-w-48 max-h-32 rounded-lg border border-white/20 cursor-pointer hover:opacity-80 transition-opacity" 
+                                  onClick={() => setImageModal({src: `data:${attachment.type};base64,${attachment.content}`, alt: attachment.name})}
                                 />
                               ))}
                             </div>
@@ -456,6 +458,26 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
           </div>
         )}
       </div>
+      
+      {/* Image Modal */}
+      {imageModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setImageModal(null)}>
+          <div className="relative max-w-4xl max-h-full">
+            <img 
+              src={imageModal.src} 
+              alt={imageModal.alt} 
+              className="max-w-full max-h-full rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button 
+              onClick={() => setImageModal(null)}
+              className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+            >
+              <Icon name="close" className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
