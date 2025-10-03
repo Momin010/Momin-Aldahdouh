@@ -161,6 +161,31 @@ export const Icon: React.FC<IconProps> = ({ name, className }) => {
     'reddit': (
         <svg fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12.021 2.012c5.518 0 9.988 4.47 9.988 9.988 0 5.518-4.47 9.988-9.988 9.988-5.518 0-9.988-4.47-9.988-9.988 0-5.518 4.47-9.988 9.988-9.988zm0 1.761c-4.526 0-8.227 3.701-8.227 8.227s3.701 8.227 8.227 8.227 8.227-3.701 8.227-8.227-3.701-8.227-8.227-8.227zm3.179 8.269c.842.023.956.417.112.923-1.096.678-2.502 1.03-4.008 1.03-1.506 0-2.912-.352-4.008-1.03-.845-.506-.729-.9.112-.923.33-.009.684.181.823.518.784.47 1.815.728 2.924.728 1.109 0 2.14-.258 2.924-.728.139-.337.494-.527.823-.518zm-.201-3.155c-.563 0-.962-.423-.962-.962s.399-.962.962-.962c.563 0 .962.423.962.962s-.399.962-.962.962zm-5.908 0c-.563 0-.962-.423-.962-.962s.399-.962.962-.962c.563 0 .962.423.962.962s-.399.962-.962.962z"/></svg>
     ),
+    settings: (
+      <svg fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"></path>
+      </svg>
+    ),
+    user: (
+      <svg fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>
+      </svg>
+    ),
+    history: (
+      <svg fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+        <polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+      </svg>
+    ),
+    download: (
+      <svg fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+    ),
+    x: (
+      <svg fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+        <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    ),
   };
 
   return <div className={className}>{icons[name]}</div>;
