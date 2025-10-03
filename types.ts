@@ -35,6 +35,7 @@ export interface Modification {
   reason: string;
   changes: Change[];
   previewHtml?: string;
+  standaloneHtml?: string;
 }
 
 export type ApiResponse =
@@ -61,8 +62,7 @@ export type ApiResponse =
 export interface AppState {
   files: Files;
   previewHtml: string;
-  frozenPrototypeHtml: string | null;
-  projectPhase: 'planning' | 'prototyping' | 'building';
+  standaloneHtml: string;
   chatMessages: Message[];
   hasGeneratedCode: boolean;
   projectName: string;

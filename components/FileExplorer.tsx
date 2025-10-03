@@ -129,10 +129,9 @@ interface FileExplorerProps {
   files: Files;
   activeFile: string;
   onSelectFile: (path: string) => void;
-  projectPhase: 'planning' | 'prototyping' | 'building';
 }
 
-const FileExplorer: React.FC<FileExplorerProps> = ({ files, activeFile, onSelectFile, projectPhase }) => {
+const FileExplorer: React.FC<FileExplorerProps> = ({ files, activeFile, onSelectFile }) => {
   const fileTree = useMemo(() => buildFileTree(files), [files]);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
@@ -149,18 +148,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, activeFile, onSelect
   };
 
   const renderContent = () => {
-    if (projectPhase === 'prototyping') {
-      return (
-        <div className="p-4 text-center text-gray-400 text-sm">
-          <Icon name="eye" className="w-8 h-8 mx-auto mb-2 text-purple-400" />
-          <h3 className="font-semibold text-gray-200">Prototype Phase</h3>
-          <p className="mt-1">
-            The full source code will be generated here after you approve the interactive prototype.
-          </p>
-        </div>
-      );
-    }
-    
     if (fileTree.length === 0) {
       return <p className="text-gray-500 px-2 text-sm">No files generated yet.</p>;
     }

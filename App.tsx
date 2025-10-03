@@ -19,9 +19,7 @@ const createDefaultWorkspace = (projectName: string): Workspace => {
       versions: [{
         files: {},
         previewHtml: '',
-        // FIX: Add missing properties to conform to AppState type
-        frozenPrototypeHtml: null,
-        projectPhase: 'planning',
+        standaloneHtml: '',
         chatMessages: [INITIAL_CHAT_MESSAGE],
         hasGeneratedCode: false,
         projectName: projectName || 'Untitled Project',
