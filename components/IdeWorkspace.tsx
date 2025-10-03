@@ -4,6 +4,7 @@ import Header from './Header';
 import EditorPreviewPanel from './EditorPreviewPanel';
 import PublishModal from './PublishModal';
 import CommandPalette from './CommandPalette';
+import SettingsModal from './SettingsModal';
 import LivePreview, { Device } from './LivePreview';
 import ResizablePanel from './ResizablePanel';
 import Sidebar from './Sidebar';
@@ -62,6 +63,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({ visible: false, x: 0, y: 0, messageIndex: -1, message: null });
   const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
+  const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
 
   const activeProject = workspace.projects.find(p => p.id === workspace.activeProjectId);
   const activeProjectRunState = activeProject ? projectRunStates[activeProject.id] : undefined;
@@ -564,13 +566,10 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
             onRenameProject={handleRenameProject} 
             onDownloadProject={handleDownloadProject} 
             onPublish={isGuest ? onSignUpClick : () => setPublishModalOpen(true)} 
+            onSettings={() => setSettingsModalOpen(true)}
             mobileView={mobileView} 
             isProjectLoaded={isProjectLoaded} 
             onToggleView={() => setMobileView(prev => prev === 'chat' ? 'preview' : 'chat')} 
-            onUndo={handleUndo} 
-            onRedo={handleRedo} 
-            canUndo={canUndo} 
-            canRedo={canRedo} 
             onToggleSidebar={() => setMobileSidebarOpen(true)}
         />
         
@@ -636,6 +635,17 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
       </div>
 
       {isPublishModalOpen && activeProject && <PublishModal projectName={projectName} files={files} onClose={() => setPublishModalOpen(false)} />}
+      {isSettingsModalOpen && activeProject && (
+        <SettingsModal 
+          user={user}
+          project={activeProject}
+          onClose={() => setSettingsModalOpen(false)}
+          onRestoreVersion={(versionIndex) => {
+            updateProjectById(activeProject.id, p => ({ ...p, history: { ...p.history, currentIndex: versionIndex } }));
+            setSettingsModalOpen(false);
+          }}
+        />
+      )}
       <CommandPalette isOpen={isCommandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} files={files} onSelectFile={setActiveFile} onDownloadProject={handleDownloadProject} onPublish={isGuest ? onSignUpClick : () => setPublishModalOpen(true)} />
       <MessageContextMenu {...contextMenu} onClose={handleCloseContextMenu} onDelete={() => handleDeleteMessage(contextMenu.messageIndex)} onEdit={handleEditMessage} />
     </div>
