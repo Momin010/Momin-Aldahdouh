@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Competitor codebase - not to be committed
+bolt.diy-main/
