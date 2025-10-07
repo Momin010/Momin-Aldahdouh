@@ -14,7 +14,7 @@ import type { Message, Files, Change, FileAttachment, History, AppState, Console
 import { sendAiChatRequest, resetChat } from '../services/geminiService';
 import { downloadProjectAsZip } from '../services/zipService';
 import * as projectService from '../services/projectService';
-import { validateJavaScriptCode, validateHtmlContent, validationErrorsToConsoleMessages } from '../lib/codeValidation';
+import { validateJavaScriptCode, validateHtmlContent, validatePreviewHtml, validationErrorsToConsoleMessages } from '../lib/codeValidation';
 import { v4 as uuidv4 } from 'uuid';
 
 type MobileView = 'chat' | 'preview';
@@ -318,7 +318,26 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
             break;
         case 'MODIFY_CODE':
             applyModification(projectId, response.modification);
-            setProjectRunStates(prev => ({ ...prev, [projectId]: { ...prev[projectId], isVerifying: true, aiStatus: "Verifying generated code..." } }));
+            // Immediately validate the preview HTML after code generation
+            setTimeout(() => {
+              const project = workspace.projects.find(p => p.id === projectId);
+              if (project) {
+                const currentState = project.history.versions[project.history.currentIndex];
+                const previewHtml = currentState.standaloneHtml || currentState.previewHtml || '';
+                if (previewHtml.trim()) {
+                  const validationErrors = validatePreviewHtml(previewHtml);
+                  if (validationErrors.length > 0) {
+                    const consoleMessages = validationErrorsToConsoleMessages(validationErrors);
+                    setConsoleLogs(consoleMessages);
+                    // Trigger self-correction for validation errors
+                    triggerSelfCorrection(projectId, consoleMessages);
+                  } else {
+                    // No validation errors, mark as verified
+                    setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], isVerifying: false, aiStatus: null, isStopwatchRunning: false} }));
+                  }
+                }
+              }
+            }, 100); // Small delay to ensure DOM is updated
             break;
     }
   }, [workspace.projects, addHistoryStateForProject, makeAiRequest, applyModification]);
@@ -543,24 +562,21 @@ Only fix the actual errors - don't change working code.`;
       }
     }));
 
-    // Run static code validation
+    // Run static code validation on the PREVIEW HTML that users actually see
     const validationErrors: ConsoleMessage[] = [];
 
-    // Validate HTML
-    const htmlErrors = validateHtmlContent(currentState.standaloneHtml || currentState.previewHtml || '');
-    validationErrors.push(...validationErrorsToConsoleMessages(htmlErrors));
-
-    // Validate JavaScript in files
-    Object.entries(currentState.files).forEach(([filePath, content]) => {
-      if (filePath.endsWith('.js') || filePath.endsWith('.ts') || filePath.endsWith('.jsx') || filePath.endsWith('.tsx')) {
-        const jsErrors = validateJavaScriptCode(content);
-        const fileErrors = validationErrorsToConsoleMessages(jsErrors).map(error => ({
-          ...error,
-          payload: [`${filePath}: ${error.payload[0]}`]
-        }));
-        validationErrors.push(...fileErrors);
-      }
-    });
+    // Validate the preview HTML content (this is what gets executed in the iframe)
+    const previewHtml = currentState.standaloneHtml || currentState.previewHtml || '';
+    if (previewHtml.trim()) {
+      const previewErrors = validatePreviewHtml(previewHtml);
+      validationErrors.push(...validationErrorsToConsoleMessages(previewErrors));
+    } else {
+      // No preview HTML yet
+      validationErrors.push({
+        level: 'warn',
+        payload: ['No preview HTML available to validate. Generate some code first.']
+      });
+    }
 
     // Add validation errors to console logs
     if (validationErrors.length > 0) {

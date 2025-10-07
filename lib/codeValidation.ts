@@ -140,6 +140,35 @@ export function validationErrorsToConsoleMessages(errors: ValidationError[]): Co
 }
 
 /**
+ * Extracts JavaScript code from HTML content
+ */
+export function extractJavaScriptFromHtml(html: string): string[] {
+  const scripts: string[] = [];
+
+  // Extract content from <script> tags
+  const scriptRegex = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+  let match;
+
+  while ((match = scriptRegex.exec(html)) !== null) {
+    const scriptContent = match[1].trim();
+    if (scriptContent) {
+      scripts.push(scriptContent);
+    }
+  }
+
+  // Also extract inline event handlers and onclick attributes
+  const eventHandlerRegex = /\bon\w+="([^"]*)"/gi;
+  while ((match = eventHandlerRegex.exec(html)) !== null) {
+    const handlerCode = match[1];
+    if (handlerCode) {
+      scripts.push(handlerCode);
+    }
+  }
+
+  return scripts;
+}
+
+/**
  * Validates HTML content for common issues
  */
 export function validateHtmlContent(html: string): ValidationError[] {
@@ -179,6 +208,43 @@ export function validateHtmlContent(html: string): ValidationError[] {
       code: tagStack.map(tag => `<${tag}>`).join('')
     });
   }
+
+  return errors;
+}
+
+/**
+ * Validates the preview HTML that users actually see
+ */
+export function validatePreviewHtml(html: string): ValidationError[] {
+  const errors: ValidationError[] = [];
+
+  // First validate HTML structure
+  errors.push(...validateHtmlContent(html));
+
+  // Extract and validate JavaScript code from the HTML
+  const scripts = extractJavaScriptFromHtml(html);
+
+  scripts.forEach((script, index) => {
+    try {
+      // Try to parse the JavaScript
+      new Function('"use strict";\n' + script);
+    } catch (error: any) {
+      errors.push({
+        type: 'syntax',
+        message: `JavaScript syntax error in script ${index + 1}: ${error.message}`,
+        line: extractLineNumber(error.message),
+        column: extractColumnNumber(error.message),
+        code: script.substring(0, 100) + (script.length > 100 ? '...' : '')
+      });
+    }
+
+    // Check for common runtime issues in the script
+    const scriptErrors = validateJavaScriptCode(script);
+    errors.push(...scriptErrors.map(error => ({
+      ...error,
+      message: `Script ${index + 1}: ${error.message}`
+    })));
+  });
 
   return errors;
 }
