@@ -14,6 +14,7 @@ import type { Message, Files, Change, FileAttachment, History, AppState, Console
 import { sendAiChatRequest, resetChat } from '../services/geminiService';
 import { downloadProjectAsZip } from '../services/zipService';
 import * as projectService from '../services/projectService';
+import { validateJavaScriptCode, validateHtmlContent, validationErrorsToConsoleMessages } from '../lib/codeValidation';
 import { v4 as uuidv4 } from 'uuid';
 
 type MobileView = 'chat' | 'preview';
@@ -393,12 +394,29 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
   const triggerSelfCorrection = useCallback(async (projectId: string, errors: ConsoleMessage[]) => {
     const projectForRequest = workspace.projects.find(p => p.id === projectId);
     if (!projectForRequest) return;
-    
+
     setProjectRunStates(prev => ({...prev, [projectId]: {...prev[projectId], aiStatus: 'Errors detected. Attempting to fix...'}}));
-    
-    const errorContent = `The code you just generated produced the following errors: ${JSON.stringify(errors, null, 2)}`;
+
+    // Format errors in a more helpful way for the AI
+    const formattedErrors = errors.map((error, index) => {
+      const errorText = Array.isArray(error.payload) ? error.payload.join(' ') : String(error.payload);
+      return `${index + 1}. ${error.level.toUpperCase()}: ${errorText}`;
+    }).join('\n');
+
+    const errorContent = `I found the following errors in the generated code. Please fix them:
+
+${formattedErrors}
+
+Please analyze these errors and provide corrected code. Focus on:
+- Syntax errors (missing brackets, semicolons, etc.)
+- Undefined variables or functions
+- Type mismatches (especially with Date objects)
+- HTML structure issues
+
+Only fix the actual errors - don't change working code.`;
+
     const correctionMessage: Message = { role: 'correction', content: errorContent };
-    
+
     const currentProjectState = projectForRequest.history.versions[projectForRequest.history.currentIndex];
     const messagesForCorrection = [...currentProjectState.chatMessages, correctionMessage];
     const filesForContext = currentProjectState.hasGeneratedCode ? currentProjectState.files : null;
@@ -506,6 +524,51 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
   const handleToggleFullscreen = useCallback(() => setIsPreviewFullscreen(prev => !prev), []);
   const handleNavigateToPreview = useCallback(() => setMobileView('preview'), []);
   const handleNewLog = useCallback((log: ConsoleMessage) => setConsoleLogs(prev => [...prev, log]), []);
+
+  const handleCheckErrors = useCallback(() => {
+    if (!activeProject || !currentState) return;
+    const projectId = activeProject.id;
+
+    // Clear existing logs to start fresh
+    setConsoleLogs([]);
+
+    // Set verifying state to trigger error checking
+    setProjectRunStates(prev => ({
+      ...prev,
+      [projectId]: {
+        ...prev[projectId],
+        isVerifying: true,
+        aiStatus: "Checking for errors...",
+        isStopwatchRunning: false
+      }
+    }));
+
+    // Run static code validation
+    const validationErrors: ConsoleMessage[] = [];
+
+    // Validate HTML
+    const htmlErrors = validateHtmlContent(currentState.standaloneHtml || currentState.previewHtml || '');
+    validationErrors.push(...validationErrorsToConsoleMessages(htmlErrors));
+
+    // Validate JavaScript in files
+    Object.entries(currentState.files).forEach(([filePath, content]) => {
+      if (filePath.endsWith('.js') || filePath.endsWith('.ts') || filePath.endsWith('.jsx') || filePath.endsWith('.tsx')) {
+        const jsErrors = validateJavaScriptCode(content);
+        const fileErrors = validationErrorsToConsoleMessages(jsErrors).map(error => ({
+          ...error,
+          payload: [`${filePath}: ${error.payload[0]}`]
+        }));
+        validationErrors.push(...fileErrors);
+      }
+    });
+
+    // Add validation errors to console logs
+    if (validationErrors.length > 0) {
+      setConsoleLogs(validationErrors);
+    }
+
+    // The useEffect will handle triggering self-correction if errors are found
+  }, [activeProject, currentState]);
   
   const handleSelectProject = useCallback((id: string) => {
     onWorkspaceChange(ws => ws ? ({ ...ws, activeProjectId: id }) : null);
@@ -565,15 +628,16 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
 
     return (
       <div className="flex flex-col h-full overflow-hidden flex-grow">
-        <Header 
-            projectName={projectName} 
-            onRenameProject={handleRenameProject} 
-            onDownloadProject={handleDownloadProject} 
-            onPublish={isGuest ? onSignUpClick : () => setPublishModalOpen(true)} 
+        <Header
+            projectName={projectName}
+            onRenameProject={handleRenameProject}
+            onDownloadProject={handleDownloadProject}
+            onPublish={isGuest ? onSignUpClick : () => setPublishModalOpen(true)}
             onSettings={() => setSettingsModalOpen(true)}
-            mobileView={mobileView} 
-            isProjectLoaded={isProjectLoaded} 
-            onToggleView={() => setMobileView(prev => prev === 'chat' ? 'preview' : 'chat')} 
+            onCheckErrors={handleCheckErrors}
+            mobileView={mobileView}
+            isProjectLoaded={isProjectLoaded}
+            onToggleView={() => setMobileView(prev => prev === 'chat' ? 'preview' : 'chat')}
             onToggleSidebar={() => setMobileSidebarOpen(true)}
         />
         

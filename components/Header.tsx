@@ -7,20 +7,22 @@ interface HeaderProps {
   onDownloadProject: () => void;
   onPublish: () => void;
   onSettings: () => void;
+  onCheckErrors?: () => void;
   mobileView: 'chat' | 'preview';
   isProjectLoaded: boolean;
   onToggleView: () => void;
   onToggleSidebar: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ 
-  projectName, 
+const Header: React.FC<HeaderProps> = ({
+  projectName,
   onRenameProject,
   onDownloadProject,
   onPublish,
   onSettings,
-  mobileView, 
-  isProjectLoaded, 
+  onCheckErrors,
+  mobileView,
+  isProjectLoaded,
   onToggleView,
   onToggleSidebar
 }) => {
@@ -99,16 +101,26 @@ const Header: React.FC<HeaderProps> = ({
         )}
        
         <div className="hidden md:flex items-center gap-2 md:gap-4">
-          <a 
-            href="https://github.com/Momin-Ai/Momin-AI-IDE" 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors" 
+          <a
+            href="https://github.com/Momin-Ai/Momin-AI-IDE"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
             aria-label="View on GitHub"
           >
             <Icon name="github" className="w-6 h-6" />
           </a>
-          <button 
+          {onCheckErrors && (
+            <button
+              onClick={onCheckErrors}
+              disabled={!isProjectLoaded}
+              className="p-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/20 bg-white/10 transition-colors disabled:text-gray-600 disabled:cursor-not-allowed"
+              aria-label="Check for Errors"
+            >
+              <Icon name="bug" className="w-5 h-5" />
+            </button>
+          )}
+          <button
             onClick={onSettings}
             disabled={!isProjectLoaded}
             className="p-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/20 bg-white/10 transition-colors disabled:text-gray-600 disabled:cursor-not-allowed"
@@ -116,7 +128,7 @@ const Header: React.FC<HeaderProps> = ({
           >
             <Icon name="settings" className="w-5 h-5" />
           </button>
-          <button 
+          <button
             onClick={onPublish}
             disabled={!isProjectLoaded}
             className="px-4 py-2 text-sm font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">
