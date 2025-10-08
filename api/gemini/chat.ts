@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type, GenerateContentResponse } from '@google/genai';
 import { getUserFromRequest } from '../../lib/auth.js';
+import { throwIfEnvInvalid } from '../../lib/env.js';
 import type { Message, Files, FileAttachment, ApiResponse } from '../../types.js';
 
 const SYSTEM_INSTRUCTION = `You are MominAI, a senior software architect and conversational partner with expertise equivalent to a principal engineer from a top-tier tech company. Additionally, you have broad knowledge across all fields - science, history, current events, philosophy, arts, and general topics. You are helpful, polite, and collaborative.
@@ -2042,11 +2043,14 @@ function getRandomApiKey() {
 
 // Main handler for the serverless function
 export default async function handler(req: any, res: any) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ message: 'Method Not Allowed' });
-    }
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method Not Allowed' });
+  }
 
-    const { messages, files, attachments } = req.body as {
+  // Validate environment variables
+  throwIfEnvInvalid();
+
+  const { messages, files, attachments } = req.body as {
         messages: Message[];
         files: Files | null;
         attachments: FileAttachment[] | null;

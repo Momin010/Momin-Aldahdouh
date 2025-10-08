@@ -3,6 +3,8 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import LandingPage from './components/LandingPage';
 import IdeWorkspace from './components/IdeWorkspace';
 import AuthModal from './components/AuthModal';
+import ErrorBoundary from './components/ErrorBoundary';
+import LoadingSpinner from './components/LoadingSpinner';
 import * as authService from './services/authService';
 import * as projectService from './services/projectService';
 import usePersistentState from './hooks/usePersistentState';
@@ -161,13 +163,17 @@ const App: React.FC = () => {
 
   if (isLoading || isMigrating) {
     const message = isMigrating ? 'Saving your work to your account...' : 'Loading...';
-    return <div className="flex items-center justify-center h-screen bg-gray-900 text-white">{message}</div>;
+    return (
+      <div className="h-screen bg-gray-900 text-white">
+        <LoadingSpinner message={message} size="lg" className="h-full" />
+      </div>
+    );
   }
   
   const workspaceForRender = currentUser ? userWorkspace : (isGuest ? guestWorkspace : null);
 
   return (
-    <>
+    <ErrorBoundary>
       {workspaceForRender ? (
         <IdeWorkspace
           key={currentUser?.email || 'guest'}
@@ -192,7 +198,7 @@ const App: React.FC = () => {
         initialMode={authMode}
         setMode={setAuthMode}
       />
-    </>
+    </ErrorBoundary>
   );
 };
 
