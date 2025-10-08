@@ -65,6 +65,11 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({ visible: false, x: 0, y: 0, messageIndex: -1, message: null });
   const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
   const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [streamingProgress, setStreamingProgress] = useState<{
+    receivedBytes: number;
+    totalBytes?: number;
+    progress: number;
+  } | null>(null);
 
   const activeProject = workspace.projects.find(p => p.id === workspace.activeProjectId);
   const activeProjectRunState = activeProject ? projectRunStates[activeProject.id] : undefined;
@@ -255,14 +260,25 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
         [projectId]: { ...prev[projectId], abortController: controller }
     }));
 
+    // Reset progress at start
+    setStreamingProgress({ receivedBytes: 0, progress: 0 });
+
     // Add prototype context to the last message if available
     if (prototypeContext) {
         const lastMessage = messagesForAI[messagesForAI.length - 1];
         lastMessage.content += `\n\n### Approved Prototype HTML Context:\n\`\`\`html\n${prototypeContext}\n\`\`\``;
     }
 
+    const progressCallback = (receivedBytes: number, totalBytes?: number) => {
+      const progress = totalBytes ? (receivedBytes / totalBytes) * 100 : Math.min((receivedBytes / 50000) * 100, 95); // Estimate progress if no total
+      setStreamingProgress({ receivedBytes, totalBytes, progress });
+    };
+
     try {
-        return await sendAiChatRequest(messagesForAI, filesForContext, attachments, controller.signal);
+        const result = await sendAiChatRequest(messagesForAI, filesForContext, attachments, controller.signal, progressCallback);
+        // Set to 100% when complete
+        setStreamingProgress({ receivedBytes: result ? 100000 : 0, progress: 100 });
+        return result;
     } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
             addHistoryStateForProject(projectId, prev => ({...prev, chatMessages: [...prev.chatMessages, { role: 'model', content: 'AI generation cancelled.' }]}));
@@ -271,6 +287,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
             addHistoryStateForProject(projectId, prev => ({ ...prev, chatMessages: [...prev.chatMessages, { role: 'model', content: errorMessageContent }], projectPlan: null }));
         }
         setProjectRunStates(prev => ({...prev, [projectId]: { ...prev[projectId], aiStatus: null, isVerifying: false, abortController: null, isStopwatchRunning: false } }));
+        setStreamingProgress(null);
         return null;
     } finally {
         setProjectRunStates(prev => ({...prev, [projectId]: { ...prev[projectId], abortController: null } }));
@@ -366,7 +383,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
           onWorkspaceChange(ws => ws ? ({ projects: [...ws.projects, serverProject], activeProjectId: serverProject.id }) : null);
           
           if (andThenSend) {
-            setTimeout(() => handleSendMessage(andThenSend.prompt, andThenSend.attachment), 0);
+            setTimeout(() => handleSendMessage(andThenSend.prompt, andThenSend.attachment ? [andThenSend.attachment] : undefined), 0);
           }
         } else {
           // For guest users, create project locally
@@ -385,7 +402,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
           onWorkspaceChange(ws => ws ? ({ projects: [...ws.projects, newProject], activeProjectId: newProject.id }) : null);
 
           if (andThenSend) {
-              setTimeout(() => handleSendMessage(andThenSend.prompt, andThenSend.attachment), 0);
+              setTimeout(() => handleSendMessage(andThenSend.prompt, andThenSend.attachment ? [andThenSend.attachment] : undefined), 0);
           }
         }
       } catch (error) {
@@ -403,7 +420,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
           const isFreshProject = !hasGeneratedCode && chatMessages.length <= 1 && (projectName === 'Untitled Project' || projectName === 'New Project');
           if (isFreshProject) {
               if (prompt) addHistoryStateForProject(activeProject!.id, prev => ({...prev, projectName: prompt.substring(0, 30)}));
-              handleSendMessage(prompt, attachment);
+              handleSendMessage(prompt, attachment ? [attachment] : undefined);
           } else {
               handleNewProject(prompt.substring(0, 30) || 'New Visual Project', { prompt, attachment });
           }
@@ -659,14 +676,14 @@ Only fix the actual errors - don't change working code.`;
         
         <main className="hidden md:flex flex-grow p-4 gap-4 overflow-hidden">
           <ResizablePanel direction="horizontal" initialSize={450} minSize={320}>
-            <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} aiStatus={activeProjectRunState?.aiStatus || null} onStreamingComplete={onStreamingCompleteForActive} hasGeneratedCode={hasGeneratedCode} onNavigateToPreview={handleNavigateToPreview} onCancelRequest={handleCancelRequest} isCancelling={!!activeProjectRunState?.abortController} onContextMenu={handleOpenContextMenu} onDeleteMessage={handleDeleteMessage} onResubmitMessage={handleResubmitMessage} editingIndex={editingMessageIndex} onCancelEditing={() => setEditingMessageIndex(null)} stopwatchSeconds={activeProjectRunState?.stopwatchSeconds || 0} isStopwatchRunning={activeProjectRunState?.isStopwatchRunning || false} />
+            <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} aiStatus={activeProjectRunState?.aiStatus || null} onStreamingComplete={onStreamingCompleteForActive} hasGeneratedCode={hasGeneratedCode} onNavigateToPreview={handleNavigateToPreview} onCancelRequest={handleCancelRequest} isCancelling={!!activeProjectRunState?.abortController} onContextMenu={handleOpenContextMenu} onDeleteMessage={handleDeleteMessage} onResubmitMessage={handleResubmitMessage} editingIndex={editingMessageIndex} onCancelEditing={() => setEditingMessageIndex(null)} stopwatchSeconds={activeProjectRunState?.stopwatchSeconds || 0} isStopwatchRunning={activeProjectRunState?.isStopwatchRunning || false} streamingProgress={streamingProgress} />
             <EditorPreviewPanel device={device} onDeviceChange={setDevice} files={files} activeFile={activeFile} onSelectFile={setActiveFile} onCodeChange={handleCodeChange} previewHtml={previewHtml} standaloneHtml={standaloneHtml} onBackToChat={() => {}} onToggleFullscreen={handleToggleFullscreen} consoleLogs={consoleLogs} onNewLog={handleNewLog} onClearConsole={() => setConsoleLogs([])} />
           </ResizablePanel>
         </main>
 
         <main className="md:hidden flex flex-col flex-grow p-0 overflow-hidden">
           <div className={`${mobileView === 'preview' ? 'hidden' : 'flex'} flex-col w-full h-full`}>
-            <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} aiStatus={activeProjectRunState?.aiStatus || null} onStreamingComplete={onStreamingCompleteForActive} hasGeneratedCode={hasGeneratedCode} onNavigateToPreview={handleNavigateToPreview} onCancelRequest={handleCancelRequest} isCancelling={!!activeProjectRunState?.abortController} onContextMenu={handleOpenContextMenu} onDeleteMessage={handleDeleteMessage} onResubmitMessage={handleResubmitMessage} editingIndex={editingMessageIndex} onCancelEditing={() => setEditingMessageIndex(null)} stopwatchSeconds={activeProjectRunState?.stopwatchSeconds || 0} isStopwatchRunning={activeProjectRunState?.isStopwatchRunning || false} />
+            <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} aiStatus={activeProjectRunState?.aiStatus || null} onStreamingComplete={onStreamingCompleteForActive} hasGeneratedCode={hasGeneratedCode} onNavigateToPreview={handleNavigateToPreview} onCancelRequest={handleCancelRequest} isCancelling={!!activeProjectRunState?.abortController} onContextMenu={handleOpenContextMenu} onDeleteMessage={handleDeleteMessage} onResubmitMessage={handleResubmitMessage} editingIndex={editingMessageIndex} onCancelEditing={() => setEditingMessageIndex(null)} stopwatchSeconds={activeProjectRunState?.stopwatchSeconds || 0} isStopwatchRunning={activeProjectRunState?.isStopwatchRunning || false} streamingProgress={streamingProgress} />
           </div>
           <div className={`${mobileView === 'chat' ? 'hidden' : 'flex'} flex-col flex-grow h-full`}>
             <EditorPreviewPanel device={device} onDeviceChange={setDevice} files={files} activeFile={activeFile} onSelectFile={setActiveFile} onCodeChange={handleCodeChange} previewHtml={previewHtml} standaloneHtml={standaloneHtml} onBackToChat={() => setMobileView('chat')} onToggleFullscreen={handleToggleFullscreen} consoleLogs={consoleLogs} onNewLog={handleNewLog} onClearConsole={() => setConsoleLogs([])} />

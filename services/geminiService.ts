@@ -1,11 +1,15 @@
 import type { Message, Files, FileAttachment, ApiResponse } from '../types';
 
+// Progress callback type
+type ProgressCallback = (receivedBytes: number, totalBytes?: number) => void;
+
 // This function now handles a streaming response from the backend to avoid payload size limits.
 export const sendAiChatRequest = async (
-    messages: Message[], 
-    files: Files | null, 
+    messages: Message[],
+    files: Files | null,
     attachments: FileAttachment[] | null,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    onProgress?: ProgressCallback
 ): Promise<ApiResponse> => {
     try {
         const response = await fetch('/api/gemini/chat', {
@@ -26,19 +30,32 @@ export const sendAiChatRequest = async (
             throw new Error("The response from the server was empty.");
         }
 
+        // Get total bytes if available
+        const contentLength = response.headers.get('content-length');
+        const totalBytes = contentLength ? parseInt(contentLength, 10) : undefined;
+
         // Read the stream from the server
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let accumulatedJson = '';
+        let receivedBytes = 0;
 
         while (true) {
             const { done, value } = await reader.read();
             if (done) {
                 break;
             }
-            accumulatedJson += decoder.decode(value, { stream: true });
+
+            const chunk = decoder.decode(value, { stream: true });
+            accumulatedJson += chunk;
+            receivedBytes += value.length;
+
+            // Call progress callback if provided
+            if (onProgress) {
+                onProgress(receivedBytes, totalBytes);
+            }
         }
-        
+
         // Once the stream is complete, parse the full JSON string.
         try {
             return JSON.parse(accumulatedJson);

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { Message, FileAttachment, Plan } from '../types';
 import { Icon } from './Icon';
 import { STARTER_PROMPTS, DESIGN_BLUEPRINTS } from '../constants';
+import ProgressBar from './ProgressBar';
 
 // Utility to decode HTML entities
 const decodeHtmlEntities = (text: string): string => {
@@ -68,6 +69,11 @@ interface ChatPanelProps {
   onCancelEditing: () => void;
   stopwatchSeconds: number;
   isStopwatchRunning: boolean;
+  streamingProgress?: {
+    receivedBytes: number;
+    totalBytes?: number;
+    progress: number;
+  } | null;
 }
 
 const LOADING_TEXTS: Record<string, string[]> = {
@@ -127,10 +133,10 @@ const PlanDisplay: React.FC<{ plan: Plan }> = ({ plan }) => (
     </div>
 );
 
-const ChatPanel: React.FC<ChatPanelProps> = ({ 
+const ChatPanel: React.FC<ChatPanelProps> = ({
   messages, onSendMessage, aiStatus, onStreamingComplete, hasGeneratedCode, onNavigateToPreview,
   onCancelRequest, isCancelling, onContextMenu, onResubmitMessage, editingIndex, onCancelEditing,
-  stopwatchSeconds, isStopwatchRunning
+  stopwatchSeconds, isStopwatchRunning, streamingProgress
 }) => {
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
@@ -279,10 +285,25 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                  <div className="absolute inset-0 rounded-full border border-purple-400 animate-pulse"></div>
               </div>
               <div className="max-w-md p-3 rounded-xl bg-black/30 text-gray-200 rounded-bl-none">
-                <div className="flex items-center space-x-3">
-                  {isLoading && <div className="loader-atom"></div>}
-                  <p className="text-sm text-gray-300">{dynamicStatus}</p>
-                </div>
+                {streamingProgress ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3">
+                      {isLoading && <div className="loader-atom"></div>}
+                      <p className="text-sm text-gray-300">{dynamicStatus}</p>
+                    </div>
+                    <ProgressBar
+                      progress={streamingProgress.progress}
+                      receivedBytes={streamingProgress.receivedBytes}
+                      totalBytes={streamingProgress.totalBytes}
+                      className="w-full"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-3">
+                    {isLoading && <div className="loader-atom"></div>}
+                    <p className="text-sm text-gray-300">{dynamicStatus}</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
