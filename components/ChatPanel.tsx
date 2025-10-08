@@ -288,17 +288,13 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
               <div className="max-w-md p-3 rounded-xl bg-black/30 text-gray-200 rounded-bl-none">
                 {streamingProgress ? (
                   <div className="space-y-3">
-                    <div className="flex items-center space-x-3">
-                      {isLoading && <div className="loader-atom"></div>}
-                      <p className="text-sm text-gray-300">
-                        {dynamicStatus}
-                        {retryAttempt > 0 && (
-                          <span className="ml-2 text-yellow-400 font-medium">
-                            (Retry {retryAttempt})
-                          </span>
-                        )}
-                      </p>
-                    </div>
+                    {retryAttempt > 0 && (
+                      <div className="flex items-center space-x-3">
+                        <p className="text-sm text-yellow-400 font-medium">
+                          Retry {retryAttempt}
+                        </p>
+                      </div>
+                    )}
                     <ProgressBar
                       progress={streamingProgress.progress}
                       receivedBytes={streamingProgress.receivedBytes}
