@@ -43,6 +43,7 @@ interface ProjectRunState {
   aiStatus: string | null;
   isVerifying: boolean;
   abortController: AbortController | null;
+  isCancelling: boolean;
   stopwatchSeconds: number;
   isStopwatchRunning: boolean;
   streamingProgress: {
@@ -88,7 +89,8 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
             ...prev,
             [activeProject.id]: {
               ...currentProjectState,
-              stopwatchSeconds: currentProjectState.stopwatchSeconds + 1
+              stopwatchSeconds: currentProjectState.stopwatchSeconds + 1,
+              isCancelling: currentProjectState.isCancelling
             }
           };
         });
@@ -106,6 +108,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
                 aiStatus: null,
                 isVerifying: false,
                 abortController: null,
+                isCancelling: false,
                 stopwatchSeconds: 0,
                 isStopwatchRunning: false,
                 streamingProgress: null,
@@ -286,6 +289,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
           aiStatus: null,
           isVerifying: false,
           abortController: null,
+          isCancelling: false,
           stopwatchSeconds: 0,
           isStopwatchRunning: false,
           streamingProgress: null,
@@ -298,7 +302,8 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
             [projectId]: {
               ...currentState,
               retryAttempt: currentState.retryAttempt + 1,
-              streamingProgress: { receivedBytes: 0, progress: 0 } // Reset progress on retry
+              streamingProgress: { receivedBytes: 0, progress: 0 }, // Reset progress on retry
+              isCancelling: false
             }
           };
         }
@@ -328,6 +333,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
         return result;
     } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
+            console.log('AI request was cancelled by user');
             addHistoryStateForProject(projectId, prev => ({...prev, chatMessages: [...prev.chatMessages, { role: 'model', content: 'AI generation cancelled.' }]}));
         } else {
             const errorMessageContent = `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}`;
@@ -340,12 +346,14 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
                 aiStatus: null,
                 isVerifying: false,
                 abortController: null,
+                isCancelling: false,
                 isStopwatchRunning: false,
                 streamingProgress: null
             }
         }));
         return null;
     } finally {
+        // Clear abort controller after request completes
         setProjectRunStates(prev => ({...prev, [projectId]: { ...prev[projectId], abortController: null } }));
     }
   }, [addHistoryStateForProject]);
@@ -377,6 +385,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
             aiStatus: status,
             isVerifying: false,
             abortController: null,
+            isCancelling: false,
             isStopwatchRunning: true,
             stopwatchSeconds: 0
         }
@@ -385,7 +394,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
     const response = await makeAiRequest(projectId, messagesForAI, filesForContext, attachments, null);
     if (!response) return;
 
-    setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], aiStatus: null } }));
+    setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], aiStatus: null, isCancelling: false } }));
 
     switch (response.responseType) {
         case 'CHAT':
@@ -395,7 +404,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
             const { plan } = response;
             const planMessage: Message = { role: 'model', content: `I've drafted a plan for **${plan.projectName}**. Please review it.`, plan: plan, action: 'AWAITING_PLAN_APPROVAL' };
             addHistoryStateForProject(projectId, prev => ({ ...prev, projectPlan: plan, chatMessages: [...prev.chatMessages, planMessage] }));
-            setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], aiStatus: "Awaiting your approval...", isStopwatchRunning: false }}));
+            setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], aiStatus: "Awaiting your approval...", isStopwatchRunning: false, isCancelling: false }}));
             break;
         case 'MODIFY_CODE':
             applyModification(projectId, response.modification);
@@ -414,7 +423,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
                     triggerSelfCorrection(projectId, consoleMessages);
                   } else {
                     // No validation errors, mark as verified
-                    setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], isVerifying: false, aiStatus: null, isStopwatchRunning: false} }));
+                    setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], isVerifying: false, aiStatus: null, isStopwatchRunning: false, isCancelling: false} }));
                   }
                 }
               }
@@ -495,7 +504,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
     const projectForRequest = workspace.projects.find(p => p.id === projectId);
     if (!projectForRequest) return;
 
-    setProjectRunStates(prev => ({...prev, [projectId]: {...prev[projectId], aiStatus: 'Errors detected. Attempting to fix...'}}));
+    setProjectRunStates(prev => ({...prev, [projectId]: {...prev[projectId], aiStatus: 'Errors detected. Attempting to fix...', isCancelling: false}}));
 
     const currentProjectState = projectForRequest.history.versions[projectForRequest.history.currentIndex];
 
@@ -546,7 +555,7 @@ DO NOT remove working code or features the user asked for.`;
     } else {
         addHistoryStateForProject(projectId, prev => ({...prev, chatMessages: [...prev.chatMessages, { role: 'model', content: response.message }] }));
     }
-    setProjectRunStates(prev => ({...prev, [projectId]: {...prev[projectId], aiStatus: null, isStopwatchRunning: false}}));
+    setProjectRunStates(prev => ({...prev, [projectId]: {...prev[projectId], aiStatus: null, isStopwatchRunning: false, isCancelling: false}}));
   }, [addHistoryStateForProject, workspace.projects, makeAiRequest, applyModification]);
 
   // Instant error detection with fallback timeout
@@ -558,15 +567,15 @@ DO NOT remove working code or features the user asked for.`;
     
     if (errors.length > 0) {
       // Errors detected - fix immediately
-      setProjectRunStates(prev => ({...prev, [projectToVerifyId]: {...prev[projectToVerifyId], isVerifying: false}}));
+      setProjectRunStates(prev => ({...prev, [projectToVerifyId]: {...prev[projectToVerifyId], isVerifying: false, isCancelling: false}}));
       triggerSelfCorrection(projectToVerifyId, errors);
     } else if (consoleLogs.length > 0) {
       // No errors but console logs exist - code is working
-      setProjectRunStates(prev => ({...prev, [projectToVerifyId]: {...prev[projectToVerifyId], isVerifying: false, aiStatus: null, isStopwatchRunning: false}}));
+      setProjectRunStates(prev => ({...prev, [projectToVerifyId]: {...prev[projectToVerifyId], isVerifying: false, aiStatus: null, isStopwatchRunning: false, isCancelling: false}}));
     } else {
       // Fallback: if no logs after 2 seconds, assume code is working
       const fallbackTimeout = setTimeout(() => {
-        setProjectRunStates(prev => ({...prev, [projectToVerifyId]: {...prev[projectToVerifyId], isVerifying: false, aiStatus: null, isStopwatchRunning: false}}));
+        setProjectRunStates(prev => ({...prev, [projectToVerifyId]: {...prev[projectToVerifyId], isVerifying: false, aiStatus: null, isStopwatchRunning: false, isCancelling: false}}));
       }, 2000);
       return () => clearTimeout(fallbackTimeout);
     }
@@ -592,8 +601,22 @@ DO NOT remove working code or features the user asked for.`;
   }, [activeProject, addHistoryStateForProject]);
 
   const handleCancelRequest = useCallback(() => {
-    activeProjectRunState?.abortController?.abort();
-  }, [activeProjectRunState]);
+    if (activeProjectRunState?.abortController && !activeProjectRunState.isCancelling) {
+      console.log('Cancelling AI request for project:', activeProject?.id);
+      activeProjectRunState.abortController.abort();
+
+      // Update state to show cancelling
+      setProjectRunStates(prev => ({
+        ...prev,
+        [activeProject!.id]: {
+          ...prev[activeProject!.id],
+          aiStatus: 'Cancelling...',
+          isCancelling: true,
+          isStopwatchRunning: false
+        }
+      }));
+    }
+  }, [activeProjectRunState, activeProject]);
 
   const handleOpenContextMenu = useCallback((event: React.MouseEvent, index: number) => {
     event.preventDefault();
@@ -655,7 +678,8 @@ DO NOT remove working code or features the user asked for.`;
         ...prev[projectId],
         isVerifying: true,
         aiStatus: "Checking for errors...",
-        isStopwatchRunning: false
+        isStopwatchRunning: false,
+        isCancelling: false
       }
     }));
 
@@ -756,14 +780,14 @@ DO NOT remove working code or features the user asked for.`;
         
         <main className="hidden md:flex flex-grow p-4 gap-4 overflow-hidden">
           <ResizablePanel direction="horizontal" initialSize={450} minSize={320}>
-            <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} aiStatus={activeProjectRunState?.aiStatus || null} onStreamingComplete={onStreamingCompleteForActive} hasGeneratedCode={hasGeneratedCode} onNavigateToPreview={handleNavigateToPreview} onCancelRequest={handleCancelRequest} isCancelling={!!activeProjectRunState?.abortController} onContextMenu={handleOpenContextMenu} onDeleteMessage={handleDeleteMessage} onResubmitMessage={handleResubmitMessage} editingIndex={editingMessageIndex} onCancelEditing={() => setEditingMessageIndex(null)} stopwatchSeconds={activeProjectRunState?.stopwatchSeconds || 0} isStopwatchRunning={activeProjectRunState?.isStopwatchRunning || false} streamingProgress={activeProjectRunState?.streamingProgress || null} retryAttempt={activeProjectRunState?.retryAttempt || 0} />
+            <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} aiStatus={activeProjectRunState?.aiStatus || null} onStreamingComplete={onStreamingCompleteForActive} hasGeneratedCode={hasGeneratedCode} onNavigateToPreview={handleNavigateToPreview} onCancelRequest={handleCancelRequest} isCancelling={activeProjectRunState?.isCancelling || false} onContextMenu={handleOpenContextMenu} onDeleteMessage={handleDeleteMessage} onResubmitMessage={handleResubmitMessage} editingIndex={editingMessageIndex} onCancelEditing={() => setEditingMessageIndex(null)} stopwatchSeconds={activeProjectRunState?.stopwatchSeconds || 0} isStopwatchRunning={activeProjectRunState?.isStopwatchRunning || false} streamingProgress={activeProjectRunState?.streamingProgress || null} retryAttempt={activeProjectRunState?.retryAttempt || 0} />
             <EditorPreviewPanel device={device} onDeviceChange={setDevice} files={files} activeFile={activeFile} onSelectFile={setActiveFile} onCodeChange={handleCodeChange} previewHtml={previewHtml} standaloneHtml={standaloneHtml} onBackToChat={() => {}} onToggleFullscreen={handleToggleFullscreen} consoleLogs={consoleLogs} onNewLog={handleNewLog} onClearConsole={() => setConsoleLogs([])} />
           </ResizablePanel>
         </main>
 
         <main className="md:hidden flex flex-col flex-grow p-0 overflow-hidden">
           <div className={`${mobileView === 'preview' ? 'hidden' : 'flex'} flex-col w-full h-full`}>
-            <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} aiStatus={activeProjectRunState?.aiStatus || null} onStreamingComplete={onStreamingCompleteForActive} hasGeneratedCode={hasGeneratedCode} onNavigateToPreview={handleNavigateToPreview} onCancelRequest={handleCancelRequest} isCancelling={!!activeProjectRunState?.abortController} onContextMenu={handleOpenContextMenu} onDeleteMessage={handleDeleteMessage} onResubmitMessage={handleResubmitMessage} editingIndex={editingMessageIndex} onCancelEditing={() => setEditingMessageIndex(null)} stopwatchSeconds={activeProjectRunState?.stopwatchSeconds || 0} isStopwatchRunning={activeProjectRunState?.isStopwatchRunning || false} streamingProgress={activeProjectRunState?.streamingProgress || null} retryAttempt={activeProjectRunState?.retryAttempt || 0} />
+            <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} aiStatus={activeProjectRunState?.aiStatus || null} onStreamingComplete={onStreamingCompleteForActive} hasGeneratedCode={hasGeneratedCode} onNavigateToPreview={handleNavigateToPreview} onCancelRequest={handleCancelRequest} isCancelling={activeProjectRunState?.isCancelling || false} onContextMenu={handleOpenContextMenu} onDeleteMessage={handleDeleteMessage} onResubmitMessage={handleResubmitMessage} editingIndex={editingMessageIndex} onCancelEditing={() => setEditingMessageIndex(null)} stopwatchSeconds={activeProjectRunState?.stopwatchSeconds || 0} isStopwatchRunning={activeProjectRunState?.isStopwatchRunning || false} streamingProgress={activeProjectRunState?.streamingProgress || null} retryAttempt={activeProjectRunState?.retryAttempt || 0} />
           </div>
           <div className={`${mobileView === 'chat' ? 'hidden' : 'flex'} flex-col flex-grow h-full`}>
             <EditorPreviewPanel device={device} onDeviceChange={setDevice} files={files} activeFile={activeFile} onSelectFile={setActiveFile} onCodeChange={handleCodeChange} previewHtml={previewHtml} standaloneHtml={standaloneHtml} onBackToChat={() => setMobileView('chat')} onToggleFullscreen={handleToggleFullscreen} consoleLogs={consoleLogs} onNewLog={handleNewLog} onClearConsole={() => setConsoleLogs([])} />
