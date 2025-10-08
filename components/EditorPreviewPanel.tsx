@@ -93,11 +93,48 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
         
         <div className="flex-1" />
 
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => {
+              const newWindow = window.open('', '_blank', 'width=1200,height=800');
+              if (newWindow) {
+                const srcDoc = `<script>
+                  const originalConsole = { ...window.console };
+                  const levels = ['log', 'warn', 'error', 'info'];
 
-
-        <button onClick={onToggleFullscreen} className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10" aria-label="Toggle fullscreen">
-          <Icon name="fullscreen" className="w-5 h-5" />
-        </button>
+                  levels.forEach(level => {
+                    window.console[level] = (...args) => {
+                      originalConsole[level](...args);
+                    };
+                  });
+                </script>${displayHtml}`;
+                newWindow.document.write(`
+                  <!DOCTYPE html>
+                  <html>
+                    <head>
+                      <title>Live Preview - Fullscreen</title>
+                      <style>
+                        body { margin: 0; padding: 0; background: white; }
+                        iframe { width: 100vw; height: 100vh; border: none; }
+                      </style>
+                    </head>
+                    <body>
+                      <iframe srcdoc="${srcDoc.replace(/"/g, '"')}"></iframe>
+                    </body>
+                  </html>
+                `);
+                newWindow.document.close();
+              }
+            }}
+            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10"
+            aria-label="Open in new tab"
+          >
+            <Icon name="external-link" className="w-5 h-5" />
+          </button>
+          <button onClick={onToggleFullscreen} className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10" aria-label="Toggle fullscreen">
+            <Icon name="fullscreen" className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       <div className="flex-grow overflow-hidden relative">

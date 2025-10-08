@@ -101,23 +101,7 @@
     background: #67e8f9; /* cyan-300 */
   }
 
-  /* New animations for "Excellence" */
-  @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes scaleIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
-  }
-  .animate-fadeInUp {
-    animation: fadeInUp 0.7s ease-out forwards;
-    opacity: 0; /* Start hidden */
-  }
-  .animate-scaleIn {
-    animation: scaleIn 0.5s ease-out forwards;
-  }
-
+  /* Cursor blink animation only */
   @keyframes blink {
     50% { opacity: 0; }
   }
@@ -129,12 +113,6 @@
     background-color: #c084fc; /* purple-300 */
     animation: blink 1s step-end infinite;
   }
-
-  /* Staggered animation delays */
-  .delay-100 { animation-delay: 100ms; }
-  .delay-200 { animation-delay: 200ms; }
-  .delay-300 { animation-delay: 300ms; }
-  .delay-500 { animation-delay: 500ms; }
 </style>
 </head>
   <body class="text-white" style="background-image: url('https://i.pinimg.com/736x/c3/28/e8/c328e8cd93acc362efd2f7a1d9f2b1f3.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat; background-attachment: fixed;">

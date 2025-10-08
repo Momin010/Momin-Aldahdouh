@@ -303,7 +303,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
           };
         }
 
-        const progress = totalBytes ? (receivedBytes / totalBytes) * 100 : Math.min((receivedBytes / 60000) * 100, 95); // Estimate progress if no total
+        const progress = totalBytes ? (receivedBytes / totalBytes) * 100 : Math.min((receivedBytes / 67000) * 100, 95); // Estimate progress if no total
         return {
           ...prev,
           [projectId]: {
