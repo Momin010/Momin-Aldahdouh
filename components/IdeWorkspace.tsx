@@ -45,6 +45,12 @@ interface ProjectRunState {
   abortController: AbortController | null;
   stopwatchSeconds: number;
   isStopwatchRunning: boolean;
+  streamingProgress: {
+    receivedBytes: number;
+    totalBytes?: number;
+    progress: number;
+  } | null;
+  retryAttempt: number;
 }
 
 const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspaceChange, onSignOut, onSignUpClick, initialPrompt, clearInitialPrompt, initialAttachment, clearInitialAttachment }) => {
@@ -65,12 +71,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({ visible: false, x: 0, y: 0, messageIndex: -1, message: null });
   const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
   const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
-  const [streamingProgress, setStreamingProgress] = useState<{
-    receivedBytes: number;
-    totalBytes?: number;
-    progress: number;
-  } | null>(null);
-  const [retryAttempt, setRetryAttempt] = useState<number>(0);
+  // Progress and retry tracking moved to projectRunStates for isolation
 
   const activeProject = workspace.projects.find(p => p.id === workspace.activeProjectId);
   const activeProjectRunState = activeProject ? projectRunStates[activeProject.id] : undefined;
@@ -107,6 +108,8 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
                 abortController: null,
                 stopwatchSeconds: 0,
                 isStopwatchRunning: false,
+                streamingProgress: null,
+                retryAttempt: 0,
             };
         }
         return newStates;
@@ -261,9 +264,15 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
         [projectId]: { ...prev[projectId], abortController: controller }
     }));
 
-    // Reset progress and retry counter at start
-    setStreamingProgress({ receivedBytes: 0, progress: 0 });
-    setRetryAttempt(0);
+    // Reset progress and retry counter at start for this project
+    setProjectRunStates(prev => ({
+        ...prev,
+        [projectId]: {
+            ...prev[projectId],
+            streamingProgress: { receivedBytes: 0, progress: 0 },
+            retryAttempt: 0
+        }
+    }));
 
     // Add prototype context to the last message if available
     if (prototypeContext) {
@@ -272,19 +281,50 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
     }
 
     const progressCallback = (receivedBytes: number, totalBytes?: number, isRetry: boolean = false) => {
-      if (isRetry) {
-        setRetryAttempt(prev => prev + 1);
-        setStreamingProgress({ receivedBytes: 0, progress: 0 }); // Reset progress on retry
-      }
-      const progress = totalBytes ? (receivedBytes / totalBytes) * 100 : Math.min((receivedBytes / 50000) * 100, 95); // Estimate progress if no total
-      setStreamingProgress({ receivedBytes, totalBytes, progress });
+      setProjectRunStates(prev => {
+        const currentState = prev[projectId] || {
+          aiStatus: null,
+          isVerifying: false,
+          abortController: null,
+          stopwatchSeconds: 0,
+          isStopwatchRunning: false,
+          streamingProgress: null,
+          retryAttempt: 0
+        };
+
+        if (isRetry) {
+          return {
+            ...prev,
+            [projectId]: {
+              ...currentState,
+              retryAttempt: currentState.retryAttempt + 1,
+              streamingProgress: { receivedBytes: 0, progress: 0 } // Reset progress on retry
+            }
+          };
+        }
+
+        const progress = totalBytes ? (receivedBytes / totalBytes) * 100 : Math.min((receivedBytes / 50000) * 100, 95); // Estimate progress if no total
+        return {
+          ...prev,
+          [projectId]: {
+            ...currentState,
+            streamingProgress: { receivedBytes, totalBytes, progress }
+          }
+        };
+      });
     };
 
     try {
         const result = await sendAiChatRequest(messagesForAI, filesForContext, attachments, controller.signal, progressCallback);
-        // Set to 100% when complete and reset retry counter
-        setStreamingProgress({ receivedBytes: result ? 100000 : 0, progress: 100 });
-        setRetryAttempt(0);
+        // Set to 100% when complete and reset retry counter for this project
+        setProjectRunStates(prev => ({
+            ...prev,
+            [projectId]: {
+                ...prev[projectId],
+                streamingProgress: { receivedBytes: result ? 100000 : 0, progress: 100 },
+                retryAttempt: 0
+            }
+        }));
         return result;
     } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
@@ -293,8 +333,17 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
             const errorMessageContent = `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}`;
             addHistoryStateForProject(projectId, prev => ({ ...prev, chatMessages: [...prev.chatMessages, { role: 'model', content: errorMessageContent }], projectPlan: null }));
         }
-        setProjectRunStates(prev => ({...prev, [projectId]: { ...prev[projectId], aiStatus: null, isVerifying: false, abortController: null, isStopwatchRunning: false } }));
-        setStreamingProgress(null);
+        setProjectRunStates(prev => ({
+            ...prev,
+            [projectId]: {
+                ...prev[projectId],
+                aiStatus: null,
+                isVerifying: false,
+                abortController: null,
+                isStopwatchRunning: false,
+                streamingProgress: null
+            }
+        }));
         return null;
     } finally {
         setProjectRunStates(prev => ({...prev, [projectId]: { ...prev[projectId], abortController: null } }));
@@ -322,7 +371,15 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
     }
 
     setProjectRunStates(prev => ({
-        ...prev, [projectId]: { aiStatus: status, isVerifying: false, abortController: null, isStopwatchRunning: true, stopwatchSeconds: 0 }
+        ...prev,
+        [projectId]: {
+            ...prev[projectId],
+            aiStatus: status,
+            isVerifying: false,
+            abortController: null,
+            isStopwatchRunning: true,
+            stopwatchSeconds: 0
+        }
     }));
 
     const response = await makeAiRequest(projectId, messagesForAI, filesForContext, attachments, null);
@@ -699,14 +756,14 @@ DO NOT remove working code or features the user asked for.`;
         
         <main className="hidden md:flex flex-grow p-4 gap-4 overflow-hidden">
           <ResizablePanel direction="horizontal" initialSize={450} minSize={320}>
-            <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} aiStatus={activeProjectRunState?.aiStatus || null} onStreamingComplete={onStreamingCompleteForActive} hasGeneratedCode={hasGeneratedCode} onNavigateToPreview={handleNavigateToPreview} onCancelRequest={handleCancelRequest} isCancelling={!!activeProjectRunState?.abortController} onContextMenu={handleOpenContextMenu} onDeleteMessage={handleDeleteMessage} onResubmitMessage={handleResubmitMessage} editingIndex={editingMessageIndex} onCancelEditing={() => setEditingMessageIndex(null)} stopwatchSeconds={activeProjectRunState?.stopwatchSeconds || 0} isStopwatchRunning={activeProjectRunState?.isStopwatchRunning || false} streamingProgress={streamingProgress} retryAttempt={retryAttempt} />
+            <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} aiStatus={activeProjectRunState?.aiStatus || null} onStreamingComplete={onStreamingCompleteForActive} hasGeneratedCode={hasGeneratedCode} onNavigateToPreview={handleNavigateToPreview} onCancelRequest={handleCancelRequest} isCancelling={!!activeProjectRunState?.abortController} onContextMenu={handleOpenContextMenu} onDeleteMessage={handleDeleteMessage} onResubmitMessage={handleResubmitMessage} editingIndex={editingMessageIndex} onCancelEditing={() => setEditingMessageIndex(null)} stopwatchSeconds={activeProjectRunState?.stopwatchSeconds || 0} isStopwatchRunning={activeProjectRunState?.isStopwatchRunning || false} streamingProgress={activeProjectRunState?.streamingProgress || null} retryAttempt={activeProjectRunState?.retryAttempt || 0} />
             <EditorPreviewPanel device={device} onDeviceChange={setDevice} files={files} activeFile={activeFile} onSelectFile={setActiveFile} onCodeChange={handleCodeChange} previewHtml={previewHtml} standaloneHtml={standaloneHtml} onBackToChat={() => {}} onToggleFullscreen={handleToggleFullscreen} consoleLogs={consoleLogs} onNewLog={handleNewLog} onClearConsole={() => setConsoleLogs([])} />
           </ResizablePanel>
         </main>
 
         <main className="md:hidden flex flex-col flex-grow p-0 overflow-hidden">
           <div className={`${mobileView === 'preview' ? 'hidden' : 'flex'} flex-col w-full h-full`}>
-            <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} aiStatus={activeProjectRunState?.aiStatus || null} onStreamingComplete={onStreamingCompleteForActive} hasGeneratedCode={hasGeneratedCode} onNavigateToPreview={handleNavigateToPreview} onCancelRequest={handleCancelRequest} isCancelling={!!activeProjectRunState?.abortController} onContextMenu={handleOpenContextMenu} onDeleteMessage={handleDeleteMessage} onResubmitMessage={handleResubmitMessage} editingIndex={editingMessageIndex} onCancelEditing={() => setEditingMessageIndex(null)} stopwatchSeconds={activeProjectRunState?.stopwatchSeconds || 0} isStopwatchRunning={activeProjectRunState?.isStopwatchRunning || false} streamingProgress={streamingProgress} retryAttempt={retryAttempt} />
+            <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} aiStatus={activeProjectRunState?.aiStatus || null} onStreamingComplete={onStreamingCompleteForActive} hasGeneratedCode={hasGeneratedCode} onNavigateToPreview={handleNavigateToPreview} onCancelRequest={handleCancelRequest} isCancelling={!!activeProjectRunState?.abortController} onContextMenu={handleOpenContextMenu} onDeleteMessage={handleDeleteMessage} onResubmitMessage={handleResubmitMessage} editingIndex={editingMessageIndex} onCancelEditing={() => setEditingMessageIndex(null)} stopwatchSeconds={activeProjectRunState?.stopwatchSeconds || 0} isStopwatchRunning={activeProjectRunState?.isStopwatchRunning || false} streamingProgress={activeProjectRunState?.streamingProgress || null} retryAttempt={activeProjectRunState?.retryAttempt || 0} />
           </div>
           <div className={`${mobileView === 'chat' ? 'hidden' : 'flex'} flex-col flex-grow h-full`}>
             <EditorPreviewPanel device={device} onDeviceChange={setDevice} files={files} activeFile={activeFile} onSelectFile={setActiveFile} onCodeChange={handleCodeChange} previewHtml={previewHtml} standaloneHtml={standaloneHtml} onBackToChat={() => setMobileView('chat')} onToggleFullscreen={handleToggleFullscreen} consoleLogs={consoleLogs} onNewLog={handleNewLog} onClearConsole={() => setConsoleLogs([])} />
