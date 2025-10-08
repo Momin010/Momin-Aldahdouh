@@ -440,27 +440,43 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
 
     setProjectRunStates(prev => ({...prev, [projectId]: {...prev[projectId], aiStatus: 'Errors detected. Attempting to fix...'}}));
 
+    const currentProjectState = projectForRequest.history.versions[projectForRequest.history.currentIndex];
+
+    // Find the user's last request to understand what they wanted to add/modify
+    const userMessages = currentProjectState.chatMessages.filter(msg => msg.role === 'user');
+    const lastUserMessage = userMessages[userMessages.length - 1];
+
     // Format errors in a more helpful way for the AI
     const formattedErrors = errors.map((error, index) => {
       const errorText = Array.isArray(error.payload) ? error.payload.join(' ') : String(error.payload);
       return `${index + 1}. ${error.level.toUpperCase()}: ${errorText}`;
     }).join('\n');
 
-    const errorContent = `I found the following errors in the generated code. Please fix them:
+    const errorContent = `I found errors in the code I just generated. The user asked me to: "${lastUserMessage?.content || 'modify the application'}"
 
+IMPORTANT: You MUST preserve all existing functionality and only fix the specific errors listed below. Do NOT remove or change working features that the user requested.
+
+The errors to fix are:
 ${formattedErrors}
 
-Please analyze these errors and provide corrected code. Focus on:
+CRITICAL INSTRUCTIONS:
+1. Keep all existing features and functionality that were working before
+2. Only fix the specific errors mentioned above
+3. Do not remove entire components or features - just correct the bugs
+4. Maintain the user's original request: "${lastUserMessage?.content || 'modify the application'}"
+5. If you need to restructure code, ensure all user-requested functionality remains intact
+
+Focus on fixing:
 - Syntax errors (missing brackets, semicolons, etc.)
 - Undefined variables or functions
 - Type mismatches (especially with Date objects)
 - HTML structure issues
 
-Only fix the actual errors - don't change working code.`;
+DO NOT remove working code or features the user asked for.`;
 
     const correctionMessage: Message = { role: 'correction', content: errorContent };
 
-    const currentProjectState = projectForRequest.history.versions[projectForRequest.history.currentIndex];
+    // Include the full conversation history so the AI understands what was requested
     const messagesForCorrection = [...currentProjectState.chatMessages, correctionMessage];
     const filesForContext = currentProjectState.hasGeneratedCode ? currentProjectState.files : null;
     const prototypeForContext = null;
