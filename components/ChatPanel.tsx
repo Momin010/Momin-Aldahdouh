@@ -74,6 +74,7 @@ interface ChatPanelProps {
     totalBytes?: number;
     progress: number;
   } | null;
+  retryAttempt?: number;
 }
 
 const LOADING_TEXTS: Record<string, string[]> = {
@@ -136,7 +137,7 @@ const PlanDisplay: React.FC<{ plan: Plan }> = ({ plan }) => (
 const ChatPanel: React.FC<ChatPanelProps> = ({
   messages, onSendMessage, aiStatus, onStreamingComplete, hasGeneratedCode, onNavigateToPreview,
   onCancelRequest, isCancelling, onContextMenu, onResubmitMessage, editingIndex, onCancelEditing,
-  stopwatchSeconds, isStopwatchRunning, streamingProgress
+  stopwatchSeconds, isStopwatchRunning, streamingProgress, retryAttempt = 0
 }) => {
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
@@ -289,7 +290,14 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                   <div className="space-y-3">
                     <div className="flex items-center space-x-3">
                       {isLoading && <div className="loader-atom"></div>}
-                      <p className="text-sm text-gray-300">{dynamicStatus}</p>
+                      <p className="text-sm text-gray-300">
+                        {dynamicStatus}
+                        {retryAttempt > 0 && (
+                          <span className="ml-2 text-yellow-400 font-medium">
+                            (Retry {retryAttempt})
+                          </span>
+                        )}
+                      </p>
                     </div>
                     <ProgressBar
                       progress={streamingProgress.progress}
@@ -301,7 +309,14 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                 ) : (
                   <div className="flex items-center space-x-3">
                     {isLoading && <div className="loader-atom"></div>}
-                    <p className="text-sm text-gray-300">{dynamicStatus}</p>
+                    <p className="text-sm text-gray-300">
+                      {dynamicStatus}
+                      {retryAttempt > 0 && (
+                        <span className="ml-2 text-yellow-400 font-medium">
+                          (Retry {retryAttempt})
+                        </span>
+                      )}
+                    </p>
                   </div>
                 )}
               </div>
