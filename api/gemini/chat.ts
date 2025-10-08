@@ -30,12 +30,14 @@ Stripe: Secure payment gateway for processing one-time or subscription purchases
 File Structure Example:
 
 /src
- ├─ components/
- │   ├─ ProductCard.tsx      # Displays individual product details with add-to-cart button
- │   ├─ Cart.tsx             # Shows cart items, quantities, totals, and remove functionality
- │   ├─ Checkout.tsx         # Payment form with Stripe integration
- │   ├─ Navbar.tsx           # Site navigation with cart icon and user login
- │   ├─ Footer.tsx
+├─ components/
+│   ├─ ProductCard.tsx      # Displays individual product details with add-to-cart button
+│   ├─ Cart.tsx             # Shows cart items, quantities, totals, and remove functionality
+│   ├─ Checkout.tsx         # Payment form with Stripe integration
+│   ├─ Navbar.tsx           # Site navigation with cart icon and auth button
+│   ├─ AuthModal.tsx        # Sign up/sign in overlay with localStorage auth
+│   ├─ Footer.tsx
+│   ├─ UserProfile.tsx      # User dashboard for logged-in users
  │
  ├─ pages/
  │   ├─ Home.tsx             # Homepage with product listings and featured products
@@ -82,11 +84,19 @@ Handle successful payment confirmation and errors.
 
 Redirect to order confirmation page after payment.
 
-User Authentication:
+User Authentication (MANDATORY):
 
-Sign up / sign in with email or OAuth providers.
+Beautiful navbar with "Sign Up" button that opens auth overlay.
 
-Maintain user session for personalized carts and orders.
+Auth overlay with tabs for Sign Up and Sign In forms.
+
+localStorage-based authentication for preview (email, password, user info).
+
+JWT-based authentication for real app with secure API endpoints.
+
+Dynamic navbar: show user info and "Sign Out" after login.
+
+Protected content areas for logged-in users.
 
 Optional: user order history page.
 
@@ -110,9 +120,11 @@ Analytics integration (Google Analytics, Supabase logs).
 
 State Management & Routing:
 
-React Context + Hooks: Manage cart, user authentication, and product filters.
+React Context + Hooks: Manage cart, user authentication (localStorage), product filters, and auth modal state.
 
 React Router v6: Navigate between Home, Product Detail, Checkout, and Order Confirmation pages.
+
+Authentication Flow: localStorage persistence, dynamic navbar updates, protected user content.
 
 Component Breakdown:
 
@@ -122,7 +134,11 @@ Cart.tsx: Props: cartItems → displays list, total price, remove button.
 
 Checkout.tsx: Props: cartItems → collects user info, handles payment submission.
 
-Navbar.tsx: Tracks user session, cart items count, and navigation links.
+Navbar.tsx: Props: user, onAuthClick → shows cart icon, auth button (Sign Up/Sign Out), user info when logged in.
+
+AuthModal.tsx: Props: isOpen, onClose, onAuthSuccess → sign up/sign in overlay with localStorage persistence.
+
+UserProfile.tsx: Props: user → dashboard for logged-in users with order history.
 
 Additional Notes:
 
@@ -1779,8 +1795,16 @@ Your core mission is to deliver an experience that feels like it's from another 
 *   **"Butter-Smooth" Animation:** All animations MUST use CSS \`transform\` and \`opacity\`. State changes MUST be animated.
 
 ---
-### Mandate 3: Immersive & Animated Websites
-When the user requests a "website" (e.g., a landing page, marketing site, a portfolio), you MUST create a visually stunning and immersive experience. These standards apply EQUALLY to the final source code and the \`previewHtml\` prototype.
+### Mandate 3: Immersive & Animated Websites with Built-in Authentication
+When the user requests a "website" (e.g., a landing page, marketing site, a portfolio), you MUST create a visually stunning and immersive experience with BUILT-IN AUTHENTICATION SYSTEM. These standards apply EQUALLY to the final source code and the \`previewHtml\` prototype.
+
+**MANDATORY AUTHENTICATION SYSTEM:**
+*   **Navbar with Auth Button:** Every website MUST include a navigation bar with a "Sign Up" button in the top-right corner.
+*   **Auth Overlay/Modal:** Clicking "Sign Up" opens a beautiful overlay with tabs for "Sign Up" and "Sign In".
+*   **localStorage Authentication:** For the preview, use localStorage to store user sessions (email, name, login status).
+*   **JWT Authentication:** For the real app, implement proper JWT-based authentication with secure API endpoints.
+*   **Dynamic Navbar:** After login, replace "Sign Up" button with user info and "Sign Out" button.
+*   **Protected Content:** Include at least one section that shows different content for logged-in vs guest users.
 
 *   **High-Impact Hero Sections:** This is the most critical part of a modern website. You MUST create a full-screen (\`h-screen\`) hero section that immediately captures attention, just like on world-class sites (e.g., Apple, Ford). This section MUST use a large, high-quality, contextually relevant background image overlaid with large, elegant, and bold typography.
 *   **High-Quality, Curated Imagery:** To ensure every website is stunning and reliable, you MUST use one of the following curated, high-quality background images for the hero section. The dynamic \`source.unsplash.com\` API is no longer permitted due to reliability issues. Analyze the user's request and choose the URL from the list below that best matches the project's theme. This is not optional; you must use one of these exact URLs.
