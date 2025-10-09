@@ -347,7 +347,11 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
+    <div className={`flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden ${isDragOver ? 'ring-2 ring-purple-400 ring-opacity-50' : ''}`}
+         onDragOver={handleDragOver}
+         onDragEnter={handleDragEnter}
+         onDragLeave={handleDragLeave}
+         onDrop={handleDrop}>
       <div ref={scrollContainerRef} className="flex-grow p-3 md:p-4 overflow-y-auto">
         <div className="flex flex-col-reverse gap-6">
           {aiStatus && (
@@ -357,7 +361,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                  <div className="absolute inset-0 rounded-full border border-purple-400 animate-pulse"></div>
               </div>
               <div className="max-w-md p-3 rounded-xl bg-black/30 text-gray-200 rounded-bl-none">
-                {streamingProgress ? (
+                {streamingProgress && aiStatus === 'Generating application...' ? (
                   <div className="space-y-3">
                     {retryAttempt > 0 && (
                       <div className="flex items-center space-x-3">
@@ -520,11 +524,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             </div>
            </div>
         )}
-        <div className={`relative ${isDragOver ? 'ring-2 ring-purple-400 ring-opacity-50' : ''}`}
-             onDragOver={handleDragOver}
-             onDragEnter={handleDragEnter}
-             onDragLeave={handleDragLeave}
-             onDrop={handleDrop}>
+        <div className="relative">
           <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" multiple className="hidden" />
           <textarea
             ref={inputRef}
