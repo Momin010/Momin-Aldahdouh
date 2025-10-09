@@ -13,6 +13,7 @@ interface LandingPageProps {
 const LandingPage: React.FC<LandingPageProps> = ({ onStart, onSignInClick }) => {
   const [input, setInput] = useState('');
   const [attachment, setAttachment] = useState<FileAttachment | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const handleSend = () => {
     if (input.trim() || attachment) {
@@ -34,6 +35,56 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onSignInClick }) => 
     } else if (file) {
         alert("Please select an image file (e.g., PNG, JPG, GIF).");
     }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragOver) setIsDragOver(true);
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set to false if leaving the container entirely
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragOver(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+
+    if (imageFiles.length === 0) {
+      alert("Please drop an image file (e.g., PNG, JPG, GIF).");
+      return;
+    }
+
+    if (imageFiles.length > 1) {
+      alert("Please drop only one image file.");
+      return;
+    }
+
+    const file = imageFiles[0];
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      const base64String = (loadEvent.target?.result as string).split(',')[1];
+      if (base64String) {
+        setAttachment({ name: file.name, type: file.type, content: base64String });
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -77,12 +128,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onSignInClick }) => 
                     </button>
                  </div>
                )}
-              <div className="relative bg-black/30 backdrop-blur-lg border border-white/10 rounded-2xl shadow-2xl">
+              <div className={`relative bg-black/30 backdrop-blur-lg border border-white/10 rounded-2xl shadow-2xl ${isDragOver ? 'ring-2 ring-purple-400 ring-opacity-50' : ''}`}
+                   onDragOver={handleDragOver}
+                   onDragEnter={handleDragEnter}
+                   onDragLeave={handleDragLeave}
+                   onDrop={handleDrop}>
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="e.g., 'a portfolio website for a photographer'"
+                  placeholder={isDragOver ? "Drop an image here..." : "e.g., 'a portfolio website for a photographer'"}
                   className="w-full bg-transparent rounded-2xl p-4 pr-24 text-base resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-gray-400 transition-shadow"
                   rows={1}
                 />

@@ -20,22 +20,45 @@ const ModelMessageContent: React.FC<{
   const [animatedText, setAnimatedText] = useState(message.streaming ? '' : message.content);
   const animationCompletedRef = useRef(!message.streaming);
   const contentRef = useRef(message.content);
+  const charIndexRef = useRef(0);
+  const timeoutRef = useRef<number | null>(null);
+  const isVisibleRef = useRef(!document.hidden);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      isVisibleRef.current = !document.hidden;
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
   useEffect(() => {
     contentRef.current = message.content;
-    
+
     if (message.streaming && !animationCompletedRef.current) {
-      let charIndex = 0;
-      const intervalId = setInterval(() => {
-        charIndex++;
-        setAnimatedText(contentRef.current.substring(0, charIndex));
-        if (charIndex >= contentRef.current.length) {
-          clearInterval(intervalId);
+      const animate = () => {
+        charIndexRef.current++;
+        setAnimatedText(contentRef.current.substring(0, charIndexRef.current));
+
+        if (charIndexRef.current >= contentRef.current.length) {
           animationCompletedRef.current = true;
           setTimeout(() => onComplete(index), 100);
+          return;
         }
-      }, 20);
-      return () => clearInterval(intervalId);
+
+        // Use shorter delay when visible, longer when hidden
+        const delay = isVisibleRef.current ? 20 : 100;
+        timeoutRef.current = window.setTimeout(animate, delay);
+      };
+
+      timeoutRef.current = window.setTimeout(animate, 20);
+
+      return () => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+      };
     } else if (!message.streaming && !animationCompletedRef.current) {
         setAnimatedText(message.content);
         animationCompletedRef.current = true;
@@ -144,6 +167,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const [editingText, setEditingText] = useState('');
   const [dynamicStatus, setDynamicStatus] = useState<string | null>(aiStatus);
   const [imageModal, setImageModal] = useState<{src: string, alt: string} | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -201,12 +225,59 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
-    
+
     if (imageFiles.length === 0) {
       alert("Please select image files (e.g., PNG, JPG, GIF).");
       return;
     }
-    
+
+    imageFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (loadEvent) => {
+        const base64String = (loadEvent.target?.result as string).split(',')[1];
+        if (base64String) {
+          const newAttachment = { name: file.name, type: file.type, content: base64String };
+          setAttachments(prev => [...prev, newAttachment]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragOver) setIsDragOver(true);
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set to false if leaving the container entirely
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragOver(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+
+    if (imageFiles.length === 0) {
+      alert("Please drop image files (e.g., PNG, JPG, GIF).");
+      return;
+    }
+
     imageFiles.forEach(file => {
       const reader = new FileReader();
       reader.onload = (loadEvent) => {
@@ -449,14 +520,18 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             </div>
            </div>
         )}
-        <div className="relative">
+        <div className={`relative ${isDragOver ? 'ring-2 ring-purple-400 ring-opacity-50' : ''}`}
+             onDragOver={handleDragOver}
+             onDragEnter={handleDragEnter}
+             onDragLeave={handleDragLeave}
+             onDrop={handleDrop}>
           <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" multiple className="hidden" />
           <textarea
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Describe your web app or attach an image reference..."
+            placeholder={isDragOver ? "Drop images here..." : "Describe your web app or attach an image reference..."}
             className="w-full bg-black/40 rounded-xl p-2.5 md:p-3 pr-16 sm:pr-20 md:pr-24 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-gray-500 transition-shadow"
             rows={1}
             disabled={isLoading || isCancelling}
