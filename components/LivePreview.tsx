@@ -143,6 +143,7 @@ const LivePreview: React.FC<LivePreviewProps> = ({
   const handleOpenInNewTab = () => {
     const newWindow = window.open('', '_blank', 'width=1200,height=800');
     if (newWindow) {
+      const escapedSrcDoc = srcDoc.replace(/"/g, '"').replace(/'/g, ''');
       newWindow.document.write(`
         <!DOCTYPE html>
         <html>
@@ -154,7 +155,7 @@ const LivePreview: React.FC<LivePreviewProps> = ({
             </style>
           </head>
           <body>
-            <iframe srcdoc="${srcDoc.replace(/"/g, '"')}"></iframe>
+            <iframe srcdoc="${escapedSrcDoc}"></iframe>
           </body>
         </html>
       `);
@@ -179,7 +180,7 @@ const LivePreview: React.FC<LivePreviewProps> = ({
   return (
     <div className={containerClasses}>
       {isFullscreen && (
-        <div className="absolute top-4 right-4 z-50 flex gap-2">
+        <div className="absolute top-4 left-4 z-50 flex gap-2">
           <button
             onClick={handleOpenInNewTab}
             className="flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg bg-black/50 hover:bg-black/80 text-white backdrop-blur-md border border-white/20 transition-colors"

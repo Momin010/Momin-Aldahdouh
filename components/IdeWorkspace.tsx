@@ -798,7 +798,7 @@ DO NOT remove working code or features the user asked for.`;
   };
   
   return (
-    <div className="h-screen bg-transparent text-gray-200 font-sans flex overflow-hidden relative" onClick={handleCloseContextMenu}>
+    <div className="h-screen bg-black text-gray-200 font-sans flex overflow-hidden relative" onClick={handleCloseContextMenu}>
       {isGuest && (
         <div className="absolute top-0 left-0 right-0 z-30 bg-yellow-500/20 backdrop-blur-md border-b border-yellow-400/30 text-yellow-100 text-xs md:text-sm p-2 md:p-3 text-center flex items-center justify-center gap-2 md:gap-4 animate-fadeInUp">
             <Icon name="help" className="w-4 h-4 md:w-5 md:h-5 text-yellow-300 flex-shrink-0" />

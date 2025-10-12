@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+pimport React, { useState, useRef, useEffect } from 'react';
 import type { Message, FileAttachment, Plan } from '../types';
 import { Icon } from './Icon';
 import { STARTER_PROMPTS, DESIGN_BLUEPRINTS } from '../constants';
@@ -420,7 +420,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                     <div className="w-full h-full rounded-full bg-gradient-to-br from-purple-500 to-cyan-400 opacity-50" />
                   </div>
                 }
-                 <div className={`max-w-xs md:max-w-md p-3 md:p-4 rounded-2xl ${msg.role === 'user' ? 'bg-purple-600 text-white rounded-br-none' : 'bg-black/30 text-gray-200 rounded-bl-none'}`}
+                 <div className={`max-w-xs md:max-w-md p-3 md:p-4 rounded-2xl ${msg.role === 'user' ? 'bg-purple-600 text-white rounded-br-none' : 'bg-gray-800/80 text-gray-100 rounded-bl-none'}`}
                     onClick={(e) => isEditing && e.stopPropagation()}
                 >
                   {isEditing ? (
