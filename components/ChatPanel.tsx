@@ -347,7 +347,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   };
 
   return (
-    <div className={`flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden ${isDragOver ? 'ring-2 ring-purple-400 ring-opacity-50' : ''}`}
+    <div className={`flex flex-col h-full bg-white/5 backdrop-blur-xl md:border border-white/20 md:rounded-2xl overflow-hidden ${isDragOver ? 'ring-2 ring-purple-400 ring-opacity-50' : ''}`}
          onDragOver={handleDragOver}
          onDragEnter={handleDragEnter}
          onDragLeave={handleDragLeave}
@@ -360,7 +360,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                  <div className="w-full h-full rounded-full bg-gradient-to-br from-purple-500 to-cyan-400 opacity-50" />
                  <div className="absolute inset-0 rounded-full border border-purple-400 animate-pulse"></div>
               </div>
-              <div className="max-w-md p-3 rounded-xl bg-black/30 text-gray-200 rounded-bl-none">
+              <div className="max-w-md p-3 rounded-xl bg-white/10 backdrop-blur-xl text-gray-200 rounded-bl-none border border-white/20 shadow-lg">
                 {streamingProgress && aiStatus === 'Generating application...' ? (
                   <div className="space-y-3">
                     {retryAttempt > 0 && (
@@ -420,18 +420,18 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                     <div className="w-full h-full rounded-full bg-gradient-to-br from-purple-500 to-cyan-400 opacity-50" />
                   </div>
                 }
-                 <div className={`max-w-xs md:max-w-md p-3 md:p-4 rounded-2xl ${msg.role === 'user' ? 'bg-purple-600 text-white rounded-br-none' : 'bg-gray-800/80 text-gray-100 rounded-bl-none'}`}
+                 <div className={`max-w-xs md:max-w-md p-3 md:p-4 rounded-2xl ${msg.role === 'user' ? 'bg-purple-600 text-white rounded-br-none' : 'bg-white/10 backdrop-blur-xl text-gray-100 rounded-bl-none border border-white/20 shadow-lg'}`}
                     onClick={(e) => isEditing && e.stopPropagation()}
                 >
                   {isEditing ? (
                     <div className="space-y-3">
                         <textarea
-                            value={editingText}
-                            onChange={(e) => setEditingText(e.target.value)}
-                            className="w-full bg-purple-700/80 rounded-lg p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-400"
-                            rows={3}
-                            autoFocus
-                        />
+                                  value={editingText}
+                                  onChange={(e) => setEditingText(e.target.value)}
+                                  className="w-full bg-white/10 backdrop-blur-xl rounded-lg p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-400 border border-white/20"
+                                  rows={3}
+                                  autoFocus
+                              />
                         <div className="flex justify-end gap-2">
                             <button onClick={cancelEditing} className="px-3 py-1 text-xs font-semibold rounded-md bg-white/10 hover:bg-white/20">Cancel</button>
                             <button onClick={confirmEditing} className="px-3 py-1 text-xs font-semibold rounded-md bg-white text-purple-700 hover:bg-gray-200">Save & Submit</button>
@@ -532,7 +532,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={isDragOver ? "Drop images here..." : "Describe your web app or attach an image reference..."}
-            className="w-full bg-black/40 rounded-xl p-2.5 md:p-3 pr-16 sm:pr-20 md:pr-24 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-gray-500 transition-shadow"
+            className="w-full bg-white/5 backdrop-blur-xl rounded-xl p-2.5 md:p-3 pr-16 sm:pr-20 md:pr-24 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-gray-500 transition-shadow border border-white/20"
             rows={1}
             disabled={isLoading || isCancelling}
           />

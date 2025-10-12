@@ -800,12 +800,12 @@ DO NOT remove working code or features the user asked for.`;
   return (
     <div className="h-screen bg-black text-gray-200 font-sans flex overflow-hidden relative" onClick={handleCloseContextMenu}>
       {isGuest && (
-        <div className="absolute top-0 left-0 right-0 z-30 bg-yellow-500/20 backdrop-blur-md border-b border-yellow-400/30 text-yellow-100 text-xs md:text-sm p-2 md:p-3 text-center flex items-center justify-center gap-2 md:gap-4 animate-fadeInUp">
+        <div className="absolute top-0 left-0 right-0 z-30 bg-yellow-500/20 backdrop-blur-xl border-b border-yellow-400/30 text-yellow-100 text-xs md:text-sm p-2 md:p-3 text-center flex items-center justify-center gap-2 md:gap-4 animate-fadeInUp shadow-lg">
             <Icon name="help" className="w-4 h-4 md:w-5 md:h-5 text-yellow-300 flex-shrink-0" />
             <p className="flex-1 min-w-0">
                 <span className="font-bold">Temporary Session:</span> <span className="hidden sm:inline">Your work is stored in your browser and will be lost if you clear your data.</span><span className="sm:hidden">Data not saved permanently.</span>
             </p>
-            <button onClick={onSignUpClick} className="px-3 py-1 md:px-4 md:py-1.5 text-xs font-semibold rounded-md bg-white text-yellow-900 hover:bg-yellow-50 transition-colors flex-shrink-0">
+            <button onClick={onSignUpClick} className="px-3 py-1 md:px-4 md:py-1.5 text-xs font-semibold rounded-md bg-white text-yellow-900 hover:bg-yellow-50 backdrop-blur-xl border border-white/20 transition-colors flex-shrink-0 shadow-lg">
                 Sign Up
             </button>
         </div>
@@ -823,7 +823,7 @@ DO NOT remove working code or features the user asked for.`;
         onMouseEnter={() => setIsSidebarHovered(true)}
         className={`hidden md:block fixed bottom-4 left-4 z-50 cursor-pointer transition-opacity duration-300 ${isSidebarHovered ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
       >
-        <div className="p-3 rounded-full bg-purple-600/80 backdrop-blur-md border border-white/10 text-white shadow-lg">
+        <div className="p-3 rounded-full bg-purple-600/80 backdrop-blur-xl border border-white/20 text-white shadow-2xl">
             <Icon name="menu" className="w-6 h-6" />
         </div>
       </div>
