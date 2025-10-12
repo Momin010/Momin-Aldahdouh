@@ -1,4 +1,4 @@
-pimport React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { Message, FileAttachment, Plan } from '../types';
 import { Icon } from './Icon';
 import { STARTER_PROMPTS, DESIGN_BLUEPRINTS } from '../constants';
