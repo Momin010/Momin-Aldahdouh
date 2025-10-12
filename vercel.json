@@ -2,6 +2,9 @@
   "functions": {
     "api/gemini/chat.ts": {
       "maxDuration": 300
+    },
+    "api/images/search.ts": {
+      "maxDuration": 30
     }
   }
 }
