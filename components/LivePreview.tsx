@@ -143,7 +143,7 @@ const LivePreview: React.FC<LivePreviewProps> = ({
   const handleOpenInNewTab = () => {
     const newWindow = window.open('', '_blank', 'width=1200,height=800');
     if (newWindow) {
-      const escapedSrcDoc = srcDoc.replace(/"/g, '"').replace(/'/g, ''');
+      const escapedSrcDoc = srcDoc.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
       newWindow.document.write(`
         <!DOCTYPE html>
         <html>
