@@ -10,6 +10,12 @@ import ResizablePanel from './ResizablePanel';
 import Sidebar from './Sidebar';
 import { Icon } from './Icon';
 import MessageContextMenu from './MessageContextMenu';
+import VisualEditor from './VisualEditor';
+import TemplateLibrary from './TemplateLibrary';
+import StylePresets from './StylePresets';
+import { aiAgentService, AVAILABLE_AGENTS, AIAgent } from '../services/aiAgentService';
+import { deploymentService, DEPLOYMENT_PLATFORMS } from '../services/deploymentService';
+import { databaseService } from '../services/databaseService';
 import type { Message, Files, Change, FileAttachment, History, AppState, ConsoleMessage, Plan, Workspace, Project, User, Modification, ApiResponse } from '../types';
 import { sendAiChatRequest, resetChat } from '../services/geminiService';
 import { downloadProjectAsZip } from '../services/zipService';
@@ -72,6 +78,15 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({ visible: false, x: 0, y: 0, messageIndex: -1, message: null });
   const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
   const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
+
+  // New feature modals
+  const [isVisualEditorOpen, setIsVisualEditorOpen] = useState(false);
+  const [isTemplateLibraryOpen, setIsTemplateLibraryOpen] = useState(false);
+  const [isStylePresetsOpen, setIsStylePresetsOpen] = useState(false);
+  const [isAIAgentsOpen, setIsAIAgentsOpen] = useState(false);
+  const [isDeploymentOpen, setIsDeploymentOpen] = useState(false);
+  const [isDatabaseOpen, setIsDatabaseOpen] = useState(false);
+
   // Progress and retry tracking moved to projectRunStates for isolation
 
   const activeProject = workspace.projects.find(p => p.id === workspace.activeProjectId);
@@ -732,6 +747,76 @@ DO NOT remove working code or features the user asked for.`;
       handleNewProject();
   };
 
+  // New feature handlers
+  const handleTemplateSelect = (template: any) => {
+    setIsTemplateLibraryOpen(false);
+    // Apply template logic here
+    handleSendMessage(template.prompt);
+  };
+
+  const handleStylePresetApply = (preset: any) => {
+    // Apply style preset to current project
+    console.log('Applied style preset:', preset);
+  };
+
+  const handleAIAgentTask = async (agent: AIAgent, taskType: string) => {
+    if (!activeProject) return;
+
+    const taskId = aiAgentService.createTask(agent.id, taskType as any, `Using ${agent.name} for ${taskType}`);
+    setIsAIAgentsOpen(false);
+
+    try {
+      await aiAgentService.executeTask(taskId, [
+        ...currentState.chatMessages,
+        { role: 'user', content: `Use ${agent.name} to ${taskType} this project` }
+      ], currentState.files);
+    } catch (error) {
+      console.error('Agent task failed:', error);
+    }
+  };
+
+  const handleDeployProject = async (platform: string) => {
+    if (!activeProject) return;
+
+    try {
+      await deploymentService.deployProject(
+        currentState.files,
+        {
+          platform,
+          projectName: projectName,
+          buildSettings: {
+            buildCommand: 'npm run build',
+            outputDir: 'dist'
+          }
+        },
+        (progress, message) => {
+          console.log(`${progress}%: ${message}`);
+        }
+      );
+      setIsDeploymentOpen(false);
+    } catch (error) {
+      console.error('Deployment failed:', error);
+    }
+  };
+
+  const handleDatabaseAction = (action: string) => {
+    if (!activeProject) return;
+
+    switch (action) {
+      case 'create':
+        databaseService.createDatabase(`${projectName} Database`);
+        break;
+      case 'schema':
+        const schema = databaseService.generateSQLSchema();
+        console.log('Generated schema:', schema);
+        break;
+      case 'export':
+        const exportData = databaseService.exportDatabase();
+        console.log('Exported database:', exportData);
+        break;
+    }
+  };
+
   if (isPreviewFullscreen) {
     return (
       <div className="fixed inset-0 z-[100] bg-black">
@@ -765,18 +850,71 @@ DO NOT remove working code or features the user asked for.`;
 
     return (
       <div className="flex flex-col h-full overflow-hidden flex-grow">
-        <Header
-            projectName={projectName}
-            onRenameProject={handleRenameProject}
-            onDownloadProject={handleDownloadProject}
-            onPublish={isGuest ? onSignUpClick : () => setPublishModalOpen(true)}
-            onSettings={() => setSettingsModalOpen(true)}
-            onCheckErrors={handleCheckErrors}
-            mobileView={mobileView}
-            isProjectLoaded={isProjectLoaded}
-            onToggleView={() => setMobileView(prev => prev === 'chat' ? 'preview' : 'chat')}
-            onToggleSidebar={() => setMobileSidebarOpen(true)}
-        />
+        <div className="flex items-center justify-between p-4 bg-white/5 backdrop-blur-xl border-b border-white/10">
+          <Header
+              projectName={projectName}
+              onRenameProject={handleRenameProject}
+              onDownloadProject={handleDownloadProject}
+              onPublish={isGuest ? onSignUpClick : () => setPublishModalOpen(true)}
+              onSettings={() => setSettingsModalOpen(true)}
+              onCheckErrors={handleCheckErrors}
+              mobileView={mobileView}
+              isProjectLoaded={isProjectLoaded}
+              onToggleView={() => setMobileView(prev => prev === 'chat' ? 'preview' : 'chat')}
+              onToggleSidebar={() => setMobileSidebarOpen(true)}
+          />
+
+          {/* New Feature Toolbar */}
+          <div className="hidden md:flex items-center gap-2">
+            <button
+              onClick={() => setIsTemplateLibraryOpen(true)}
+              className="px-3 py-2 text-sm font-semibold rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+              title="Template Library"
+            >
+              📚 Templates
+            </button>
+
+            <button
+              onClick={() => setIsVisualEditorOpen(true)}
+              className="px-3 py-2 text-sm font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+              title="Visual Editor"
+            >
+              🎨 Visual Edit
+            </button>
+
+            <button
+              onClick={() => setIsStylePresetsOpen(true)}
+              className="px-3 py-2 text-sm font-semibold rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors"
+              title="Style Presets"
+            >
+              🎭 Styles
+            </button>
+
+            <button
+              onClick={() => setIsAIAgentsOpen(true)}
+              className="px-3 py-2 text-sm font-semibold rounded-lg bg-orange-600 hover:bg-orange-700 text-white transition-colors"
+              title="AI Agents"
+            >
+              🤖 AI Agents
+            </button>
+
+            <button
+              onClick={() => setIsDeploymentOpen(true)}
+              className="px-3 py-2 text-sm font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white transition-colors"
+              title="Deploy Project"
+            >
+              🚀 Deploy
+            </button>
+
+            <button
+              onClick={() => setIsDatabaseOpen(true)}
+              className="px-3 py-2 text-sm font-semibold rounded-lg bg-pink-600 hover:bg-pink-700 text-white transition-colors"
+              title="Database Manager"
+            >
+              🗄️ Database
+            </button>
+          </div>
+        </div>
         
         <main className="hidden md:flex flex-grow p-4 gap-4 overflow-hidden">
           <ResizablePanel direction="horizontal" initialSize={450} minSize={320}>
@@ -854,6 +992,204 @@ DO NOT remove working code or features the user asked for.`;
       )}
       <CommandPalette isOpen={isCommandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} files={files} onSelectFile={setActiveFile} onDownloadProject={handleDownloadProject} onPublish={isGuest ? onSignUpClick : () => setPublishModalOpen(true)} />
       <MessageContextMenu {...contextMenu} onClose={handleCloseContextMenu} onDelete={() => handleDeleteMessage(contextMenu.messageIndex)} onEdit={handleEditMessage} />
+
+      {/* New Feature Modals */}
+      {isTemplateLibraryOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="relative max-w-6xl w-full max-h-[90vh] overflow-hidden">
+            <TemplateLibrary
+              onSelectTemplate={handleTemplateSelect}
+              className="max-h-full"
+            />
+            <button
+              onClick={() => setIsTemplateLibraryOpen(false)}
+              className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+            >
+              <Icon name="close" className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isVisualEditorOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="relative max-w-7xl w-full max-h-[90vh] overflow-hidden">
+            <VisualEditor
+              htmlContent={standaloneHtml || previewHtml || ''}
+              onContentChange={(content) => {
+                if (activeProject) {
+                  updateProjectById(activeProject.id, project => {
+                    const newHistory = { ...project.history };
+                    const newVersions = [...newHistory.versions];
+                    const currentVersion = { ...newVersions[project.history.currentIndex] };
+                    currentVersion.standaloneHtml = content;
+                    newVersions[project.history.currentIndex] = currentVersion;
+                    newHistory.versions = newVersions;
+                    return { ...project, history: newHistory };
+                  });
+                }
+              }}
+              className="max-h-full"
+            />
+            <button
+              onClick={() => setIsVisualEditorOpen(false)}
+              className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+            >
+              <Icon name="close" className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isStylePresetsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="relative max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <StylePresets
+              onApplyPreset={handleStylePresetApply}
+              className="max-h-full"
+            />
+            <button
+              onClick={() => setIsStylePresetsOpen(false)}
+              className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+            >
+              <Icon name="close" className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isAIAgentsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="relative max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/20 p-6 max-h-full overflow-y-auto">
+              <h2 className="text-2xl font-bold text-white mb-6">AI Agents</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {AVAILABLE_AGENTS.map(agent => (
+                  <div key={agent.id} className="bg-white/5 rounded-xl border border-white/10 p-4 hover:bg-white/10 transition-colors">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-2xl">{agent.icon}</span>
+                      <div>
+                        <h3 className="font-bold text-white">{agent.name}</h3>
+                        <p className="text-gray-400 text-sm">{agent.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {agent.capabilities.slice(0, 3).map(cap => (
+                        <span key={cap} className="px-2 py-1 text-xs bg-purple-500/20 text-purple-300 rounded-full">
+                          {cap}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleAIAgentTask(agent, 'code_generation')}
+                        className="flex-1 py-2 px-3 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                      >
+                        Generate
+                      </button>
+                      <button
+                        onClick={() => handleAIAgentTask(agent, 'debugging')}
+                        className="flex-1 py-2 px-3 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                      >
+                        Debug
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <button
+              onClick={() => setIsAIAgentsOpen(false)}
+              className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+            >
+              <Icon name="close" className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isDeploymentOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="relative max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/20 p-6 max-h-full overflow-y-auto">
+              <h2 className="text-2xl font-bold text-white mb-6">Deploy Project</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {DEPLOYMENT_PLATFORMS.map(platform => (
+                  <div key={platform.id} className="bg-white/5 rounded-xl border border-white/10 p-4 hover:bg-white/10 transition-colors">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-2xl">{platform.icon}</span>
+                      <div>
+                        <h3 className="font-bold text-white">{platform.name}</h3>
+                        <p className="text-gray-400 text-sm">{platform.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1 mb-4">
+                      {platform.features.slice(0, 2).map(feature => (
+                        <span key={feature} className="px-2 py-1 text-xs bg-cyan-500/20 text-cyan-300 rounded-full">
+                          {feature}
+                        </span>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => handleDeployProject(platform.id)}
+                      className="w-full py-2 px-3 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                    >
+                      Deploy to {platform.name}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <button
+              onClick={() => setIsDeploymentOpen(false)}
+              className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+            >
+              <Icon name="close" className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isDatabaseOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="relative max-w-5xl w-full max-h-[90vh] overflow-hidden">
+            <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/20 p-6 max-h-full overflow-y-auto">
+              <h2 className="text-2xl font-bold text-white mb-6">Database Manager</h2>
+              <div className="flex gap-3 mb-6">
+                <button
+                  onClick={() => handleDatabaseAction('create')}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Create Database
+                </button>
+                <button
+                  onClick={() => handleDatabaseAction('schema')}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Generate Schema
+                </button>
+                <button
+                  onClick={() => handleDatabaseAction('export')}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Export Data
+                </button>
+              </div>
+              <div className="bg-black/30 rounded-lg p-4">
+                <p className="text-gray-400 text-sm">
+                  Database management features will be displayed here. Current database: {databaseService.getCurrentDatabase()?.name || 'None'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsDatabaseOpen(false)}
+              className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+            >
+              <Icon name="close" className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
