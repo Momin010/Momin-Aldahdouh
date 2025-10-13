@@ -102,32 +102,20 @@ interface ChatPanelProps {
 
 const LOADING_TEXTS: Record<string, string[]> = {
   'MominAI is working...': [
-    'Thinking...',
-    'Analyzing your request...',
-    'Consulting the digital muses...',
-    'Warming up the circuits...',
+    'Receiving data...',
   ],
   'Generating application...': [
-    'Building React components...',
-    'Creating standalone preview...',
-    'Finalizing file structure...',
-    'Almost ready...',
+    'Receiving data...',
   ],
   'Applying changes...': [
-    'Integrating new code...',
-    'Applying modifications...',
-    'Updating file structure...',
+    'Receiving data...',
   ],
   'Verifying generated code...': [
-    'Running diagnostics...',
-    'Checking for syntax ghosts...',
-    'Ensuring everything is pixel-perfect...',
+    'Receiving data...',
   ],
-   'Errors detected. Attempting to fix...': [
-    'Engaging self-correction protocols...',
-    'Debugging the anomalies...',
-    'Rerouting neural pathways...',
-  ]
+    'Errors detected. Attempting to fix...': [
+     'Receiving data...',
+   ]
 };
 
 const PlanDisplay: React.FC<{ plan: Plan }> = ({ plan }) => (
@@ -392,9 +380,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                       {Math.round(streamingProgress?.progress || 0)}% complete
                     </div>
                   </div>
-                  <p className="text-sm text-gray-300">
-                    {dynamicStatus}
-                  </p>
                 </div>
               </div>
             </div>
