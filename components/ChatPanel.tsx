@@ -361,35 +361,21 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                  <div className="absolute inset-0 rounded-full border border-purple-400 animate-pulse"></div>
               </div>
               <div className="max-w-md p-3 rounded-xl bg-white/10 backdrop-blur-xl text-gray-200 rounded-bl-none border border-white/20 shadow-lg">
-                {streamingProgress && aiStatus === 'Generating application...' ? (
-                  <div className="space-y-3">
-                    {retryAttempt > 0 && (
-                      <div className="flex items-center space-x-3">
-                        <p className="text-sm text-yellow-400 font-medium">
-                          Retry {retryAttempt}
-                        </p>
-                      </div>
-                    )}
-                    <ProgressBar
-                      progress={streamingProgress.progress}
-                      receivedBytes={streamingProgress.receivedBytes}
-                      totalBytes={streamingProgress.totalBytes}
-                      className="w-full"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex items-center space-x-3">
-                    {isLoading && <div className="loader-atom"></div>}
-                    <p className="text-sm text-gray-300">
-                      {dynamicStatus}
-                      {retryAttempt > 0 && (
-                        <span className="ml-2 text-yellow-400 font-medium">
-                          (Retry {retryAttempt})
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                )}
+                <div className="space-y-3">
+                  {retryAttempt > 0 && (
+                    <div className="flex items-center space-x-3">
+                      <p className="text-sm text-yellow-400 font-medium">
+                        Retry {retryAttempt}
+                      </p>
+                    </div>
+                  )}
+                  <ProgressBar
+                    progress={streamingProgress?.progress || 0}
+                    receivedBytes={streamingProgress?.receivedBytes}
+                    totalBytes={streamingProgress?.totalBytes}
+                    className="w-full"
+                  />
+                </div>
               </div>
             </div>
           )}

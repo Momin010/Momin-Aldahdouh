@@ -23,23 +23,11 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
 
   return (
     <div className={`w-full ${className}`}>
-      <div className="flex justify-between items-center mb-2 text-sm text-gray-400">
-        <span>Receiving data...</span>
-        {receivedBytes !== undefined && totalBytes !== undefined && (
-          <span>{formatBytes(receivedBytes)} / {formatBytes(totalBytes)}</span>
-        )}
-        {receivedBytes !== undefined && totalBytes === undefined && (
-          <span>{formatBytes(receivedBytes)} received</span>
-        )}
-      </div>
-      <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+      <div className="w-full bg-white/10 backdrop-blur-xl rounded-full h-2 overflow-hidden border border-white/20">
         <div
-          className="h-full bg-gradient-to-r from-purple-500 to-cyan-500 transition-all duration-300 ease-out rounded-full"
+          className="h-full bg-white/20 transition-all duration-300 ease-out rounded-full"
           style={{ width: `${Math.min(progress, 100)}%` }}
         />
-      </div>
-      <div className="text-center mt-2 text-sm text-gray-500">
-        {progress.toFixed(1)}% complete
       </div>
     </div>
   );
