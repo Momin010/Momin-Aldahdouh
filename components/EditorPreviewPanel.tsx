@@ -50,7 +50,7 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
-      <div className="flex-grow overflow-hidden relative">
+      <div className="flex-grow overflow-auto relative">
         {view === 'preview' && (
           <LivePreview 
             htmlContent={displayHtml} 

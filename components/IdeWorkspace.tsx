@@ -863,14 +863,14 @@ DO NOT remove working code or features the user asked for.`;
 
     return (
       <div className="flex flex-col h-full overflow-hidden flex-grow">
-        <main className="hidden md:flex flex-grow p-4 gap-4 overflow-hidden">
+        <main className="hidden md:flex flex-grow p-4 gap-4 overflow-auto">
           <ResizablePanel direction="horizontal" initialSize={450} minSize={320}>
             <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} aiStatus={activeProjectRunState?.aiStatus || null} onStreamingComplete={onStreamingCompleteForActive} hasGeneratedCode={hasGeneratedCode} onNavigateToPreview={handleNavigateToPreview} onCancelRequest={handleCancelRequest} isCancelling={activeProjectRunState?.isCancelling || false} onContextMenu={handleOpenContextMenu} onDeleteMessage={handleDeleteMessage} onResubmitMessage={handleResubmitMessage} editingIndex={editingMessageIndex} onCancelEditing={() => setEditingMessageIndex(null)} stopwatchSeconds={activeProjectRunState?.stopwatchSeconds || 0} isStopwatchRunning={activeProjectRunState?.isStopwatchRunning || false} streamingProgress={activeProjectRunState?.streamingProgress || null} retryAttempt={activeProjectRunState?.retryAttempt || 0} />
             <EditorPreviewPanel device={device} onDeviceChange={setDevice} files={files} activeFile={activeFile} onSelectFile={setActiveFile} onCodeChange={handleCodeChange} previewHtml={previewHtml} standaloneHtml={standaloneHtml} onBackToChat={() => {}} onToggleFullscreen={handleToggleFullscreen} consoleLogs={consoleLogs} onNewLog={handleNewLog} onClearConsole={() => setConsoleLogs([])} view={view} />
           </ResizablePanel>
         </main>
 
-        <main className="md:hidden flex flex-col flex-grow p-0 overflow-hidden">
+        <main className="md:hidden flex flex-col flex-grow p-0 overflow-auto">
           <div className={`${mobileView === 'preview' ? 'hidden' : 'flex'} flex-col w-full h-full`}>
             <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} aiStatus={activeProjectRunState?.aiStatus || null} onStreamingComplete={onStreamingCompleteForActive} hasGeneratedCode={hasGeneratedCode} onNavigateToPreview={handleNavigateToPreview} onCancelRequest={handleCancelRequest} isCancelling={activeProjectRunState?.isCancelling || false} onContextMenu={handleOpenContextMenu} onDeleteMessage={handleDeleteMessage} onResubmitMessage={handleResubmitMessage} editingIndex={editingMessageIndex} onCancelEditing={() => setEditingMessageIndex(null)} stopwatchSeconds={activeProjectRunState?.stopwatchSeconds || 0} isStopwatchRunning={activeProjectRunState?.isStopwatchRunning || false} streamingProgress={activeProjectRunState?.streamingProgress || null} retryAttempt={activeProjectRunState?.retryAttempt || 0} />
           </div>
@@ -883,7 +883,7 @@ DO NOT remove working code or features the user asked for.`;
   };
   
   return (
-    <div className="h-screen bg-black text-gray-200 font-sans flex overflow-hidden relative" onClick={handleCloseContextMenu}>
+    <div className="h-screen bg-black text-gray-200 font-sans flex flex-col overflow-hidden relative" onClick={handleCloseContextMenu}>
       {isGuest && (
         <div className="absolute top-0 left-0 right-0 z-30 bg-yellow-500/20 backdrop-blur-xl border-b border-yellow-400/30 text-yellow-100 text-xs md:text-sm p-2 md:p-3 text-center flex items-center justify-center gap-2 md:gap-4 animate-fadeInUp shadow-lg">
             <Icon name="help" className="w-4 h-4 md:w-5 md:h-5 text-yellow-300 flex-shrink-0" />
@@ -920,7 +920,7 @@ DO NOT remove working code or features the user asked for.`;
           </div>
       </div>
       
-      <div className={`flex-grow h-full flex flex-col ${isGuest ? 'pt-12 md:pt-14' : ''}`}>
+      <div className={`flex-grow h-full flex flex-col overflow-hidden ${isGuest ? 'pt-12 md:pt-14' : ''}`}>
         <ConsolidatedHeader
           projectName={projectName}
           onRenameProject={handleRenameProject}
@@ -945,7 +945,7 @@ DO NOT remove working code or features the user asked for.`;
           onToggleFullscreen={handleToggleFullscreen}
           userEmail={user?.email}
         />
-        <div className="flex-grow">
+        <div className="flex-grow overflow-auto">
           {renderWorkspaceContent()}
         </div>
       </div>

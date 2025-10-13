@@ -138,7 +138,7 @@ const LivePreview: React.FC<LivePreviewProps> = ({
 
   const containerClasses = isFullscreen
     ? "flex flex-col h-full bg-black relative"
-    : "flex flex-col h-full overflow-hidden";
+    : "flex flex-col h-full overflow-auto";
 
   const handleOpenInNewTab = () => {
     const newWindow = window.open('', '_blank', 'width=1200,height=800');
@@ -164,7 +164,7 @@ const LivePreview: React.FC<LivePreviewProps> = ({
   };
     
   const previewIframe = (
-    <div className="w-full h-full bg-gray-800/50 flex justify-center overflow-auto p-4">
+    <div className="w-full h-full bg-gray-800/50 flex justify-center overflow-auto p-4 min-h-0">
       <div style={deviceStyles[device]} className="h-full shadow-2xl bg-white flex-shrink-0 transition-all duration-300 ease-in-out">
         <iframe
           key={htmlContent} // Force re-render on content change

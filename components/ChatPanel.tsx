@@ -360,7 +360,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
          onDragEnter={handleDragEnter}
          onDragLeave={handleDragLeave}
          onDrop={handleDrop}>
-      <div ref={scrollContainerRef} className="flex-grow p-3 md:p-4 overflow-y-auto">
+      <div ref={scrollContainerRef} className="flex-grow p-3 md:p-4 overflow-y-auto min-h-0">
         <div className="flex flex-col-reverse gap-6">
           {aiStatus && (
             <div className="flex items-start gap-3">

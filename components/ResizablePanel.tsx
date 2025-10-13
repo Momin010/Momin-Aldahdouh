@@ -57,7 +57,7 @@ const ResizablePanel: React.FC<ResizablePanelProps> = ({
 
   return (
     <div ref={wrapperRef} className={`flex flex-grow h-full ${isHorizontal ? 'flex-row' : 'flex-col'} ${className}`}>
-      <div style={firstPanelStyle} className="flex-shrink-0 overflow-hidden relative">
+      <div style={firstPanelStyle} className="flex-shrink-0 overflow-auto relative">
         {children[0]}
       </div>
       <div
@@ -65,7 +65,7 @@ const ResizablePanel: React.FC<ResizablePanelProps> = ({
         className={`flex-shrink-0 bg-white/5 hover:bg-purple-500/50 transition-colors z-10 ${resizerClass}`}
         aria-hidden="true"
       />
-      <div className="flex-grow overflow-hidden relative">
+      <div className="flex-grow overflow-auto relative">
         {children[1]}
       </div>
     </div>
