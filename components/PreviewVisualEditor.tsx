@@ -94,6 +94,7 @@ const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
     const handleMouseOver = (e: MouseEvent) => {
       if (isResizing) return;
 
+      console.log('Mouse over event in iframe:', e.target);
       const target = e.target as Element;
       if (target && target !== iframeDoc.body) {
         e.preventDefault();
@@ -111,18 +112,21 @@ const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
           rect
         };
 
+        console.log('Setting hovered element:', element);
         setEditorState(prev => ({ ...prev, hoveredElement: element }));
       }
     };
 
     const handleMouseOut = (e: MouseEvent) => {
       if (isResizing) return;
+      console.log('Mouse out event in iframe');
       setEditorState(prev => ({ ...prev, hoveredElement: null }));
     };
 
     const handleClick = (e: MouseEvent) => {
       if (isResizing) return;
 
+      console.log('Click event in iframe:', e.target);
       const target = e.target as Element;
       if (target && target !== iframeDoc.body) {
         e.preventDefault();
@@ -140,6 +144,7 @@ const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
           rect
         };
 
+        console.log('Setting selected element:', element);
         setEditorState(prev => ({
           ...prev,
           selectedElement: element,
