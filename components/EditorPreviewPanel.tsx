@@ -59,14 +59,15 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
   
   const displayHtml = standaloneHtml || previewHtml;
 
-  // Only show content for preview and code views
-  if (view !== 'preview' && view !== 'code') {
+  // Show placeholder only when there's no content to display in preview mode
+  if (!displayHtml && view === 'preview') {
     return (
       <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
         <div className="flex-grow flex items-center justify-center text-white">
           <div className="text-center">
             <Icon name="eye" className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400">Switch to Preview or Code view to see content</p>
+            <h3 className="text-xl font-semibold mb-2">Live Preview</h3>
+            <p className="text-gray-400">Your generated project preview will appear here.</p>
           </div>
         </div>
       </div>
@@ -74,7 +75,7 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
   }
 
   // Database View Content
-  if (currentView === 'database' && onDatabaseAction) {
+  if (view === 'database') {
     return (
       <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
         <div className="flex-grow p-6 overflow-auto">
@@ -82,19 +83,19 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <button
-                onClick={() => onDatabaseAction('create')}
+                onClick={() => onDatabaseAction && onDatabaseAction('create')}
                 className="p-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
               >
                 Create Database
               </button>
               <button
-                onClick={() => onDatabaseAction('schema')}
+                onClick={() => onDatabaseAction && onDatabaseAction('schema')}
                 className="p-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
               >
                 Generate Schema
               </button>
               <button
-                onClick={() => onDatabaseAction('export')}
+                onClick={() => onDatabaseAction && onDatabaseAction('export')}
                 className="p-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors"
               >
                 Export Data
@@ -112,15 +113,15 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
   }
 
   // Visual Editor View Content
-  if (currentView === 'visual-editor' && onVisualEditorChange && onVisualEditModeChange) {
+  if (view === 'visual-editor') {
     return (
       <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
         <div className="flex-grow overflow-hidden">
           <VisualEditor
             htmlContent={standaloneHtml || previewHtml || ''}
-            onContentChange={onVisualEditorChange}
+            onContentChange={onVisualEditorChange || (() => {})}
             isEditMode={isVisualEditMode || false}
-            onEditModeChange={onVisualEditModeChange}
+            onEditModeChange={onVisualEditModeChange || (() => {})}
             className="h-full"
           />
         </div>
@@ -131,7 +132,7 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
   return (
     <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
       <div className="flex-grow overflow-auto relative">
-        {currentView === 'preview' && (
+        {view === 'preview' && (
           <LivePreview
             htmlContent={displayHtml}
             device={device}
@@ -140,7 +141,7 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
             onClearLogs={onClearConsole}
           />
         )}
-        {currentView === 'code' && (
+        {view === 'code' && (
           <div className="h-full w-full">
             {/* Desktop: Resizable horizontal panel */}
             <div className="hidden md:flex h-full">
