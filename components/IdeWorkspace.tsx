@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import ChatPanel from './ChatPanel';
-import Header from './Header';
+import ConsolidatedHeader from './ConsolidatedHeader';
 import EditorPreviewPanel from './EditorPreviewPanel';
 import PublishModal from './PublishModal';
 import CommandPalette from './CommandPalette';
@@ -16,6 +16,8 @@ import StylePresets from './StylePresets';
 import { aiAgentService, AVAILABLE_AGENTS, AIAgent } from '../services/aiAgentService';
 import { deploymentService, DEPLOYMENT_PLATFORMS } from '../services/deploymentService';
 import { databaseService } from '../services/databaseService';
+import { ThemeProvider } from '../lib/themeContext';
+import { CreditService } from '../lib/creditService';
 import type { Message, Files, Change, FileAttachment, History, AppState, ConsoleMessage, Plan, Workspace, Project, User, Modification, ApiResponse } from '../types';
 import { sendAiChatRequest, resetChat } from '../services/geminiService';
 import { downloadProjectAsZip } from '../services/zipService';
@@ -68,6 +70,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
   const [projectRunStates, setProjectRunStates] = useState<Record<string, ProjectRunState>>({});
   
   const [mobileView, setMobileView] = useState<MobileView>('chat');
+  const [view, setView] = useState<'code' | 'preview'>('preview');
   const [isPublishModalOpen, setPublishModalOpen] = useState(false);
   const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
@@ -451,18 +454,27 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
   const handleSendMessage = useCallback(async (message: string, attachments?: FileAttachment[]) => {
     if (!activeProject || !currentState) return;
     const projectId = activeProject.id;
-    
-    const userMessage: Message = { 
-      role: 'user', 
+
+    // Check credits before sending message
+    if (currentUser) {
+      const hasCredits = CreditService.useCredit(currentUser.email);
+      if (!hasCredits) {
+        alert('You have reached your daily limit of 10 messages. Please try again tomorrow.');
+        return;
+      }
+    }
+
+    const userMessage: Message = {
+      role: 'user',
       content: message,
       attachments: attachments
     };
     addHistoryStateForProject(projectId, prev => ({ ...prev, chatMessages: [...prev.chatMessages, userMessage] }));
-    
+
     const messagesForAI = [...currentState.chatMessages, userMessage];
     triggerAiResponse(projectId, messagesForAI, attachments || null);
 
-  }, [activeProject, currentState, addHistoryStateForProject, triggerAiResponse]);
+  }, [activeProject, currentState, addHistoryStateForProject, triggerAiResponse, currentUser]);
 
   const handleNewProject = useCallback(async (name: string = 'New Project', andThenSend?: {prompt: string, attachment: FileAttachment | null}) => {
       try {
@@ -851,29 +863,10 @@ DO NOT remove working code or features the user asked for.`;
 
     return (
       <div className="flex flex-col h-full overflow-hidden flex-grow">
-        <Header
-            projectName={projectName}
-            onRenameProject={handleRenameProject}
-            onDownloadProject={handleDownloadProject}
-            onPublish={isGuest ? onSignUpClick : () => setPublishModalOpen(true)}
-            onSettings={() => setSettingsModalOpen(true)}
-            onCheckErrors={handleCheckErrors}
-            mobileView={mobileView}
-            isProjectLoaded={isProjectLoaded}
-            onToggleView={() => setMobileView(prev => prev === 'chat' ? 'preview' : 'chat')}
-            onToggleSidebar={() => setMobileSidebarOpen(true)}
-            onTemplateLibrary={() => setIsTemplateLibraryOpen(true)}
-            onVisualEditor={() => setIsVisualEditorOpen(true)}
-            onStylePresets={() => setIsStylePresetsOpen(true)}
-            onAIAgents={() => setIsAIAgentsOpen(true)}
-            onDeployment={() => setIsDeploymentOpen(true)}
-            onDatabase={() => setIsDatabaseOpen(true)}
-        />
-        
         <main className="hidden md:flex flex-grow p-4 gap-4 overflow-hidden">
           <ResizablePanel direction="horizontal" initialSize={450} minSize={320}>
             <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} aiStatus={activeProjectRunState?.aiStatus || null} onStreamingComplete={onStreamingCompleteForActive} hasGeneratedCode={hasGeneratedCode} onNavigateToPreview={handleNavigateToPreview} onCancelRequest={handleCancelRequest} isCancelling={activeProjectRunState?.isCancelling || false} onContextMenu={handleOpenContextMenu} onDeleteMessage={handleDeleteMessage} onResubmitMessage={handleResubmitMessage} editingIndex={editingMessageIndex} onCancelEditing={() => setEditingMessageIndex(null)} stopwatchSeconds={activeProjectRunState?.stopwatchSeconds || 0} isStopwatchRunning={activeProjectRunState?.isStopwatchRunning || false} streamingProgress={activeProjectRunState?.streamingProgress || null} retryAttempt={activeProjectRunState?.retryAttempt || 0} />
-            <EditorPreviewPanel device={device} onDeviceChange={setDevice} files={files} activeFile={activeFile} onSelectFile={setActiveFile} onCodeChange={handleCodeChange} previewHtml={previewHtml} standaloneHtml={standaloneHtml} onBackToChat={() => {}} onToggleFullscreen={handleToggleFullscreen} consoleLogs={consoleLogs} onNewLog={handleNewLog} onClearConsole={() => setConsoleLogs([])} />
+            <EditorPreviewPanel device={device} onDeviceChange={setDevice} files={files} activeFile={activeFile} onSelectFile={setActiveFile} onCodeChange={handleCodeChange} previewHtml={previewHtml} standaloneHtml={standaloneHtml} onBackToChat={() => {}} onToggleFullscreen={handleToggleFullscreen} consoleLogs={consoleLogs} onNewLog={handleNewLog} onClearConsole={() => setConsoleLogs([])} view={view} />
           </ResizablePanel>
         </main>
 
@@ -927,8 +920,34 @@ DO NOT remove working code or features the user asked for.`;
           </div>
       </div>
       
-      <div className={`flex-grow h-full ${isGuest ? 'pt-12 md:pt-14' : ''}`}>
-        {renderWorkspaceContent()}
+      <div className={`flex-grow h-full flex flex-col ${isGuest ? 'pt-12 md:pt-14' : ''}`}>
+        <ConsolidatedHeader
+          projectName={projectName}
+          onRenameProject={handleRenameProject}
+          onDownloadProject={handleDownloadProject}
+          onPublish={isGuest ? onSignUpClick : () => setPublishModalOpen(true)}
+          onSettings={() => setSettingsModalOpen(true)}
+          onCheckErrors={handleCheckErrors}
+          mobileView={mobileView}
+          isProjectLoaded={isProjectLoaded}
+          onToggleView={() => setMobileView(prev => prev === 'chat' ? 'preview' : 'chat')}
+          onToggleSidebar={() => setMobileSidebarOpen(true)}
+          onTemplateLibrary={() => setIsTemplateLibraryOpen(true)}
+          onVisualEditor={() => setIsVisualEditorOpen(true)}
+          onStylePresets={() => setIsStylePresetsOpen(true)}
+          onAIAgents={() => setIsAIAgentsOpen(true)}
+          onDeployment={() => setIsDeploymentOpen(true)}
+          onDatabase={() => setIsDatabaseOpen(true)}
+          device={device}
+          onDeviceChange={setDevice}
+          view={view}
+          onViewChange={setView}
+          onToggleFullscreen={handleToggleFullscreen}
+          userEmail={currentUser?.email}
+        />
+        <div className="flex-grow">
+          {renderWorkspaceContent()}
+        </div>
       </div>
 
       {isPublishModalOpen && activeProject && <PublishModal projectName={projectName} files={files} onClose={() => setPublishModalOpen(false)} />}

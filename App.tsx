@@ -5,6 +5,7 @@ import IdeWorkspace from './components/IdeWorkspace';
 import AuthModal from './components/AuthModal';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
+import { ThemeProvider } from './lib/themeContext';
 import * as authService from './services/authService';
 import * as projectService from './services/projectService';
 import usePersistentState from './hooks/usePersistentState';
@@ -174,30 +175,32 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      {workspaceForRender ? (
-        <IdeWorkspace
-          key={currentUser?.email || 'guest'}
-          user={currentUser}
-          workspace={workspaceForRender}
-          onWorkspaceChange={handleWorkspaceChange}
-          onSignOut={handleSignOut}
-          onSignUpClick={() => handleOpenAuthModal('signUp')}
-          initialPrompt={initialPrompt}
-          clearInitialPrompt={() => setInitialPrompt(null)}
-          initialAttachment={initialAttachment}
-          clearInitialAttachment={() => setInitialAttachment(null)}
+      <ThemeProvider>
+        {workspaceForRender ? (
+          <IdeWorkspace
+            key={currentUser?.email || 'guest'}
+            user={currentUser}
+            workspace={workspaceForRender}
+            onWorkspaceChange={handleWorkspaceChange}
+            onSignOut={handleSignOut}
+            onSignUpClick={() => handleOpenAuthModal('signUp')}
+            initialPrompt={initialPrompt}
+            clearInitialPrompt={() => setInitialPrompt(null)}
+            initialAttachment={initialAttachment}
+            clearInitialAttachment={() => setInitialAttachment(null)}
+          />
+        ) : (
+          <LandingPage onStart={handleStartFromLanding} onSignInClick={() => handleOpenAuthModal('signIn')} />
+        )}
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          onSignIn={handleAuthSuccess}
+          onSignUp={handleAuthSuccess}
+          initialMode={authMode}
+          setMode={setAuthMode}
         />
-      ) : (
-        <LandingPage onStart={handleStartFromLanding} onSignInClick={() => handleOpenAuthModal('signIn')} />
-      )}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        onSignIn={handleAuthSuccess}
-        onSignUp={handleAuthSuccess}
-        initialMode={authMode}
-        setMode={setAuthMode}
-      />
+      </ThemeProvider>
     </ErrorBoundary>
   );
 };

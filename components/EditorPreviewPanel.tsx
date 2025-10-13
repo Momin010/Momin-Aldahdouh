@@ -20,6 +20,7 @@ interface EditorPreviewPanelProps {
   onClearConsole: () => void;
   device: Device;
   onDeviceChange: (device: Device) => void;
+  view: 'code' | 'preview';
 }
 
 const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
@@ -36,8 +37,8 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
   onClearConsole,
   device,
   onDeviceChange,
+  view,
 }) => {
-  const [view, setView] = useState<'code' | 'preview'>('preview');
   
   const deviceButtons: { name: Device, icon: string }[] = [
     { name: 'desktop', icon: 'desktop' },
@@ -49,94 +50,6 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
-      <div className="flex items-center justify-between p-1.5 sm:p-2 border-b border-white/10 flex-shrink-0 gap-2">
-        <div className="flex items-center gap-1 bg-black/20 p-1 rounded-xl">
-          <button
-            onClick={() => setView('code')}
-            className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-              view === 'code' ? 'bg-white/10' : 'text-gray-400 hover:bg-white/5'
-            }`}
-            aria-pressed={view === 'code'}
-          >
-            <Icon name="code" className="w-4 h-4" />
-            <span className="hidden sm:inline">Code</span>
-          </button>
-          <button
-            onClick={() => setView('preview')}
-            className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-              view === 'preview' ? 'bg-purple-600' : 'text-gray-400 hover:bg-white/5'
-            }`}
-            aria-pressed={view === 'preview'}
-          >
-            <Icon name="eye" className="w-4 h-4" />
-            <span className="hidden sm:inline">Preview</span>
-          </button>
-        </div>
-        
-        {view === 'preview' && (
-           <div className='hidden sm:flex items-center gap-1 bg-black/20 p-1 rounded-xl'>
-            {deviceButtons.map(({ name, icon }) => (
-              <button
-                key={name}
-                onClick={() => onDeviceChange(name)}
-                className={`p-1.5 rounded-lg transition-colors ${
-                  device === name ? 'bg-purple-600 text-white' : 'text-gray-400 hover:bg-white/10 hover:text-white'
-                }`}
-                aria-label={`Switch to ${name} view`}
-                aria-pressed={device === name}
-              >
-                <Icon name={icon} className="w-5 h-5" />
-              </button>
-            ))}
-          </div>
-        )}
-        
-        <div className="flex-1" />
-
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => {
-              const newWindow = window.open('', '_blank', 'width=1200,height=800');
-              if (newWindow) {
-                const srcDoc = `<script>
-                  const originalConsole = { ...window.console };
-                  const levels = ['log', 'warn', 'error', 'info'];
-
-                  levels.forEach(level => {
-                    window.console[level] = (...args) => {
-                      originalConsole[level](...args);
-                    };
-                  });
-                </script>${displayHtml}`;
-                newWindow.document.write(`
-                  <!DOCTYPE html>
-                  <html>
-                    <head>
-                      <title>Live Preview - Fullscreen</title>
-                      <style>
-                        body { margin: 0; padding: 0; background: white; }
-                        iframe { width: 100vw; height: 100vh; border: none; }
-                      </style>
-                    </head>
-                    <body>
-                      <iframe srcdoc="${srcDoc.replace(/"/g, '"')}"></iframe>
-                    </body>
-                  </html>
-                `);
-                newWindow.document.close();
-              }
-            }}
-            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10"
-            aria-label="Open in new tab"
-          >
-            <Icon name="external-link" className="w-5 h-5" />
-          </button>
-          <button onClick={onToggleFullscreen} className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10" aria-label="Toggle fullscreen">
-            <Icon name="fullscreen" className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
       <div className="flex-grow overflow-hidden relative">
         {view === 'preview' && (
           <LivePreview 
