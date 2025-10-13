@@ -21,14 +21,15 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
+  const estimatedTotal = totalBytes !== undefined ? totalBytes : (progress > 0 ? receivedBytes! / (progress / 100) : 0);
+
   return (
     <div className={`w-full ${className}`}>
-      <div className="text-xs text-gray-400 mb-1 flex justify-between">
-        <span>{Math.round(progress)}% done</span>
-        {receivedBytes !== undefined && totalBytes !== undefined && (
-          <span>{formatBytes(receivedBytes)} / {formatBytes(totalBytes)}</span>
-        )}
-      </div>
+      {progress > 0 && (
+        <div className="text-xs text-gray-400 mb-1 text-center">
+          {Math.round(progress)}% = {formatBytes(estimatedTotal)} of data
+        </div>
+      )}
       <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
         <div
           className="h-full bg-gradient-to-r from-purple-500 to-cyan-500 transition-all duration-300 ease-out rounded-full"
