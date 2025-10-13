@@ -113,7 +113,7 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
               }`}
             >
               <Icon name="eye" className="w-5 h-5 flex-shrink-0" />
-              <span className={`ml-2 whitespace-nowrap transition-all duration-300 ${
+              <span className={`ml-2 whitespace-nowrap transition-all duration-900 ${
                 view === 'preview' ? 'w-auto opacity-100' : 'w-0 opacity-0 group-hover:w-auto group-hover:opacity-100'
               }`}>
                 Preview
@@ -132,7 +132,7 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
               }`}
             >
               <Icon name="code" className="w-5 h-5 flex-shrink-0" />
-              <span className={`ml-2 whitespace-nowrap transition-all duration-300 ${
+              <span className={`ml-2 whitespace-nowrap transition-all duration-900 ${
                 view === 'code' ? 'w-auto opacity-100' : 'w-0 opacity-0 group-hover:w-auto group-hover:opacity-100'
               }`}>
                 Code
@@ -151,7 +151,7 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
               }`}
             >
               <Icon name="database" className="w-5 h-5 text-gray-300 flex-shrink-0" />
-              <span className={`ml-2 whitespace-nowrap transition-all duration-300 ${
+              <span className={`ml-2 whitespace-nowrap transition-all duration-900 ${
                 view === 'database' ? 'w-auto opacity-100' : 'w-0 opacity-0 group-hover:w-auto group-hover:opacity-100'
               }`}>
                 Database
@@ -170,7 +170,7 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
               }`}
             >
               <Icon name="edit" className="w-5 h-5 flex-shrink-0" />
-              <span className={`ml-2 whitespace-nowrap transition-all duration-300 ${
+              <span className={`ml-2 whitespace-nowrap transition-all duration-900 ${
                 view === 'visual-editor' ? 'w-auto opacity-100' : 'w-0 opacity-0 group-hover:w-auto group-hover:opacity-100'
               }`}>
                 Visual Editor
