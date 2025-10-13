@@ -10,10 +10,10 @@ interface SettingsModalProps {
   onDownloadProject: () => void;
 }
 
-type SettingsTab = 'account' | 'versions' | 'backups';
+type SettingsTab = 'project' | 'agents' | 'versions' | 'database';
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ user, project, onClose, onRestoreVersion, onDownloadProject }) => {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('account');
+  const [activeTab, setActiveTab] = useState<SettingsTab>('project');
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleString();
@@ -83,56 +83,150 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ user, project, onClose, o
     </div>
   );
 
-  const renderBackupsTab = () => (
+  const renderProjectTab = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-white mb-4">Backup & Storage</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">Project General Settings</h3>
         <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Project name</label>
+            <input
+              type="text"
+              defaultValue={project.projectName}
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button className="mt-2 px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded">
+              Save
+            </button>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Project Agent</label>
+            <div className="space-y-2">
+              <button className="w-full p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-left flex items-center gap-2">
+                <Icon name="bot" className="w-4 h-4" />
+                Claude Agent
+              </button>
+              <button className="w-full p-3 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-left flex items-center gap-2 opacity-50">
+                <Icon name="code" className="w-4 h-4" />
+                Codex
+                <span className="text-xs bg-yellow-600 px-2 py-1 rounded ml-auto">COMING SOON</span>
+              </button>
+              <button className="w-full p-3 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-left flex items-center gap-2">
+                <Icon name="zap" className="w-4 h-4" />
+                v1 Agent (Legacy)
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Context</label>
+            <p className="text-sm text-gray-400 mb-2">
+              Free up context. This is useful when a part of your app is completed and you want to work on a new one.
+            </p>
+            <button className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded">
+              Clear context
+            </button>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Project Visibility</label>
+            <div className="grid grid-cols-3 gap-2">
+              <button className="p-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-center">
+                <Icon name="lock" className="w-5 h-5 mx-auto mb-1" />
+                Private
+                <div className="text-xs text-gray-400">Only owner can access</div>
+              </button>
+              <button className="p-3 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-center">
+                <Icon name="link" className="w-5 h-5 mx-auto mb-1" />
+                Secret
+                <div className="text-xs text-gray-400">Accessible via shared URL</div>
+              </button>
+              <button className="p-3 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-center">
+                <Icon name="globe" className="w-5 h-5 mx-auto mb-1" />
+                Public
+                <div className="text-xs text-gray-400">Everyone can view</div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderAgentsTab = () => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold text-white mb-4">AI Agents</h3>
+        <div className="space-y-3">
           <div className="p-4 bg-gray-800 rounded-lg border border-gray-600">
             <div className="flex items-center justify-between mb-2">
-              <span className="font-medium text-white">Local Storage</span>
+              <span className="font-medium text-white">Creator Agent</span>
               <span className="text-sm text-green-400">Active</span>
             </div>
             <p className="text-sm text-gray-400">
-              Your project is automatically saved to your browser's local storage.
+              Specialized in building new features and applications from scratch
             </p>
           </div>
-          
-          {user ? (
-            <div className="p-4 bg-gray-800 rounded-lg border border-gray-600">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-medium text-white">Cloud Backup</span>
-                <span className="text-sm text-green-400">Enabled</span>
-              </div>
-              <p className="text-sm text-gray-400">
-                Your projects are backed up to our secure cloud storage.
-              </p>
-            </div>
-          ) : (
-            <div className="p-4 bg-yellow-900/20 rounded-lg border border-yellow-600">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-medium text-yellow-300">Cloud Backup</span>
-                <span className="text-sm text-yellow-400">Unavailable</span>
-              </div>
-              <p className="text-sm text-yellow-200">
-                Sign up for an account to enable cloud backup and sync across devices.
-              </p>
-            </div>
-          )}
-          
+
           <div className="p-4 bg-gray-800 rounded-lg border border-gray-600">
             <div className="flex items-center justify-between mb-2">
-              <span className="font-medium text-white">Export Options</span>
+              <span className="font-medium text-white">Debugger Agent</span>
+              <span className="text-sm text-green-400">Active</span>
+            </div>
+            <p className="text-sm text-gray-400">
+              Expert at finding and fixing bugs, errors, and performance issues
+            </p>
+          </div>
+
+          <div className="p-4 bg-gray-800 rounded-lg border border-gray-600">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-medium text-white">Optimizer Agent</span>
+              <span className="text-sm text-green-400">Active</span>
+            </div>
+            <p className="text-sm text-gray-400">
+              Focuses on improving code quality, performance, and maintainability
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderDatabaseTab = () => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold text-white mb-4">Database</h3>
+        <div className="space-y-4">
+          <div className="p-4 bg-gray-800 rounded-lg border border-gray-600">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-medium text-white">Database Status</span>
+              <span className="text-sm text-green-400">Connected</span>
+            </div>
+            <p className="text-sm text-gray-400">
+              Database, storage, authentication, and backend logic—all ready to use.
+            </p>
+          </div>
+
+          <div className="p-4 bg-gray-800 rounded-lg border border-gray-600">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-medium text-white">Add an LLM to your app</span>
             </div>
             <p className="text-sm text-gray-400 mb-3">
-              Download your project files as a ZIP archive.
+              Powerful AI models with zero setup. Add chat, image generation, and text analysis instantly.
             </p>
-            <button 
-              onClick={onDownloadProject}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-sm font-medium transition-colors"
-            >
-              Download Project
+            <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded">
+              Enable AI Features
             </button>
+          </div>
+
+          <div className="p-4 bg-gray-800 rounded-lg border border-gray-600">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-medium text-white">Free to start, pay as you scale</span>
+            </div>
+            <p className="text-sm text-gray-400">
+              Free usage included everywhere. Top up on paid plans. Track usage in Settings → Usage.
+            </p>
           </div>
         </div>
       </div>
@@ -154,48 +248,77 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ user, project, onClose, o
         </div>
 
         <div className="flex">
-          <div className="w-48 border-r border-gray-700">
+          <div className="w-64 border-r border-gray-700 bg-gray-800/50">
             <nav className="p-4 space-y-1">
-              <button
-                onClick={() => setActiveTab('account')}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'account'
-                    ? 'bg-purple-600 text-white'
-                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                }`}
-              >
-                <Icon name="user" className="w-4 h-4 inline mr-2" />
-                Account
-              </button>
-              <button
-                onClick={() => setActiveTab('versions')}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'versions'
-                    ? 'bg-purple-600 text-white'
-                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                }`}
-              >
-                <Icon name="history" className="w-4 h-4 inline mr-2" />
-                Versions
-              </button>
-              <button
-                onClick={() => setActiveTab('backups')}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'backups'
-                    ? 'bg-purple-600 text-white'
-                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                }`}
-              >
-                <Icon name="download" className="w-4 h-4 inline mr-2" />
-                Backups
-              </button>
+              <div className="mb-6">
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Project Settings</h3>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => setActiveTab('project')}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                      activeTab === 'project'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                    }`}
+                  >
+                    <Icon name="settings" className="w-4 h-4" />
+                    General
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('database')}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                      activeTab === 'database'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                    }`}
+                  >
+                    <Icon name="database" className="w-4 h-4" />
+                    Database
+                  </button>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">AI & Tools</h3>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => setActiveTab('agents')}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                      activeTab === 'agents'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                    }`}
+                  >
+                    <Icon name="bot" className="w-4 h-4" />
+                    AI Agents
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">History</h3>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => setActiveTab('versions')}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                      activeTab === 'versions'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                    }`}
+                  >
+                    <Icon name="history" className="w-4 h-4" />
+                    Versions
+                  </button>
+                </div>
+              </div>
             </nav>
           </div>
 
-          <div className="flex-1 p-6">
-            {activeTab === 'account' && renderAccountTab()}
+          <div className="flex-1 p-6 bg-gray-900">
+            {activeTab === 'project' && renderProjectTab()}
+            {activeTab === 'agents' && renderAgentsTab()}
             {activeTab === 'versions' && renderVersionsTab()}
-            {activeTab === 'backups' && renderBackupsTab()}
+            {activeTab === 'database' && renderDatabaseTab()}
           </div>
         </div>
       </div>

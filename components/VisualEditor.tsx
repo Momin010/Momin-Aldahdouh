@@ -1,9 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Icon } from './Icon';
 
 interface VisualEditorProps {
   htmlContent: string;
   onContentChange: (content: string) => void;
   className?: string;
+  isEditMode?: boolean;
+  onEditModeChange?: (enabled: boolean) => void;
 }
 
 interface ElementData {
@@ -17,11 +20,13 @@ interface ElementData {
 const VisualEditor: React.FC<VisualEditorProps> = ({
   htmlContent,
   onContentChange,
-  className = ''
+  className = '',
+  isEditMode = false,
+  onEditModeChange
 }) => {
   const [selectedElement, setSelectedElement] = useState<ElementData | null>(null);
-  const [isEditMode, setIsEditMode] = useState(false);
   const [elements, setElements] = useState<ElementData[]>([]);
+  const [editPanelOpen, setEditPanelOpen] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
   const [isHovering, setIsHovering] = useState(false);
 
@@ -91,7 +96,7 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
   const handleElementClick = (e: React.MouseEvent, elementData: ElementData) => {
     e.stopPropagation();
     setSelectedElement(elementData);
-    setIsEditMode(true);
+    setEditPanelOpen(true);
   };
 
   const handleContentEdit = (newContent: string) => {
@@ -182,35 +187,26 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
 
   return (
     <div className={`relative ${className}`}>
-      {/* Toolbar */}
-      <div className="mb-4 flex items-center gap-2 p-3 bg-white/10 backdrop-blur-xl rounded-xl border border-white/20">
-        <button
-          onClick={() => setIsEditMode(!isEditMode)}
-          className={`px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
-            isEditMode
-              ? 'bg-purple-600 text-white'
-              : 'bg-white/10 text-gray-300 hover:bg-white/20'
-          }`}
-        >
-          {isEditMode ? 'Exit Edit Mode' : 'Visual Edit'}
-        </button>
-
-        {selectedElement && (
-          <div className="flex items-center gap-2 text-sm text-gray-300">
-            <span>Selected: {selectedElement.tag.toUpperCase()}</span>
-          </div>
-        )}
+      {/* Instructions */}
+      <div className="mb-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+        <div className="flex items-center gap-2 mb-2">
+          <Icon name="edit" className="w-5 h-5 text-blue-400" />
+          <h3 className="text-lg font-bold text-white">Visual Editor</h3>
+        </div>
+        <p className="text-sm text-gray-300">
+          Click on any element in the preview below to edit its content and styles. Use the panel that appears to make changes.
+        </p>
       </div>
 
-      {/* Editor Area */}
+      {/* Preview Area */}
       <div className="relative">
         <div
           ref={editorRef}
-          className={`min-h-[400px] bg-white/5 backdrop-blur-xl rounded-xl border-2 border-dashed transition-colors ${
+          className={`min-h-[500px] bg-white/5 backdrop-blur-xl rounded-xl border-2 border-dashed transition-colors ${
             isEditMode
-              ? 'border-purple-500/50 bg-purple-500/5'
+              ? 'border-blue-500/50 bg-blue-500/5'
               : 'border-white/20'
-          } p-4`}
+          } p-4 overflow-auto`}
           onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
         />

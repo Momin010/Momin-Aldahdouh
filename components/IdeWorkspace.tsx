@@ -86,6 +86,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
   const [isAIAgentsOpen, setIsAIAgentsOpen] = useState(false);
   const [isDeploymentOpen, setIsDeploymentOpen] = useState(false);
   const [isDatabaseOpen, setIsDatabaseOpen] = useState(false);
+  const [isVisualEditMode, setIsVisualEditMode] = useState(false);
 
   // Progress and retry tracking moved to projectRunStates for isolation
 
@@ -850,71 +851,24 @@ DO NOT remove working code or features the user asked for.`;
 
     return (
       <div className="flex flex-col h-full overflow-hidden flex-grow">
-        <div className="flex items-center justify-between p-4 bg-white/5 backdrop-blur-xl border-b border-white/10">
-          <Header
-              projectName={projectName}
-              onRenameProject={handleRenameProject}
-              onDownloadProject={handleDownloadProject}
-              onPublish={isGuest ? onSignUpClick : () => setPublishModalOpen(true)}
-              onSettings={() => setSettingsModalOpen(true)}
-              onCheckErrors={handleCheckErrors}
-              mobileView={mobileView}
-              isProjectLoaded={isProjectLoaded}
-              onToggleView={() => setMobileView(prev => prev === 'chat' ? 'preview' : 'chat')}
-              onToggleSidebar={() => setMobileSidebarOpen(true)}
-          />
-
-          {/* New Feature Toolbar */}
-          <div className="hidden md:flex items-center gap-2">
-            <button
-              onClick={() => setIsTemplateLibraryOpen(true)}
-              className="px-3 py-2 text-sm font-semibold rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-colors"
-              title="Template Library"
-            >
-              📚 Templates
-            </button>
-
-            <button
-              onClick={() => setIsVisualEditorOpen(true)}
-              className="px-3 py-2 text-sm font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
-              title="Visual Editor"
-            >
-              🎨 Visual Edit
-            </button>
-
-            <button
-              onClick={() => setIsStylePresetsOpen(true)}
-              className="px-3 py-2 text-sm font-semibold rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors"
-              title="Style Presets"
-            >
-              🎭 Styles
-            </button>
-
-            <button
-              onClick={() => setIsAIAgentsOpen(true)}
-              className="px-3 py-2 text-sm font-semibold rounded-lg bg-orange-600 hover:bg-orange-700 text-white transition-colors"
-              title="AI Agents"
-            >
-              🤖 AI Agents
-            </button>
-
-            <button
-              onClick={() => setIsDeploymentOpen(true)}
-              className="px-3 py-2 text-sm font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white transition-colors"
-              title="Deploy Project"
-            >
-              🚀 Deploy
-            </button>
-
-            <button
-              onClick={() => setIsDatabaseOpen(true)}
-              className="px-3 py-2 text-sm font-semibold rounded-lg bg-pink-600 hover:bg-pink-700 text-white transition-colors"
-              title="Database Manager"
-            >
-              🗄️ Database
-            </button>
-          </div>
-        </div>
+        <Header
+            projectName={projectName}
+            onRenameProject={handleRenameProject}
+            onDownloadProject={handleDownloadProject}
+            onPublish={isGuest ? onSignUpClick : () => setPublishModalOpen(true)}
+            onSettings={() => setSettingsModalOpen(true)}
+            onCheckErrors={handleCheckErrors}
+            mobileView={mobileView}
+            isProjectLoaded={isProjectLoaded}
+            onToggleView={() => setMobileView(prev => prev === 'chat' ? 'preview' : 'chat')}
+            onToggleSidebar={() => setMobileSidebarOpen(true)}
+            onTemplateLibrary={() => setIsTemplateLibraryOpen(true)}
+            onVisualEditor={() => setIsVisualEditorOpen(true)}
+            onStylePresets={() => setIsStylePresetsOpen(true)}
+            onAIAgents={() => setIsAIAgentsOpen(true)}
+            onDeployment={() => setIsDeploymentOpen(true)}
+            onDatabase={() => setIsDatabaseOpen(true)}
+        />
         
         <main className="hidden md:flex flex-grow p-4 gap-4 overflow-hidden">
           <ResizablePanel direction="horizontal" initialSize={450} minSize={320}>
@@ -1029,10 +983,15 @@ DO NOT remove working code or features the user asked for.`;
                   });
                 }
               }}
+              isEditMode={isVisualEditMode}
+              onEditModeChange={setIsVisualEditMode}
               className="max-h-full"
             />
             <button
-              onClick={() => setIsVisualEditorOpen(false)}
+              onClick={() => {
+                setIsVisualEditorOpen(false);
+                setIsVisualEditMode(false);
+              }}
               className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
             >
               <Icon name="close" className="w-5 h-5" />
