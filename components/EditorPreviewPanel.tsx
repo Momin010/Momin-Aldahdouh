@@ -147,7 +147,7 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
             <PreviewVisualEditor
               htmlContent={displayHtml}
               onPreviewEdit={onPreviewEdit || (() => {})}
-              isEnabled={true}
+              isEnabled={isVisualEditMode}
             />
           </>
         )}

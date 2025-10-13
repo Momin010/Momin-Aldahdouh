@@ -214,91 +214,77 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
                 Database
               </span>
             </button>
-            <button
-              onClick={() => {
-                onViewChange('visual-editor');
-                setExpandedButton(expandedButton === 'visual-editor' ? null : 'visual-editor');
-              }}
-              className={`relative group flex items-center px-2 py-1.5 text-sm rounded-lg overflow-hidden ${
-                view === 'visual-editor'
-                  ? theme === 'light'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'bg-white/20 text-white'
-                  : theme === 'light'
-                    ? 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-                    : 'text-gray-300 hover:text-white hover:bg-white/10'
-              }`}
-              style={{
-                transition: 'all 800ms cubic-bezier(0.4, 0, 0.2, 1)',
-                transformOrigin: 'center left'
-              }}
-            >
-              <Icon
-                name="edit"
-                className="w-5 h-5 flex-shrink-0 transition-transform duration-500 group-hover:scale-110"
-              />
-              <span
-                className={`ml-2 whitespace-nowrap transition-all duration-800 overflow-hidden ${
-                  expandedButton === 'visual-editor' || view === 'visual-editor'
-                    ? 'w-24 opacity-100 transform translate-x-0'
-                    : 'w-0 opacity-0 transform -translate-x-2'
-                }`}
-                style={{
-                  transition: 'all 800ms cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
-              >
-                Visual Editor
-              </span>
-            </button>
           </div>
 
-          {/* Device Selection - Only show in preview mode */}
+          {/* Device Selection and Visual Editor - Only show in preview mode */}
           {view === 'preview' && (
-            <div
-              className={`hidden md:flex items-center gap-1 p-1 rounded-xl transition-all duration-600 ${
-                theme === 'light' ? 'bg-gray-100' : 'bg-white/10'
-              }`}
-              style={{
-                transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1)',
-              }}
-            >
-              {deviceButtons.map(({ name, icon }) => (
-                <button
-                  key={name}
-                  onClick={() => onDeviceChange(name)}
-                  className={`relative group flex items-center px-2 py-1.5 rounded-lg overflow-hidden ${
-                    device === name
-                      ? theme === 'light'
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'bg-white/20 text-white'
-                      : theme === 'light'
-                        ? 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-                        : 'text-gray-300 hover:text-white hover:bg-white/10'
-                  }`}
-                  style={{
-                    transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1)',
-                  }}
-                  aria-label={`Switch to ${name} view`}
-                >
-                  <Icon
-                    name={icon}
-                    className="w-4 h-4 flex-shrink-0 transition-transform duration-400 group-hover:scale-110"
-                  />
-                  <span
-                    className={`ml-1 whitespace-nowrap overflow-hidden ${
+            <>
+              <div
+                className={`hidden md:flex items-center gap-1 p-1 rounded-xl transition-all duration-600 ${
+                  theme === 'light' ? 'bg-gray-100' : 'bg-white/10'
+                }`}
+                style={{
+                  transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+              >
+                {deviceButtons.map(({ name, icon }) => (
+                  <button
+                    key={name}
+                    onClick={() => onDeviceChange(name)}
+                    className={`relative group flex items-center px-2 py-1.5 rounded-lg overflow-hidden ${
                       device === name
-                        ? 'w-12 opacity-100 transform translate-x-0'
-                        : 'w-0 opacity-0 transform -translate-x-1'
+                        ? theme === 'light'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'bg-white/20 text-white'
+                        : theme === 'light'
+                          ? 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+                          : 'text-gray-300 hover:text-white hover:bg-white/10'
                     }`}
                     style={{
                       transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1)',
                     }}
+                    aria-label={`Switch to ${name} view`}
                   >
-                    {name.charAt(0).toUpperCase() + name.slice(1)}
-                  </span>
-                </button>
-              ))}
-            </div>
+                    <Icon
+                      name={icon}
+                      className="w-4 h-4 flex-shrink-0 transition-transform duration-400 group-hover:scale-110"
+                    />
+                    <span
+                      className={`ml-1 whitespace-nowrap overflow-hidden ${
+                        device === name
+                          ? 'w-12 opacity-100 transform translate-x-0'
+                          : 'w-0 opacity-0 transform -translate-x-1'
+                      }`}
+                      style={{
+                        transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1)',
+                      }}
+                    >
+                      {name.charAt(0).toUpperCase() + name.slice(1)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Visual Editor Toggle - Only in preview mode */}
+              <button
+                onClick={onVisualEditor}
+                className={`hidden md:flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-600 ${
+                  theme === 'light'
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }`}
+                style={{
+                  transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+                aria-label="Toggle Visual Editor"
+              >
+                <Icon
+                  name="edit"
+                  className="w-4 h-4 mr-2 transition-transform duration-400 group-hover:scale-110"
+                />
+                Visual Edit
+              </button>
+            </>
           )}
 
           {/* Mobile View Toggle */}
