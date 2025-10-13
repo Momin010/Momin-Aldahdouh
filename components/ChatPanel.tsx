@@ -373,7 +373,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                     progress={streamingProgress?.progress || 0}
                     receivedBytes={streamingProgress?.receivedBytes}
                     totalBytes={streamingProgress?.totalBytes}
-                    className="w-full"
+                    className="w-full mb-2"
                   />
                   <p className="text-sm text-gray-300">
                     {dynamicStatus}
