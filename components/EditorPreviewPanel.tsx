@@ -3,30 +3,32 @@ import FileExplorer from './FileExplorer';
 import CodeEditor from './CodeEditor';
 import LivePreview, { Device } from './LivePreview';
 import VisualEditor from './VisualEditor';
+import PreviewVisualEditor from './PreviewVisualEditor';
 import { Icon } from './Icon';
-import type { Files, ConsoleMessage } from '../types';
+import type { Files, ConsoleMessage, PreviewChange } from '../types';
 import ResizablePanel from './ResizablePanel';
 
 interface EditorPreviewPanelProps {
-  files: Files;
-  activeFile: string;
-  onSelectFile: (path: string) => void;
-  onCodeChange: (newContent: string) => void;
-  previewHtml: string;
-  standaloneHtml: string;
-  onBackToChat: () => void; // For mobile view
-  onToggleFullscreen: () => void;
-  consoleLogs: ConsoleMessage[];
-  onNewLog: (log: ConsoleMessage) => void;
-  onClearConsole: () => void;
-  device: Device;
-  onDeviceChange: (device: Device) => void;
-  view: 'code' | 'preview' | 'database' | 'visual-editor';
-  currentView: 'code' | 'preview' | 'database' | 'visual-editor';
-  onDatabaseAction?: (action: string) => void;
-  onVisualEditorChange?: (content: string) => void;
-  isVisualEditMode?: boolean;
-  onVisualEditModeChange?: (mode: boolean) => void;
+   files: Files;
+   activeFile: string;
+   onSelectFile: (path: string) => void;
+   onCodeChange: (newContent: string) => void;
+   previewHtml: string;
+   standaloneHtml: string;
+   onBackToChat: () => void; // For mobile view
+   onToggleFullscreen: () => void;
+   consoleLogs: ConsoleMessage[];
+   onNewLog: (log: ConsoleMessage) => void;
+   onClearConsole: () => void;
+   device: Device;
+   onDeviceChange: (device: Device) => void;
+   view: 'code' | 'preview' | 'database' | 'visual-editor';
+   currentView: 'code' | 'preview' | 'database' | 'visual-editor';
+   onDatabaseAction?: (action: string) => void;
+   onVisualEditorChange?: (content: string) => void;
+   isVisualEditMode?: boolean;
+   onVisualEditModeChange?: (mode: boolean) => void;
+   onPreviewEdit?: (change: PreviewChange) => void;
 }
 
 const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
@@ -49,6 +51,7 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
   onVisualEditorChange,
   isVisualEditMode,
   onVisualEditModeChange,
+  onPreviewEdit,
 }) => {
   
   const deviceButtons: { name: Device, icon: string }[] = [
@@ -133,13 +136,20 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
     <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
       <div className="flex-grow overflow-auto relative">
         {view === 'preview' && (
-          <LivePreview
-            htmlContent={displayHtml}
-            device={device}
-            logs={consoleLogs}
-            onNewLog={onNewLog}
-            onClearLogs={onClearConsole}
-          />
+          <>
+            <LivePreview
+              htmlContent={displayHtml}
+              device={device}
+              logs={consoleLogs}
+              onNewLog={onNewLog}
+              onClearLogs={onClearConsole}
+            />
+            <PreviewVisualEditor
+              htmlContent={displayHtml}
+              onPreviewEdit={onPreviewEdit || (() => {})}
+              isEnabled={true}
+            />
+          </>
         )}
         {view === 'code' && (
           <div className="h-full w-full">

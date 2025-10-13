@@ -18,7 +18,7 @@ import { deploymentService, DEPLOYMENT_PLATFORMS } from '../services/deploymentS
 import { databaseService } from '../services/databaseService';
 import { ThemeProvider } from '../lib/themeContext';
 import { CreditService } from '../lib/creditService';
-import type { Message, Files, Change, FileAttachment, History, AppState, ConsoleMessage, Plan, Workspace, Project, User, Modification, ApiResponse } from '../types';
+import type { Message, Files, Change, FileAttachment, History, AppState, ConsoleMessage, Plan, Workspace, Project, User, Modification, ApiResponse, PreviewChange } from '../types';
 import { sendAiChatRequest, resetChat } from '../services/geminiService';
 import { downloadProjectAsZip } from '../services/zipService';
 import * as projectService from '../services/projectService';
@@ -898,6 +898,11 @@ DO NOT remove working code or features the user asked for.`;
               }}
               isVisualEditMode={isVisualEditMode}
               onVisualEditModeChange={setIsVisualEditMode}
+              onPreviewEdit={(change: PreviewChange) => {
+                // Handle preview edits - for now just log them
+                console.log('Preview edit:', change);
+                // TODO: Implement actual HTML modification based on the change
+              }}
             />
           </ResizablePanel>
         </main>

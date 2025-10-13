@@ -104,3 +104,30 @@ export interface DesignBlueprint {
   description: string;
   promptFragment: string;
 }
+
+// New types for Visual Editor
+export interface PreviewElement {
+  id: string;
+  tagName: string;
+  className: string;
+  textContent?: string;
+  styles: Record<string, string>;
+  attributes: Record<string, string>;
+  children: PreviewElement[];
+  rect: DOMRect;
+}
+
+export interface PreviewChange {
+  elementId: string;
+  type: 'text' | 'style' | 'attribute' | 'resize';
+  property: string;
+  value: string;
+  oldValue?: string;
+}
+
+export interface VisualEditorState {
+  isEnabled: boolean;
+  hoveredElement: PreviewElement | null;
+  selectedElement: PreviewElement | null;
+  isEditing: boolean;
+}
