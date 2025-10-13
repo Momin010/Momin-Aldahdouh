@@ -78,6 +78,14 @@ const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
       if (iframeDoc) {
         iframeDoc.body.innerHTML = htmlContent;
         setElements(parseHtmlToElements(htmlContent));
+
+        // Request elements from iframe after content is loaded
+        setTimeout(() => {
+          console.log('Requesting elements from iframe');
+          iframe.contentWindow?.postMessage({
+            type: 'VISUAL_EDITOR_REQUEST'
+          }, '*');
+        }, 100);
       }
     }
   }, [htmlContent, parseHtmlToElements]);
@@ -163,6 +171,22 @@ const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
       iframeDoc.removeEventListener('click', handleClick, true);
     };
   }, [isEnabled, isResizing]);
+
+  // Listen for messages from iframe
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data && event.data.source === 'mominai-preview-elements') {
+        console.log('Received elements from iframe:', event.data.elements);
+        setElements(event.data.elements);
+      }
+      if (event.data && event.data.source === 'mominai-preview-ready') {
+        console.log('Iframe is ready for visual editing');
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   // Handle keyboard events
   useEffect(() => {

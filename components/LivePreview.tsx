@@ -89,6 +89,60 @@ const consoleInterceptorScript = `
       console.log('Link navigation prevented in preview:', link.href);
     }
   }, true);
+
+  // Visual Editor Communication
+  window.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'VISUAL_EDITOR_REQUEST') {
+      const elements = [];
+      const allElements = document.querySelectorAll('*');
+
+      allElements.forEach((el, index) => {
+        if (el.tagName !== 'SCRIPT' && el.tagName !== 'STYLE') {
+          const rect = el.getBoundingClientRect();
+          const computedStyle = window.getComputedStyle(el);
+
+          elements.push({
+            id: \`element-\${index}\`,
+            tagName: el.tagName.toLowerCase(),
+            className: el.className || '',
+            textContent: el.textContent?.trim() || '',
+            rect: {
+              left: rect.left,
+              top: rect.top,
+              width: rect.width,
+              height: rect.height,
+              right: rect.right,
+              bottom: rect.bottom
+            },
+            styles: {
+              fontFamily: computedStyle.fontFamily,
+              fontSize: computedStyle.fontSize,
+              color: computedStyle.color,
+              backgroundColor: computedStyle.backgroundColor,
+              width: computedStyle.width,
+              height: computedStyle.height,
+              display: computedStyle.display,
+              position: computedStyle.position
+            },
+            attributes: Array.from(el.attributes).reduce((acc, attr) => {
+              acc[attr.name] = attr.value;
+              return acc;
+            }, {})
+          });
+        }
+      });
+
+      window.parent.postMessage({
+        source: 'mominai-preview-elements',
+        elements: elements
+      }, '*');
+    }
+  });
+
+  // Notify parent that iframe is ready
+  window.parent.postMessage({
+    source: 'mominai-preview-ready'
+  }, '*');
 `;
 
 // Utility to decode HTML entities
@@ -116,6 +170,12 @@ const LivePreview: React.FC<LivePreviewProps> = ({
     const handleMessage = (event: MessageEvent) => {
       if (event.data && event.data.source === 'mominai-preview-console') {
         onNewLog({ level: event.data.level, payload: event.data.payload });
+      }
+      if (event.data && event.data.source === 'mominai-preview-elements') {
+        console.log('Received elements from iframe:', event.data.elements);
+      }
+      if (event.data && event.data.source === 'mominai-preview-ready') {
+        console.log('Iframe is ready for visual editing');
       }
     };
     window.addEventListener('message', handleMessage);
