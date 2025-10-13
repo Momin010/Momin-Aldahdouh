@@ -53,6 +53,7 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
   userEmail
 }) => {
   const [isProjectModalOpen, setProjectModalOpen] = useState(false);
+  const [expandedButton, setExpandedButton] = useState<string | null>(null);
   const { theme, toggleTheme } = useTheme();
 
   const deviceButtons = [
@@ -101,8 +102,11 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
             theme === 'light' ? 'bg-gray-100' : 'bg-white/10'
           }`}>
             <button
-              onClick={() => onViewChange('preview')}
-              className={`relative group flex items-center px-2 py-1.5 text-sm rounded-lg transition-all duration-300 overflow-hidden ${
+              onClick={() => {
+                onViewChange('preview');
+                setExpandedButton(expandedButton === 'preview' ? null : 'preview');
+              }}
+              className={`relative flex items-center px-2 py-1.5 text-sm rounded-lg transition-all duration-1600 overflow-hidden ${
                 view === 'preview'
                   ? theme === 'light'
                     ? 'bg-white text-gray-900 shadow-sm'
@@ -113,15 +117,18 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
               }`}
             >
               <Icon name="eye" className="w-5 h-5 flex-shrink-0" />
-              <span className={`ml-2 whitespace-nowrap transition-all duration-900 ${
-                view === 'preview' ? 'w-auto opacity-100' : 'w-0 opacity-0 group-hover:w-auto group-hover:opacity-100'
+              <span className={`ml-2 whitespace-nowrap transition-all duration-1600 ${
+                expandedButton === 'preview' || view === 'preview' ? 'w-auto opacity-100' : 'w-0 opacity-0'
               }`}>
                 Preview
               </span>
             </button>
             <button
-              onClick={() => onViewChange('code')}
-              className={`relative group flex items-center px-2 py-1.5 text-sm rounded-lg transition-all duration-300 overflow-hidden ${
+              onClick={() => {
+                onViewChange('code');
+                setExpandedButton(expandedButton === 'code' ? null : 'code');
+              }}
+              className={`relative flex items-center px-2 py-1.5 text-sm rounded-lg transition-all duration-1600 overflow-hidden ${
                 view === 'code'
                   ? theme === 'light'
                     ? 'bg-white text-gray-900 shadow-sm'
@@ -132,15 +139,18 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
               }`}
             >
               <Icon name="code" className="w-5 h-5 flex-shrink-0" />
-              <span className={`ml-2 whitespace-nowrap transition-all duration-900 ${
-                view === 'code' ? 'w-auto opacity-100' : 'w-0 opacity-0 group-hover:w-auto group-hover:opacity-100'
+              <span className={`ml-2 whitespace-nowrap transition-all duration-1600 ${
+                expandedButton === 'code' || view === 'code' ? 'w-auto opacity-100' : 'w-0 opacity-0'
               }`}>
                 Code
               </span>
             </button>
             <button
-              onClick={() => onViewChange('database')}
-              className={`relative group flex items-center px-2 py-1.5 text-sm rounded-lg transition-all duration-300 overflow-hidden ${
+              onClick={() => {
+                onViewChange('database');
+                setExpandedButton(expandedButton === 'database' ? null : 'database');
+              }}
+              className={`relative flex items-center px-2 py-1.5 text-sm rounded-lg transition-all duration-1600 overflow-hidden ${
                 view === 'database'
                   ? theme === 'light'
                     ? 'bg-white text-gray-900 shadow-sm'
@@ -151,15 +161,18 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
               }`}
             >
               <Icon name="database" className="w-5 h-5 text-gray-300 flex-shrink-0" />
-              <span className={`ml-2 whitespace-nowrap transition-all duration-900 ${
-                view === 'database' ? 'w-auto opacity-100' : 'w-0 opacity-0 group-hover:w-auto group-hover:opacity-100'
+              <span className={`ml-2 whitespace-nowrap transition-all duration-1600 ${
+                expandedButton === 'database' || view === 'database' ? 'w-auto opacity-100' : 'w-0 opacity-0'
               }`}>
                 Database
               </span>
             </button>
             <button
-              onClick={() => onViewChange('visual-editor')}
-              className={`relative group flex items-center px-2 py-1.5 text-sm rounded-lg transition-all duration-300 overflow-hidden ${
+              onClick={() => {
+                onViewChange('visual-editor');
+                setExpandedButton(expandedButton === 'visual-editor' ? null : 'visual-editor');
+              }}
+              className={`relative flex items-center px-2 py-1.5 text-sm rounded-lg transition-all duration-1600 overflow-hidden ${
                 view === 'visual-editor'
                   ? theme === 'light'
                     ? 'bg-white text-gray-900 shadow-sm'
@@ -170,8 +183,8 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
               }`}
             >
               <Icon name="edit" className="w-5 h-5 flex-shrink-0" />
-              <span className={`ml-2 whitespace-nowrap transition-all duration-900 ${
-                view === 'visual-editor' ? 'w-auto opacity-100' : 'w-0 opacity-0 group-hover:w-auto group-hover:opacity-100'
+              <span className={`ml-2 whitespace-nowrap transition-all duration-1600 ${
+                expandedButton === 'visual-editor' || view === 'visual-editor' ? 'w-auto opacity-100' : 'w-0 opacity-0'
               }`}>
                 Visual Editor
               </span>
@@ -187,7 +200,7 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
                 <button
                   key={name}
                   onClick={() => onDeviceChange(name)}
-                  className={`relative group flex items-center px-2 py-1.5 rounded-lg transition-all duration-300 overflow-hidden ${
+                  className={`relative flex items-center px-2 py-1.5 rounded-lg transition-all duration-1600 overflow-hidden ${
                     device === name
                       ? theme === 'light'
                         ? 'bg-white text-gray-900 shadow-sm'
@@ -199,8 +212,8 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
                   aria-label={`Switch to ${name} view`}
                 >
                   <Icon name={icon} className="w-4 h-4 flex-shrink-0" />
-                  <span className={`ml-1 whitespace-nowrap transition-all duration-300 ${
-                    device === name ? 'w-auto opacity-100' : 'w-0 opacity-0 group-hover:w-auto group-hover:opacity-100'
+                  <span className={`ml-1 whitespace-nowrap transition-all duration-1600 ${
+                    device === name ? 'w-auto opacity-100' : 'w-0 opacity-0'
                   }`}>
                     {name.charAt(0).toUpperCase() + name.slice(1)}
                   </span>
@@ -230,8 +243,11 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
         <div className="flex items-center gap-2">
           {/* Theme Toggle */}
           <button
-            onClick={toggleTheme}
-            className={`relative group flex items-center px-2 py-2 rounded-lg transition-all duration-300 overflow-hidden ${
+            onClick={() => {
+              toggleTheme();
+              setExpandedButton(expandedButton === 'theme' ? null : 'theme');
+            }}
+            className={`relative flex items-center px-2 py-2 rounded-lg transition-all duration-1600 overflow-hidden ${
               theme === 'light'
                 ? 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 : 'text-gray-300 hover:text-white hover:bg-white/10'
@@ -239,16 +255,21 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
             aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
           >
             <Icon name={theme === 'light' ? 'moon' : 'sun'} className="w-4 h-4 flex-shrink-0" />
-            <span className="ml-1 whitespace-nowrap transition-all duration-300 w-0 opacity-0 group-hover:w-auto group-hover:opacity-100">
+            <span className={`ml-1 whitespace-nowrap transition-all duration-1600 ${
+              expandedButton === 'theme' ? 'w-auto opacity-100' : 'w-0 opacity-0'
+            }`}>
               {theme === 'light' ? 'Dark' : 'Light'}
             </span>
           </button>
 
           {onCheckErrors && (
             <button
-              onClick={onCheckErrors}
+              onClick={() => {
+                onCheckErrors();
+                setExpandedButton(expandedButton === 'errors' ? null : 'errors');
+              }}
               disabled={!isProjectLoaded}
-              className={`relative group flex items-center px-2 py-2 rounded-lg transition-all duration-300 overflow-hidden disabled:opacity-50 ${
+              className={`relative flex items-center px-2 py-2 rounded-lg transition-all duration-1600 overflow-hidden disabled:opacity-50 ${
                 theme === 'light'
                   ? 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   : 'text-gray-300 hover:text-white hover:bg-white/10'
@@ -256,16 +277,21 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
               aria-label="Check for errors"
             >
               <Icon name="bug" className="w-4 h-4 flex-shrink-0" />
-              <span className="ml-1 whitespace-nowrap transition-all duration-300 w-0 opacity-0 group-hover:w-auto group-hover:opacity-100">
+              <span className={`ml-1 whitespace-nowrap transition-all duration-1600 ${
+                expandedButton === 'errors' ? 'w-auto opacity-100' : 'w-0 opacity-0'
+              }`}>
                 Check Errors
               </span>
             </button>
           )}
 
           <button
-            onClick={onSettings}
+            onClick={() => {
+              onSettings();
+              setExpandedButton(expandedButton === 'settings' ? null : 'settings');
+            }}
             disabled={!isProjectLoaded}
-            className={`relative group flex items-center px-2 py-2 rounded-lg transition-all duration-300 overflow-hidden disabled:opacity-50 ${
+            className={`relative flex items-center px-2 py-2 rounded-lg transition-all duration-1600 overflow-hidden disabled:opacity-50 ${
               theme === 'light'
                 ? 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 : 'text-gray-300 hover:text-white hover:bg-white/10'
@@ -273,7 +299,9 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
             aria-label="Settings"
           >
             <Icon name="settings" className="w-4 h-4 flex-shrink-0" />
-            <span className="ml-1 whitespace-nowrap transition-all duration-300 w-0 opacity-0 group-hover:w-auto group-hover:opacity-100">
+            <span className={`ml-1 whitespace-nowrap transition-all duration-1600 ${
+              expandedButton === 'settings' ? 'w-auto opacity-100' : 'w-0 opacity-0'
+            }`}>
               Settings
             </span>
           </button>
