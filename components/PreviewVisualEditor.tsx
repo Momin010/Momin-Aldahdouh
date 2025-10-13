@@ -110,8 +110,8 @@ const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
               ...event.data.element,
               rect: {
                 ...event.data.element.rect,
-                left: event.data.element.rect.left + iframeRect.left,
-                top: event.data.element.rect.top + iframeRect.top,
+                left: iframeRect.left,
+                top: iframeRect.top,
                 width: event.data.element.rect.width,
                 height: event.data.element.rect.height
               }
@@ -133,8 +133,8 @@ const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
               ...event.data.element,
               rect: {
                 ...event.data.element.rect,
-                left: event.data.element.rect.left + iframeRect.left,
-                top: event.data.element.rect.top + iframeRect.top,
+                left: iframeRect.left,
+                top: iframeRect.top,
                 width: event.data.element.rect.width,
                 height: event.data.element.rect.height
               }
