@@ -33,7 +33,6 @@
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
     "@types/uuid": "^9.0.8",
-    "@types/interactjs": "^1.10.27",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.16",
     "jest": "^29.7.0",

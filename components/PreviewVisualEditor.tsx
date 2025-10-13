@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Icon } from './Icon';
 import type { PreviewElement, PreviewChange, VisualEditorState } from '../types';
 
+// @ts-ignore - interact.js doesn't have official TypeScript types
 import interact from 'interactjs';
 
 interface PreviewVisualEditorProps {
