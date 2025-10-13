@@ -285,6 +285,8 @@ const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
 
   if (!isEnabled) return null;
 
+  console.log('PreviewVisualEditor rendering with isEnabled:', isEnabled);
+
   return (
     <div className="absolute inset-0 pointer-events-none">
       {/* Hover overlay */}

@@ -153,6 +153,13 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
             />
           </>
         )}
+        {view === 'preview' && (
+          <PreviewVisualEditor
+            htmlContent={displayHtml}
+            onPreviewEdit={onPreviewEdit || (() => {})}
+            isEnabled={isVisualEditorEnabled}
+          />
+        )}
         {view === 'code' && (
           <div className="h-full w-full">
             {/* Desktop: Resizable horizontal panel */}
