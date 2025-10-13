@@ -1046,7 +1046,11 @@ DO NOT remove working code or features the user asked for.`;
           onToggleView={() => setMobileView(prev => prev === 'chat' ? 'preview' : 'chat')}
           onToggleSidebar={() => setMobileSidebarOpen(true)}
           onTemplateLibrary={() => setIsTemplateLibraryOpen(true)}
-          onVisualEditor={() => setIsVisualEditorEnabled(!isVisualEditorEnabled)}
+          onVisualEditor={() => {
+            console.log('Visual Editor button clicked, current state:', isVisualEditorEnabled);
+            setIsVisualEditorEnabled(!isVisualEditorEnabled);
+            console.log('Visual Editor state changed to:', !isVisualEditorEnabled);
+          }}
           onStylePresets={() => setIsStylePresetsOpen(true)}
           onAIAgents={() => setIsAIAgentsOpen(true)}
           onDeployment={() => setIsDeploymentOpen(true)}
