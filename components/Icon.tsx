@@ -186,6 +186,16 @@ export const Icon: React.FC<IconProps> = ({ name, className }) => {
         <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
       </svg>
     ),
+    database: (
+      <svg fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+        <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+      </svg>
+    ),
+    bug: (
+      <svg fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+        <rect x="8" y="6" width="8" height="14" rx="1"></rect><path d="M12 21v-1"></path><path d="M12 3v1"></path><path d="M12 8v1"></path><path d="M12 16v1"></path><path d="M8 12h8"></path><path d="M6 8h12"></path><path d="M6 16h12"></path>
+      </svg>
+    ),
   };
 
   return <div className={className}>{icons[name]}</div>;
