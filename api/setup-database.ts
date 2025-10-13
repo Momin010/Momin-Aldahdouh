@@ -51,8 +51,24 @@ export default async function handler(req: any, res: any) {
     await sql`CREATE INDEX IF NOT EXISTS idx_user_databases_project_id ON user_databases(project_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_user_databases_status ON user_databases(connection_status)`;
 
+    // Create database_backups table for backup/restore functionality
+    await sql`
+      CREATE TABLE IF NOT EXISTS database_backups (
+        id SERIAL PRIMARY KEY,
+        user_email VARCHAR(255) NOT NULL,
+        project_id VARCHAR(255) NOT NULL,
+        backup_data JSONB NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    // Create indexes for database_backups
+    await sql`CREATE INDEX IF NOT EXISTS idx_database_backups_user_email ON database_backups(user_email)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_database_backups_project_id ON database_backups(project_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_database_backups_created_at ON database_backups(created_at DESC)`;
+
     return res.status(200).json({
-      message: 'Database setup completed successfully (including MominAI Cloud tables)',
+      message: 'Database setup completed successfully (including MominAI Cloud and backup tables)',
       timestamp: new Date().toISOString()
     });
   } catch (error) {
