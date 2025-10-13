@@ -346,7 +346,7 @@ const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
         type: 'style',
         property,
         value,
-        oldValue: editorState.selectedElement.styles[property]
+        oldValue: editorState.selectedElement.styles?.[property] || ''
       });
     }
   };
@@ -439,7 +439,7 @@ const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Font Family</label>
               <select
-                value={editorState.selectedElement.styles.fontFamily || 'Arial'}
+                value={editorState.selectedElement.styles?.fontFamily || 'Arial'}
                 onChange={(e) => handleStyleChange('fontFamily', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
               >
@@ -454,7 +454,7 @@ const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">Font Size</label>
               <input
                 type="number"
-                value={parseInt(editorState.selectedElement.styles.fontSize || '16')}
+                value={parseInt(editorState.selectedElement.styles?.fontSize || '16')}
                 onChange={(e) => handleStyleChange('fontSize', `${e.target.value}px`)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                 min="8"
@@ -469,7 +469,7 @@ const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">Text Color</label>
               <input
                 type="color"
-                value={editorState.selectedElement.styles.color || '#000000'}
+                value={editorState.selectedElement.styles?.color || '#000000'}
                 onChange={(e) => handleStyleChange('color', e.target.value)}
                 className="w-full h-10 border border-gray-300 rounded-md cursor-pointer"
               />
@@ -478,7 +478,7 @@ const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">Background</label>
               <input
                 type="color"
-                value={editorState.selectedElement.styles.backgroundColor || '#ffffff'}
+                value={editorState.selectedElement.styles?.backgroundColor || '#ffffff'}
                 onChange={(e) => handleStyleChange('backgroundColor', e.target.value)}
                 className="w-full h-10 border border-gray-300 rounded-md cursor-pointer"
               />
