@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import FileExplorer from './FileExplorer';
 import CodeEditor from './CodeEditor';
 import LivePreview, { Device } from './LivePreview';
+import VisualEditor from './VisualEditor';
 import { Icon } from './Icon';
 import type { Files, ConsoleMessage } from '../types';
 import ResizablePanel from './ResizablePanel';
@@ -21,6 +22,11 @@ interface EditorPreviewPanelProps {
   device: Device;
   onDeviceChange: (device: Device) => void;
   view: 'code' | 'preview' | 'database' | 'visual-editor';
+  currentView: 'code' | 'preview' | 'database' | 'visual-editor';
+  onDatabaseAction?: (action: string) => void;
+  onVisualEditorChange?: (content: string) => void;
+  isVisualEditMode?: boolean;
+  onVisualEditModeChange?: (mode: boolean) => void;
 }
 
 const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
@@ -38,6 +44,11 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
   device,
   onDeviceChange,
   view,
+  currentView,
+  onDatabaseAction,
+  onVisualEditorChange,
+  isVisualEditMode,
+  onVisualEditModeChange,
 }) => {
   
   const deviceButtons: { name: Device, icon: string }[] = [
@@ -62,10 +73,65 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
     );
   }
 
+  // Database View Content
+  if (currentView === 'database' && onDatabaseAction) {
+    return (
+      <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
+        <div className="flex-grow p-6 overflow-auto">
+          <h2 className="text-2xl font-bold text-white mb-6">Database Manager</h2>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <button
+                onClick={() => onDatabaseAction('create')}
+                className="p-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
+              >
+                Create Database
+              </button>
+              <button
+                onClick={() => onDatabaseAction('schema')}
+                className="p-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+              >
+                Generate Schema
+              </button>
+              <button
+                onClick={() => onDatabaseAction('export')}
+                className="p-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors"
+              >
+                Export Data
+              </button>
+            </div>
+            <div className="bg-black/30 rounded-lg p-4">
+              <p className="text-gray-400 text-sm">
+                Database management features will be displayed here.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Visual Editor View Content
+  if (currentView === 'visual-editor' && onVisualEditorChange && onVisualEditModeChange) {
+    return (
+      <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
+        <div className="flex-grow overflow-hidden">
+          <VisualEditor
+            htmlContent={standaloneHtml || previewHtml || ''}
+            onContentChange={onVisualEditorChange}
+            isEditMode={isVisualEditMode || false}
+            onEditModeChange={onVisualEditModeChange}
+            className="h-full"
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
       <div className="flex-grow overflow-auto relative">
-        {view === 'preview' && (
+        {currentView === 'preview' && (
           <LivePreview
             htmlContent={displayHtml}
             device={device}
@@ -74,7 +140,7 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
             onClearLogs={onClearConsole}
           />
         )}
-        {view === 'code' && (
+        {currentView === 'code' && (
           <div className="h-full w-full">
             {/* Desktop: Resizable horizontal panel */}
             <div className="hidden md:flex h-full">

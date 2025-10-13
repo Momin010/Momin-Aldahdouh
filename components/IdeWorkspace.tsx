@@ -861,52 +861,29 @@ DO NOT remove working code or features the user asked for.`;
 
     const onStreamingCompleteForActive = (messageIndex: number) => handleStreamingComplete(activeProject.id, messageIndex);
 
-    // Database View
-    if (view === 'database') {
-      return (
-        <div className="flex flex-col h-full overflow-hidden flex-grow p-4">
-          <div className="flex-grow bg-white/5 backdrop-blur-xl md:border border-white/20 md:rounded-2xl p-6 overflow-auto">
-            <h2 className="text-2xl font-bold text-white mb-6">Database Manager</h2>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <button
-                  onClick={() => handleDatabaseAction('create')}
-                  className="p-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
-                >
-                  Create Database
-                </button>
-                <button
-                  onClick={() => handleDatabaseAction('schema')}
-                  className="p-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
-                >
-                  Generate Schema
-                </button>
-                <button
-                  onClick={() => handleDatabaseAction('export')}
-                  className="p-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors"
-                >
-                  Export Data
-                </button>
-              </div>
-              <div className="bg-black/30 rounded-lg p-4">
-                <p className="text-gray-400 text-sm">
-                  Database management features will be displayed here. Current database: {databaseService.getCurrentDatabase()?.name || 'None'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Visual Editor View
-    if (view === 'visual-editor') {
-      return (
-        <div className="flex flex-col h-full overflow-hidden flex-grow p-4">
-          <div className="flex-grow bg-white/5 backdrop-blur-xl md:border border-white/20 md:rounded-2xl overflow-hidden">
-            <VisualEditor
-              htmlContent={standaloneHtml || previewHtml || ''}
-              onContentChange={(content) => {
+    return (
+      <div className="flex flex-col h-full overflow-hidden flex-grow">
+        <main className="hidden md:flex flex-grow p-4 gap-4 overflow-auto">
+          <ResizablePanel direction="horizontal" initialSize={450} minSize={320}>
+            <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} aiStatus={activeProjectRunState?.aiStatus || null} onStreamingComplete={onStreamingCompleteForActive} hasGeneratedCode={hasGeneratedCode} onNavigateToPreview={handleNavigateToPreview} onCancelRequest={handleCancelRequest} isCancelling={activeProjectRunState?.isCancelling || false} onContextMenu={handleOpenContextMenu} onDeleteMessage={handleDeleteMessage} onResubmitMessage={handleResubmitMessage} editingIndex={editingMessageIndex} onCancelEditing={() => setEditingMessageIndex(null)} stopwatchSeconds={activeProjectRunState?.stopwatchSeconds || 0} isStopwatchRunning={activeProjectRunState?.isStopwatchRunning || false} streamingProgress={activeProjectRunState?.streamingProgress || null} retryAttempt={activeProjectRunState?.retryAttempt || 0} />
+            <EditorPreviewPanel
+              device={device}
+              onDeviceChange={setDevice}
+              files={files}
+              activeFile={activeFile}
+              onSelectFile={setActiveFile}
+              onCodeChange={handleCodeChange}
+              previewHtml={previewHtml}
+              standaloneHtml={standaloneHtml}
+              onBackToChat={() => {}}
+              onToggleFullscreen={handleToggleFullscreen}
+              consoleLogs={consoleLogs}
+              onNewLog={handleNewLog}
+              onClearConsole={() => setConsoleLogs([])}
+              view={view}
+              currentView={view}
+              onDatabaseAction={handleDatabaseAction}
+              onVisualEditorChange={(content) => {
                 if (activeProject) {
                   updateProjectById(activeProject.id, project => {
                     const newHistory = { ...project.history };
@@ -919,21 +896,9 @@ DO NOT remove working code or features the user asked for.`;
                   });
                 }
               }}
-              isEditMode={isVisualEditMode}
-              onEditModeChange={setIsVisualEditMode}
-              className="h-full"
+              isVisualEditMode={isVisualEditMode}
+              onVisualEditModeChange={setIsVisualEditMode}
             />
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex flex-col h-full overflow-hidden flex-grow">
-        <main className="hidden md:flex flex-grow p-4 gap-4 overflow-auto">
-          <ResizablePanel direction="horizontal" initialSize={450} minSize={320}>
-            <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} aiStatus={activeProjectRunState?.aiStatus || null} onStreamingComplete={onStreamingCompleteForActive} hasGeneratedCode={hasGeneratedCode} onNavigateToPreview={handleNavigateToPreview} onCancelRequest={handleCancelRequest} isCancelling={activeProjectRunState?.isCancelling || false} onContextMenu={handleOpenContextMenu} onDeleteMessage={handleDeleteMessage} onResubmitMessage={handleResubmitMessage} editingIndex={editingMessageIndex} onCancelEditing={() => setEditingMessageIndex(null)} stopwatchSeconds={activeProjectRunState?.stopwatchSeconds || 0} isStopwatchRunning={activeProjectRunState?.isStopwatchRunning || false} streamingProgress={activeProjectRunState?.streamingProgress || null} retryAttempt={activeProjectRunState?.retryAttempt || 0} />
-            <EditorPreviewPanel device={device} onDeviceChange={setDevice} files={files} activeFile={activeFile} onSelectFile={setActiveFile} onCodeChange={handleCodeChange} previewHtml={previewHtml} standaloneHtml={standaloneHtml} onBackToChat={() => {}} onToggleFullscreen={handleToggleFullscreen} consoleLogs={consoleLogs} onNewLog={handleNewLog} onClearConsole={() => setConsoleLogs([])} view={view} />
           </ResizablePanel>
         </main>
 
