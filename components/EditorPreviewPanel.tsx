@@ -29,6 +29,7 @@ interface EditorPreviewPanelProps {
    isVisualEditMode?: boolean;
    onVisualEditModeChange?: (mode: boolean) => void;
    onPreviewEdit?: (change: PreviewChange) => void;
+   isVisualEditorEnabled?: boolean;
 }
 
 const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
@@ -52,6 +53,7 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
   isVisualEditMode,
   onVisualEditModeChange,
   onPreviewEdit,
+  isVisualEditorEnabled,
 }) => {
   
   const deviceButtons: { name: Device, icon: string }[] = [
@@ -147,7 +149,7 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
             <PreviewVisualEditor
               htmlContent={displayHtml}
               onPreviewEdit={onPreviewEdit || (() => {})}
-              isEnabled={isVisualEditMode}
+              isEnabled={isVisualEditorEnabled}
             />
           </>
         )}

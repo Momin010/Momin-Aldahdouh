@@ -922,6 +922,7 @@ DO NOT remove working code or features the user asked for.`;
                   });
                 }
               }}
+              isVisualEditorEnabled={isVisualEditorEnabled}
             />
           </ResizablePanel>
         </main>
