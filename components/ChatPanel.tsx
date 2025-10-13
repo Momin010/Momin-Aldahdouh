@@ -168,11 +168,19 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const [dynamicStatus, setDynamicStatus] = useState<string | null>(aiStatus);
   const [imageModal, setImageModal] = useState<{src: string, alt: string} | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
-  
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const longPressTimerRef = useRef<number | null>(null);
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  };
 
   const isLoading = (aiStatus !== null && Object.keys(LOADING_TEXTS).includes(aiStatus));
   const showStarterPrompts = !hasGeneratedCode && messages.length <= 1;
@@ -369,12 +377,21 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                       </p>
                     </div>
                   )}
-                  <ProgressBar
-                    progress={streamingProgress?.progress || 0}
-                    receivedBytes={streamingProgress?.receivedBytes}
-                    totalBytes={streamingProgress?.totalBytes}
-                    className="w-full mb-2"
-                  />
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-gray-400">
+                      <span>Receiving data...</span>
+                      <span>{streamingProgress?.receivedBytes ? formatBytes(streamingProgress.receivedBytes) + ' received' : ''}</span>
+                    </div>
+                    <ProgressBar
+                      progress={streamingProgress?.progress || 0}
+                      receivedBytes={streamingProgress?.receivedBytes}
+                      totalBytes={streamingProgress?.totalBytes}
+                      className="w-full"
+                    />
+                    <div className="text-center text-xs text-gray-400">
+                      {Math.round(streamingProgress?.progress || 0)}% complete
+                    </div>
+                  </div>
                   <p className="text-sm text-gray-300">
                     {dynamicStatus}
                   </p>

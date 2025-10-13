@@ -13,23 +13,8 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
   receivedBytes,
   className = ''
 }) => {
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-  };
-
-  const estimatedTotal = totalBytes !== undefined ? totalBytes : (progress > 0 ? receivedBytes! / (progress / 100) : 0);
-
   return (
     <div className={`w-full ${className}`}>
-      {progress > 0 && (
-        <div className="text-xs text-gray-400 mb-1 text-center">
-          {Math.round(progress)}% = {formatBytes(estimatedTotal)} of data
-        </div>
-      )}
       <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
         <div
           className="h-full bg-gradient-to-r from-purple-500 to-cyan-500 transition-all duration-300 ease-out rounded-full"
