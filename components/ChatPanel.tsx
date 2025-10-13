@@ -347,7 +347,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   };
 
   return (
-    <div className={`flex flex-col h-full bg-white/5 backdrop-blur-xl md:border border-white/20 md:rounded-2xl overflow-hidden ${isDragOver ? 'ring-2 ring-purple-400 ring-opacity-50' : ''}`}
+    <div className={`flex flex-col h-full bg-white/5 backdrop-blur-xl md:border border-white/20 md:rounded-2xl overflow-hidden ${isDragOver ? 'ring-2 ring-white/50 ring-opacity-50' : ''}`}
          onDragOver={handleDragOver}
          onDragEnter={handleDragEnter}
          onDragLeave={handleDragLeave}
@@ -399,7 +399,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             if (msg.action === 'GOTO_PREVIEW') {
               return (
                 <div key={`${originalIndex}-action`} className="md:hidden flex justify-center py-2">
-                  <button onClick={onNavigateToPreview} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 transition-colors">
+                  <button onClick={onNavigateToPreview} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-white/20 backdrop-blur-xl hover:bg-white/30 transition-colors border border-white/20">
                     <Icon name="eye" className="w-4 h-4" /> <span>{msg.content}</span>
                   </button>
                 </div>
@@ -420,7 +420,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                     <div className="w-full h-full rounded-full bg-gradient-to-br from-purple-500 to-cyan-400 opacity-50" />
                   </div>
                 }
-                 <div className={`max-w-xs md:max-w-md p-3 md:p-4 rounded-2xl ${msg.role === 'user' ? 'bg-purple-600 text-white rounded-br-none' : 'bg-white/10 backdrop-blur-xl text-gray-100 rounded-bl-none border border-white/20 shadow-lg'}`}
+                 <div className={`max-w-xs md:max-w-md p-3 md:p-4 rounded-2xl ${msg.role === 'user' ? 'bg-white/10 backdrop-blur-xl text-white rounded-br-none border border-white/20 shadow-lg' : 'bg-white/10 backdrop-blur-xl text-gray-100 rounded-bl-none border border-white/20 shadow-lg'}`}
                     onClick={(e) => isEditing && e.stopPropagation()}
                 >
                   {isEditing ? (
@@ -428,13 +428,13 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                         <textarea
                                   value={editingText}
                                   onChange={(e) => setEditingText(e.target.value)}
-                                  className="w-full bg-white/10 backdrop-blur-xl rounded-lg p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-400 border border-white/20"
+                                  className="w-full bg-white/10 backdrop-blur-xl rounded-lg p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-white/50 border border-white/20"
                                   rows={3}
                                   autoFocus
                               />
                         <div className="flex justify-end gap-2">
                             <button onClick={cancelEditing} className="px-3 py-1 text-xs font-semibold rounded-md bg-white/10 hover:bg-white/20">Cancel</button>
-                            <button onClick={confirmEditing} className="px-3 py-1 text-xs font-semibold rounded-md bg-white text-purple-700 hover:bg-gray-200">Save & Submit</button>
+                            <button onClick={confirmEditing} className="px-3 py-1 text-xs font-semibold rounded-md bg-white/20 backdrop-blur-xl text-white hover:bg-white/30 border border-white/20">Save & Submit</button>
                         </div>
                     </div>
                   ) : (
@@ -463,7 +463,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                       {!msg.streaming && msg.plan && <PlanDisplay plan={msg.plan} />}
                       {!msg.streaming && msg.action === 'AWAITING_PLAN_APPROVAL' && (
                         <div className="mt-4 flex flex-col sm:flex-row gap-2">
-                          <button onClick={() => onSendMessage("Looks good, build the application now.")} disabled={isLoading} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 transition-colors disabled:bg-gray-600">
+                          <button onClick={() => onSendMessage("Looks good, build the application now.")} disabled={isLoading} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-white/20 backdrop-blur-xl hover:bg-white/30 transition-colors disabled:bg-gray-600 border border-white/20">
                             <Icon name="lightning" className="w-4 h-4" /> Build Application
                           </button>
                           <button onClick={() => inputRef.current?.focus()} disabled={isLoading} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-50">Suggest Changes</button>
@@ -532,7 +532,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={isDragOver ? "Drop images here..." : "Describe your web app or attach an image reference..."}
-            className="w-full bg-white/5 backdrop-blur-xl rounded-xl p-2.5 md:p-3 pr-16 sm:pr-20 md:pr-24 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-gray-500 transition-shadow border border-white/20"
+            className="w-full bg-white/5 backdrop-blur-xl rounded-xl p-2.5 md:p-3 pr-16 sm:pr-20 md:pr-24 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-white/50 placeholder-gray-500 transition-shadow border border-white/20"
             rows={1}
             disabled={isLoading || isCancelling}
           />
@@ -548,7 +548,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             ) : (
                 <>
                     <button onClick={() => fileInputRef.current?.click()} className="p-1.5 md:p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10" aria-label="Attach file" disabled={isLoading}><Icon name="paperclip" className="w-4 h-4 md:w-5 md:h-5"/></button>
-                    <button onClick={handleSend} disabled={isLoading || (!input.trim() && attachments.length === 0)} className="p-1.5 md:p-2 rounded-lg text-white bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors" aria-label="Send message">
+                    <button onClick={handleSend} disabled={isLoading || (!input.trim() && attachments.length === 0)} className="p-1.5 md:p-2 rounded-lg text-white bg-white/20 backdrop-blur-xl hover:bg-white/30 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors border border-white/20" aria-label="Send message">
                     <Icon name="send" className="w-4 h-4 md:w-5 md:h-5" />
                     </button>
                 </>

@@ -823,7 +823,7 @@ DO NOT remove working code or features the user asked for.`;
         onMouseEnter={() => setIsSidebarHovered(true)}
         className={`hidden md:block fixed bottom-4 left-4 z-50 cursor-pointer transition-opacity duration-300 ${isSidebarHovered ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
       >
-        <div className="p-3 rounded-full bg-purple-600/80 backdrop-blur-xl border border-white/20 text-white shadow-2xl">
+        <div className="p-3 rounded-full bg-white/20 backdrop-blur-xl border border-white/20 text-white shadow-2xl">
             <Icon name="menu" className="w-6 h-6" />
         </div>
       </div>

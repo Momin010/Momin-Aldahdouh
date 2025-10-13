@@ -63,7 +63,7 @@ const Header: React.FC<HeaderProps> = ({
                 value={tempName}
                 onChange={(e) => setTempName(e.target.value)}
                 onBlur={handleRenameSubmit}
-                className="bg-white/10 backdrop-blur-xl text-white font-semibold rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500 border border-white/20"
+                className="bg-white/10 backdrop-blur-xl text-white font-semibold rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-white/50 border border-white/20"
               />
             </form>
           ) : (
@@ -84,7 +84,7 @@ const Header: React.FC<HeaderProps> = ({
       <div className="flex-1 flex justify-end items-center gap-4">
         {isProjectLoaded && (
            <div className="md:hidden">
-            <button onClick={onToggleView} className="px-2 py-1.5 text-xs font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 transition-colors flex items-center gap-1">
+            <button onClick={onToggleView} className="px-2 py-1.5 text-xs font-semibold rounded-lg bg-white/20 backdrop-blur-xl hover:bg-white/30 transition-colors flex items-center gap-1 border border-white/20">
               {mobileView === 'chat' ? (
                 <>
                   <Icon name="eye" className="w-3 h-3" />
@@ -131,7 +131,7 @@ const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onPublish}
             disabled={!isProjectLoaded}
-            className="px-4 py-2 text-sm font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">
+            className="px-4 py-2 text-sm font-semibold rounded-lg bg-white/20 backdrop-blur-xl hover:bg-white/30 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed border border-white/20">
             Publish
           </button>
         </div>

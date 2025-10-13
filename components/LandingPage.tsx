@@ -128,7 +128,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onSignInClick }) => 
                     </button>
                  </div>
                )}
-              <div className={`relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl ${isDragOver ? 'ring-2 ring-purple-400 ring-opacity-50' : ''}`}
+              <div className={`relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl ${isDragOver ? 'ring-2 ring-white/50 ring-opacity-50' : ''}`}
                    onDragOver={handleDragOver}
                    onDragEnter={handleDragEnter}
                    onDragLeave={handleDragLeave}
@@ -138,7 +138,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onSignInClick }) => 
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder={isDragOver ? "Drop an image here..." : "e.g., 'a portfolio website for a photographer'"}
-                  className="w-full bg-transparent rounded-2xl p-4 pr-24 text-base resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-gray-400 transition-shadow"
+                  className="w-full bg-transparent rounded-2xl p-4 pr-24 text-base resize-none focus:outline-none focus:ring-2 focus:ring-white/50 placeholder-gray-400 transition-shadow"
                   rows={1}
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -149,7 +149,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onSignInClick }) => 
                   <button
                     onClick={handleSend}
                     disabled={!input.trim() && !attachment}
-                    className="p-2 rounded-lg text-white bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
+                    className="p-2 rounded-lg text-white bg-white/20 backdrop-blur-xl hover:bg-white/30 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors border border-white/20"
                     aria-label="Start building"
                   >
                     <Icon name="send" className="w-5 h-5" />
@@ -167,7 +167,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onSignInClick }) => 
                     <button 
                         key={prompt.label} 
                         onClick={() => onStart(prompt.prompt)}
-                        className={`bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 text-left transform hover:-translate-y-1 hover:border-purple-400/50 transition-all duration-300 shadow-2xl animate-fadeInUp delay-${200 * (index + 2)}`}
+                        className={`bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 text-left transform hover:-translate-y-1 hover:border-white/50 transition-all duration-300 shadow-2xl animate-fadeInUp delay-${200 * (index + 2)}`}
                     >
                         <h3 className="font-bold text-white">{prompt.label}</h3>
                         <p className="mt-2 text-sm text-gray-400">{prompt.prompt}</p>
