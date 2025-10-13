@@ -1,17 +1,18 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Icon } from './Icon';
 import type { ConsoleMessage } from '../types';
 
 export type Device = 'desktop' | 'tablet' | 'mobile';
 
 interface LivePreviewProps {
-  htmlContent: string;
-  device: Device;
-  isFullscreen?: boolean;
-  onExitFullscreen?: () => void;
-  logs: ConsoleMessage[];
-  onNewLog: (log: ConsoleMessage) => void;
-  onClearLogs: () => void;
+   htmlContent: string;
+   device: Device;
+   isFullscreen?: boolean;
+   onExitFullscreen?: () => void;
+   logs: ConsoleMessage[];
+   onNewLog: (log: ConsoleMessage) => void;
+   onClearLogs: () => void;
+   isVisualEditorEnabled?: boolean;
 }
 
 const deviceStyles: Record<Device, React.CSSProperties> = {
@@ -91,7 +92,14 @@ const consoleInterceptorScript = `
   }, true);
 
   // Visual Editor Communication
+  let visualEditorEnabled = false;
+
   window.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'VISUAL_EDITOR_TOGGLE') {
+      visualEditorEnabled = e.data.enabled;
+      console.log('Visual editor enabled:', visualEditorEnabled);
+    }
+
     if (e.data && e.data.type === 'VISUAL_EDITOR_REQUEST') {
       const elements = [];
       const allElements = document.querySelectorAll('*');
@@ -139,6 +147,73 @@ const consoleInterceptorScript = `
     }
   });
 
+  // Send mouse events to parent when visual editor is enabled
+  document.addEventListener('mouseover', (e) => {
+    if (visualEditorEnabled) {
+      const target = e.target as Element;
+      if (target && target !== document.body) {
+        const rect = target.getBoundingClientRect();
+        window.parent.postMessage({
+          source: 'mominai-preview-mouse-event',
+          type: 'mouseover',
+          element: {
+            id: \`hover-\${Date.now()}\`,
+            tagName: target.tagName.toLowerCase(),
+            className: target.className || '',
+            textContent: target.textContent?.trim() || '',
+            rect: {
+              left: rect.left,
+              top: rect.top,
+              width: rect.width,
+              height: rect.height,
+              right: rect.right,
+              bottom: rect.bottom
+            }
+          }
+        }, '*');
+      }
+    }
+  }, true);
+
+  document.addEventListener('mouseout', (e) => {
+    if (visualEditorEnabled) {
+      window.parent.postMessage({
+        source: 'mominai-preview-mouse-event',
+        type: 'mouseout'
+      }, '*');
+    }
+  }, true);
+
+  document.addEventListener('click', (e) => {
+    if (visualEditorEnabled) {
+      const target = e.target as Element;
+      if (target && target !== document.body) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const rect = target.getBoundingClientRect();
+        window.parent.postMessage({
+          source: 'mominai-preview-mouse-event',
+          type: 'click',
+          element: {
+            id: \`selected-\${Date.now()}\`,
+            tagName: target.tagName.toLowerCase(),
+            className: target.className || '',
+            textContent: target.textContent?.trim() || '',
+            rect: {
+              left: rect.left,
+              top: rect.top,
+              width: rect.width,
+              height: rect.height,
+              right: rect.right,
+              bottom: rect.bottom
+            }
+          }
+        }, '*');
+      }
+    }
+  }, true);
+
   // Notify parent that iframe is ready
   window.parent.postMessage({
     source: 'mominai-preview-ready'
@@ -153,15 +228,16 @@ const decodeHtmlEntities = (text: string): string => {
     return textarea.value;
 };
 
-const LivePreview: React.FC<LivePreviewProps> = ({ 
-  htmlContent, 
-  device,
-  isFullscreen = false, 
-  onExitFullscreen, 
-  logs,
-  onNewLog,
-  onClearLogs
-}) => {
+const LivePreview = forwardRef<HTMLIFrameElement, LivePreviewProps>(({
+   htmlContent,
+   device,
+   isFullscreen = false,
+   onExitFullscreen,
+   logs,
+   onNewLog,
+   onClearLogs,
+   isVisualEditorEnabled = false
+}, ref) => {
   const decodedContent = useMemo(() => decodeHtmlEntities(htmlContent), [htmlContent]);
   const isPlaceholder = !decodedContent.trim();
   const isMobileView = window.innerWidth < 768;
@@ -177,10 +253,23 @@ const LivePreview: React.FC<LivePreviewProps> = ({
       if (event.data && event.data.source === 'mominai-preview-ready') {
         console.log('Iframe is ready for visual editing');
       }
+      if (event.data && event.data.source === 'mominai-preview-mouse-event') {
+        console.log('Received mouse event from iframe:', event.data);
+      }
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [onNewLog]);
+
+  // Send visual editor enable/disable message to iframe
+  useEffect(() => {
+    if (ref && 'current' in ref && ref.current) {
+      ref.current.contentWindow?.postMessage({
+        type: 'VISUAL_EDITOR_TOGGLE',
+        enabled: isVisualEditorEnabled
+      }, '*');
+    }
+  }, [isVisualEditorEnabled, ref]);
 
   const srcDoc = isPlaceholder ? '' : `<script>${consoleInterceptorScript}</script>${decodedContent}`;
   
@@ -225,6 +314,7 @@ const LivePreview: React.FC<LivePreviewProps> = ({
     <div className="w-full h-full bg-gray-800/50 flex justify-center overflow-auto p-4 min-h-0">
       <div style={deviceStyles[device]} className="h-full shadow-2xl bg-white flex-shrink-0 transition-all duration-300 ease-in-out">
         <iframe
+          ref={ref}
           key={htmlContent} // Force re-render on content change
           srcDoc={srcDoc}
           title="Live Preview"
@@ -261,6 +351,7 @@ const LivePreview: React.FC<LivePreviewProps> = ({
       {isFullscreen ? (
         <div className="w-full h-full bg-white">
           <iframe
+            ref={ref}
             key={htmlContent}
             srcDoc={srcDoc}
             title="Live Preview"
@@ -274,6 +365,8 @@ const LivePreview: React.FC<LivePreviewProps> = ({
       )}
     </div>
   );
-};
+});
+
+LivePreview.displayName = 'LivePreview';
 
 export default LivePreview;

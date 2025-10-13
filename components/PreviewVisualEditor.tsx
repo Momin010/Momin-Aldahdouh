@@ -3,15 +3,17 @@ import { Icon } from './Icon';
 import type { PreviewElement, PreviewChange, VisualEditorState } from '../types';
 
 interface PreviewVisualEditorProps {
-  htmlContent: string;
-  onPreviewEdit: (change: PreviewChange) => void;
-  isEnabled: boolean;
+   htmlContent: string;
+   onPreviewEdit: (change: PreviewChange) => void;
+   isEnabled: boolean;
+   iframeRef: React.RefObject<HTMLIFrameElement>;
 }
 
 const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
-  htmlContent,
-  onPreviewEdit,
-  isEnabled
+   htmlContent,
+   onPreviewEdit,
+   isEnabled,
+   iframeRef
 }) => {
   const [editorState, setEditorState] = useState<VisualEditorState>({
     isEnabled: false,
@@ -21,7 +23,6 @@ const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
   });
 
   const [elements, setElements] = useState<PreviewElement[]>([]);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
@@ -88,88 +89,36 @@ const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
         }, 100);
       }
     }
-  }, [htmlContent, parseHtmlToElements]);
+  }, [htmlContent, parseHtmlToElements, iframeRef]);
 
-  // Handle mouse events in iframe
+  // Handle mouse events from iframe via postMessage
   useEffect(() => {
-    if (!isEnabled || !iframeRef.current) return;
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data && event.data.source === 'mominai-preview-mouse-event') {
+        if (event.data.type === 'mouseover') {
+          if (isResizing) return;
 
-    const iframe = iframeRef.current;
-    const iframeDoc = iframe.contentDocument;
+          console.log('Mouse over event from iframe:', event.data.element);
+          setEditorState(prev => ({ ...prev, hoveredElement: event.data.element }));
+        } else if (event.data.type === 'mouseout') {
+          if (isResizing) return;
+          console.log('Mouse out event from iframe');
+          setEditorState(prev => ({ ...prev, hoveredElement: null }));
+        } else if (event.data.type === 'click') {
+          if (isResizing) return;
 
-    if (!iframeDoc) return;
-
-    const handleMouseOver = (e: MouseEvent) => {
-      if (isResizing) return;
-
-      console.log('Mouse over event in iframe:', e.target);
-      const target = e.target as Element;
-      if (target && target !== iframeDoc.body) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const rect = target.getBoundingClientRect();
-        const element: PreviewElement = {
-          id: `hover-${Date.now()}`,
-          tagName: target.tagName.toLowerCase(),
-          className: target.className || '',
-          textContent: target.textContent?.trim() || '',
-          styles: {},
-          attributes: {},
-          children: [],
-          rect
-        };
-
-        console.log('Setting hovered element:', element);
-        setEditorState(prev => ({ ...prev, hoveredElement: element }));
+          console.log('Click event from iframe:', event.data.element);
+          setEditorState(prev => ({
+            ...prev,
+            selectedElement: event.data.element,
+            isEditing: true
+          }));
+        }
       }
     };
 
-    const handleMouseOut = (e: MouseEvent) => {
-      if (isResizing) return;
-      console.log('Mouse out event in iframe');
-      setEditorState(prev => ({ ...prev, hoveredElement: null }));
-    };
-
-    const handleClick = (e: MouseEvent) => {
-      if (isResizing) return;
-
-      console.log('Click event in iframe:', e.target);
-      const target = e.target as Element;
-      if (target && target !== iframeDoc.body) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const rect = target.getBoundingClientRect();
-        const element: PreviewElement = {
-          id: `selected-${Date.now()}`,
-          tagName: target.tagName.toLowerCase(),
-          className: target.className || '',
-          textContent: target.textContent?.trim() || '',
-          styles: {},
-          attributes: {},
-          children: [],
-          rect
-        };
-
-        console.log('Setting selected element:', element);
-        setEditorState(prev => ({
-          ...prev,
-          selectedElement: element,
-          isEditing: true
-        }));
-      }
-    };
-
-    iframeDoc.addEventListener('mouseover', handleMouseOver, true);
-    iframeDoc.addEventListener('mouseout', handleMouseOut, true);
-    iframeDoc.addEventListener('click', handleClick, true);
-
-    return () => {
-      iframeDoc.removeEventListener('mouseover', handleMouseOver, true);
-      iframeDoc.removeEventListener('mouseout', handleMouseOut, true);
-      iframeDoc.removeEventListener('click', handleClick, true);
-    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
   }, [isEnabled, isResizing]);
 
   // Listen for messages from iframe
@@ -481,13 +430,6 @@ const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
         </div>
       )}
 
-      {/* Hidden iframe for DOM manipulation */}
-      <iframe
-        ref={iframeRef}
-        className="absolute inset-0 w-full h-full pointer-events-auto opacity-0"
-        style={{ zIndex: -1 }}
-        title="Visual Editor DOM"
-      />
     </div>
   );
 };

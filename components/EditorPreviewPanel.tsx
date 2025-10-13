@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import FileExplorer from './FileExplorer';
 import CodeEditor from './CodeEditor';
 import LivePreview, { Device } from './LivePreview';
@@ -55,13 +55,15 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
   onPreviewEdit,
   isVisualEditorEnabled,
 }) => {
-  
+
+  const previewIframeRef = useRef<HTMLIFrameElement>(null);
+
   const deviceButtons: { name: Device, icon: string }[] = [
     { name: 'desktop', icon: 'desktop' },
     { name: 'tablet', icon: 'tablet' },
     { name: 'mobile', icon: 'mobile' },
   ];
-  
+
   const displayHtml = standaloneHtml || previewHtml;
 
   // Show placeholder only when there's no content to display in preview mode
@@ -140,16 +142,19 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
         {view === 'preview' && (
           <>
             <LivePreview
+              ref={previewIframeRef}
               htmlContent={displayHtml}
               device={device}
               logs={consoleLogs}
               onNewLog={onNewLog}
               onClearLogs={onClearConsole}
+              isVisualEditorEnabled={isVisualEditorEnabled}
             />
             <PreviewVisualEditor
               htmlContent={displayHtml}
               onPreviewEdit={onPreviewEdit || (() => {})}
               isEnabled={isVisualEditorEnabled}
+              iframeRef={previewIframeRef}
             />
           </>
         )}
@@ -158,6 +163,7 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
             htmlContent={displayHtml}
             onPreviewEdit={onPreviewEdit || (() => {})}
             isEnabled={isVisualEditorEnabled}
+            iframeRef={previewIframeRef}
           />
         )}
         {view === 'code' && (
