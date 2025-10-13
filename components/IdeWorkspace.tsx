@@ -456,8 +456,8 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
     const projectId = activeProject.id;
 
     // Check credits before sending message
-    if (currentUser) {
-      const hasCredits = CreditService.useCredit(currentUser.email);
+    if (user) {
+      const hasCredits = CreditService.useCredit(user.email);
       if (!hasCredits) {
         alert('You have reached your daily limit of 10 messages. Please try again tomorrow.');
         return;
@@ -474,7 +474,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
     const messagesForAI = [...currentState.chatMessages, userMessage];
     triggerAiResponse(projectId, messagesForAI, attachments || null);
 
-  }, [activeProject, currentState, addHistoryStateForProject, triggerAiResponse, currentUser]);
+  }, [activeProject, currentState, addHistoryStateForProject, triggerAiResponse, user]);
 
   const handleNewProject = useCallback(async (name: string = 'New Project', andThenSend?: {prompt: string, attachment: FileAttachment | null}) => {
       try {
@@ -943,7 +943,7 @@ DO NOT remove working code or features the user asked for.`;
           view={view}
           onViewChange={setView}
           onToggleFullscreen={handleToggleFullscreen}
-          userEmail={currentUser?.email}
+          userEmail={user?.email}
         />
         <div className="flex-grow">
           {renderWorkspaceContent()}

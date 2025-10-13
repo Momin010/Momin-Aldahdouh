@@ -75,11 +75,18 @@ const App: React.FC = () => {
         const user = await authService.getCurrentUser();
         if (user) {
           setCurrentUser(user);
-          const workspaceData = await projectService.getWorkspace();
-          setUserWorkspace(workspaceData);
+          try {
+            const workspaceData = await projectService.getWorkspace();
+            setUserWorkspace(workspaceData);
+          } catch (workspaceError) {
+            console.error("Failed to fetch workspace after auth:", workspaceError);
+            // Don't fail completely if workspace fetch fails
+            setUserWorkspace({ projects: [], activeProjectId: null });
+          }
         }
       } catch (error) {
         console.error("Error during session check:", error);
+        // This is expected for unauthenticated users, so don't treat it as a fatal error
       } finally {
         setIsLoading(false);
       }
@@ -112,19 +119,37 @@ const App: React.FC = () => {
   const handleAuthSuccess = async (user: User) => {
     setCurrentUser(user);
     setAuthModalOpen(false);
-    await migrateGuestWorkspace(user);
-    
-    // Fetch workspace if not migrating or migration failed to ensure user sees something
-    if (!isMigrating) {
-        setIsLoading(true);
-        try {
-            const workspaceData = await projectService.getWorkspace();
-            setUserWorkspace(workspaceData);
-        } catch (error) {
-            console.error("Failed to fetch workspace after auth:", error);
-        } finally {
-            setIsLoading(false);
-        }
+
+    try {
+      await migrateGuestWorkspace(user);
+
+      // Fetch workspace if not migrating or migration failed to ensure user sees something
+      if (!isMigrating) {
+          setIsLoading(true);
+          try {
+              const workspaceData = await projectService.getWorkspace();
+              setUserWorkspace(workspaceData);
+          } catch (error) {
+              console.error("Failed to fetch workspace after auth:", error);
+              // Set empty workspace as fallback
+              setUserWorkspace({ projects: [], activeProjectId: null });
+          } finally {
+              setIsLoading(false);
+          }
+      }
+    } catch (migrationError) {
+      console.error("Migration failed:", migrationError);
+      // Continue with authentication even if migration fails
+      setIsLoading(true);
+      try {
+        const workspaceData = await projectService.getWorkspace();
+        setUserWorkspace(workspaceData);
+      } catch (workspaceError) {
+        console.error("Failed to fetch workspace after migration failure:", workspaceError);
+        setUserWorkspace({ projects: [], activeProjectId: null });
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -165,7 +190,7 @@ const App: React.FC = () => {
   if (isLoading || isMigrating) {
     const message = isMigrating ? 'Saving your work to your account...' : 'Loading...';
     return (
-      <div className="h-screen bg-gray-900 text-white">
+      <div className="h-screen bg-black text-white">
         <LoadingSpinner message={message} size="lg" className="h-full" />
       </div>
     );
