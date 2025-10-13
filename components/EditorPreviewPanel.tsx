@@ -149,10 +149,20 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
                   <div className="bg-gradient-to-br from-blue-900/50 to-purple-900/50 rounded-xl p-8 border border-blue-500/30">
                     <div className="text-center mb-6">
                       <Icon name="database" className="w-16 h-16 text-blue-400 mx-auto mb-4" />
-                      <h3 className="text-xl font-semibold text-white mb-2">Connect to MominAI Cloud</h3>
+                      <h3 className="text-xl font-semibold text-white mb-2">MominAI Cloud Database</h3>
                       <p className="text-gray-300">
-                        Generate a database schema from your website and deploy it to the cloud instantly.
+                        Publish your app to Vercel first, then connect your database to your own cloud infrastructure.
                       </p>
+                    </div>
+
+                    <div className="bg-yellow-900/30 border border-yellow-500/30 rounded-lg p-4 mb-6">
+                      <div className="flex items-start gap-3">
+                        <Icon name="alert-triangle" className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+                        <div className="text-sm text-yellow-200">
+                          <p className="font-semibold mb-1">Important: Publish First</p>
+                          <p>You must publish your app to Vercel before connecting the database. This ensures your database is hosted in your own Vercel account.</p>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="space-y-4">
@@ -171,16 +181,17 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
                         disabled={isDatabaseLoading || !databaseConfig}
                       >
                         <Icon name="cloud" className="w-5 h-5" />
-                        {isDatabaseLoading ? 'Connecting...' : 'Connect to MominAI Cloud'}
+                        {isDatabaseLoading ? 'Connecting...' : 'Connect to Your Cloud'}
                       </button>
                     </div>
 
                     <div className="mt-6 text-sm text-gray-400">
-                      <p className="mb-2">✨ <strong>How it works:</strong></p>
+                      <p className="mb-2">✨ <strong>New Workflow:</strong></p>
                       <ol className="list-decimal list-inside space-y-1 text-left">
+                        <li>Publish your app to Vercel (creates your cloud account)</li>
                         <li>MominAI analyzes your website HTML</li>
                         <li>Generates optimal database schema</li>
-                        <li>Creates PostgreSQL tables in the cloud</li>
+                        <li>Creates PostgreSQL tables in YOUR Vercel account</li>
                         <li>Provides visual database management</li>
                       </ol>
                     </div>

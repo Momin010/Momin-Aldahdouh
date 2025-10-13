@@ -67,8 +67,29 @@ export default async function handler(req: any, res: any) {
     await sql`CREATE INDEX IF NOT EXISTS idx_database_backups_project_id ON database_backups(project_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_database_backups_created_at ON database_backups(created_at DESC)`;
 
+    // Create user_deployments table for Vercel deployments
+    await sql`
+      CREATE TABLE IF NOT EXISTS user_deployments (
+        id SERIAL PRIMARY KEY,
+        user_email VARCHAR(255) NOT NULL,
+        project_id VARCHAR(255) NOT NULL,
+        vercel_project_id VARCHAR(255) NOT NULL,
+        deployment_id VARCHAR(255) NOT NULL,
+        deployment_url VARCHAR(500) NOT NULL,
+        deployment_data JSONB,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_email, project_id)
+      )
+    `;
+
+    // Create indexes for user_deployments
+    await sql`CREATE INDEX IF NOT EXISTS idx_user_deployments_user_email ON user_deployments(user_email)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_user_deployments_project_id ON user_deployments(project_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_user_deployments_deployment_id ON user_deployments(deployment_id)`;
+
     return res.status(200).json({
-      message: 'Database setup completed successfully (including MominAI Cloud and backup tables)',
+      message: 'Database setup completed successfully (including MominAI Cloud, backups, and deployments)',
       timestamp: new Date().toISOString()
     });
   } catch (error) {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Icon } from './Icon';
 import { useTheme } from '../lib/themeContext';
 import ProjectActionsModal from './ProjectActionsModal';
+import VercelPublishModal from './VercelPublishModal';
 
 interface ConsolidatedHeaderProps {
   projectName: string;
@@ -26,6 +27,9 @@ interface ConsolidatedHeaderProps {
   onViewChange: (view: 'code' | 'preview' | 'database' | 'visual-editor') => void;
   onToggleFullscreen: () => void;
   userEmail?: string;
+  // New Vercel publishing props
+  files?: Record<string, string>;
+  projectId?: string;
 }
 
 const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
@@ -50,9 +54,12 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
   view,
   onViewChange,
   onToggleFullscreen,
-  userEmail
+  userEmail,
+  files,
+  projectId
 }) => {
   const [isProjectModalOpen, setProjectModalOpen] = useState(false);
+  const [isVercelPublishModalOpen, setVercelPublishModalOpen] = useState(false);
   const [expandedButton, setExpandedButton] = useState<string | null>(null);
   const { theme, toggleTheme } = useTheme();
 
@@ -416,7 +423,7 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
           </button>
 
           <button
-            onClick={onPublish}
+            onClick={() => setVercelPublishModalOpen(true)}
             disabled={!isProjectLoaded}
             className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 ${
               theme === 'light'
@@ -424,7 +431,7 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
                 : 'bg-blue-600 hover:bg-blue-700 text-white'
             }`}
           >
-            Publish
+            Publish to Vercel
           </button>
         </div>
       </header>
@@ -436,6 +443,19 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
         onRenameProject={onRenameProject}
         onDownloadProject={onDownloadProject}
         userEmail={userEmail}
+      />
+
+      <VercelPublishModal
+        isOpen={isVercelPublishModalOpen}
+        onClose={() => setVercelPublishModalOpen(false)}
+        projectName={projectName}
+        files={files || {}}
+        userEmail={userEmail}
+        projectId={projectId}
+        onDeploymentSuccess={(url) => {
+          console.log('Deployment successful:', url);
+          // Could trigger database connection workflow here
+        }}
       />
     </>
   );
