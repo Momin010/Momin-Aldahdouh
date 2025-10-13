@@ -31,13 +31,33 @@ export default async function handler(req: any, res: any) {
       )
     `;
 
-    return res.status(200).json({ 
-      message: 'Database setup completed successfully',
+    // Create user_databases table for MominAI Cloud
+    await sql`
+      CREATE TABLE IF NOT EXISTS user_databases (
+        id SERIAL PRIMARY KEY,
+        user_email VARCHAR(255) NOT NULL,
+        project_id VARCHAR(255) NOT NULL,
+        database_name VARCHAR(255) NOT NULL,
+        schema_data JSONB NOT NULL,
+        connection_status VARCHAR(50) DEFAULT 'active',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_email, project_id)
+      )
+    `;
+
+    // Create indexes for user_databases
+    await sql`CREATE INDEX IF NOT EXISTS idx_user_databases_user_email ON user_databases(user_email)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_user_databases_project_id ON user_databases(project_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_user_databases_status ON user_databases(connection_status)`;
+
+    return res.status(200).json({
+      message: 'Database setup completed successfully (including MominAI Cloud tables)',
       timestamp: new Date().toISOString()
     });
   } catch (error) {
     console.error('Database setup error:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       message: 'Database setup failed',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
