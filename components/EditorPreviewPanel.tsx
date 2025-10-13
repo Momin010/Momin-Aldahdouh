@@ -4,8 +4,11 @@ import CodeEditor from './CodeEditor';
 import LivePreview, { Device } from './LivePreview';
 import VisualEditor from './VisualEditor';
 import PreviewVisualEditor from './PreviewVisualEditor';
+import DatabaseCanvas from './DatabaseCanvas';
+import DatabaseTable from './DatabaseTable';
 import { Icon } from './Icon';
 import type { Files, ConsoleMessage, PreviewChange } from '../types';
+import type { DatabaseTable as DBTable, DatabaseConfig } from '../services/databaseService';
 import ResizablePanel from './ResizablePanel';
 
 interface EditorPreviewPanelProps {
@@ -30,6 +33,17 @@ interface EditorPreviewPanelProps {
    onVisualEditModeChange?: (mode: boolean) => void;
    onPreviewEdit?: (change: PreviewChange) => void;
    isVisualEditorEnabled?: boolean;
+   // Database props
+   databaseTables?: DBTable[];
+   databaseConfig?: DatabaseConfig;
+   onDatabaseConnect?: () => void;
+   onDatabaseTableSelect?: (table: DBTable) => void;
+   onDatabaseRecordAdd?: (tableId: string, record: Record<string, any>) => void;
+   onDatabaseRecordUpdate?: (tableId: string, recordId: string, updates: Record<string, any>) => void;
+   onDatabaseRecordDelete?: (tableId: string, recordId: string) => void;
+   selectedDatabaseTable?: string;
+   isDatabaseConnected?: boolean;
+   isDatabaseLoading?: boolean;
 }
 
 const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
@@ -54,6 +68,17 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
   onVisualEditModeChange,
   onPreviewEdit,
   isVisualEditorEnabled,
+  // Database props
+  databaseTables,
+  databaseConfig,
+  onDatabaseConnect,
+  onDatabaseTableSelect,
+  onDatabaseRecordAdd,
+  onDatabaseRecordUpdate,
+  onDatabaseRecordDelete,
+  selectedDatabaseTable,
+  isDatabaseConnected,
+  isDatabaseLoading,
 }) => {
 
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
@@ -85,35 +110,91 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
   if (view === 'database') {
     return (
       <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
-        <div className="flex-grow p-6 overflow-auto">
-          <h2 className="text-2xl font-bold text-white mb-6">Database Manager</h2>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <button
-                onClick={() => onDatabaseAction && onDatabaseAction('create')}
-                className="p-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
-              >
-                Create Database
-              </button>
-              <button
-                onClick={() => onDatabaseAction && onDatabaseAction('schema')}
-                className="p-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
-              >
-                Generate Schema
-              </button>
-              <button
-                onClick={() => onDatabaseAction && onDatabaseAction('export')}
-                className="p-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors"
-              >
-                Export Data
-              </button>
+        <div className="flex-grow overflow-auto">
+          {isDatabaseConnected && databaseTables ? (
+            <div className="h-full">
+              {/* Database Canvas View */}
+              {!selectedDatabaseTable && (
+                <DatabaseCanvas
+                  tables={databaseTables}
+                  onTableSelect={onDatabaseTableSelect}
+                  selectedTable={selectedDatabaseTable}
+                  className="h-full"
+                />
+              )}
+
+              {/* Individual Table View */}
+              {selectedDatabaseTable && databaseTables.find(t => t.id === selectedDatabaseTable) && (
+                <DatabaseTable
+                  table={databaseTables.find(t => t.id === selectedDatabaseTable)!}
+                  onRecordAdd={onDatabaseRecordAdd}
+                  onRecordUpdate={onDatabaseRecordUpdate}
+                  onRecordDelete={onDatabaseRecordDelete}
+                  onRefresh={(tableId) => {
+                    // Refresh logic will be implemented
+                    console.log('Refresh table:', tableId);
+                  }}
+                  isLoading={isDatabaseLoading}
+                  className="h-full"
+                />
+              )}
             </div>
-            <div className="bg-black/30 rounded-lg p-4">
-              <p className="text-gray-400 text-sm">
-                Database management features will be displayed here.
-              </p>
+          ) : (
+            /* Database Connection UI */
+            <div className="flex-grow p-6 overflow-auto">
+              <div className="max-w-2xl mx-auto">
+                <h2 className="text-2xl font-bold text-white mb-6">MominAI Cloud Database</h2>
+
+                {!isDatabaseConnected ? (
+                  <div className="bg-gradient-to-br from-blue-900/50 to-purple-900/50 rounded-xl p-8 border border-blue-500/30">
+                    <div className="text-center mb-6">
+                      <Icon name="database" className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-white mb-2">Connect to MominAI Cloud</h3>
+                      <p className="text-gray-300">
+                        Generate a database schema from your website and deploy it to the cloud instantly.
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <button
+                        onClick={() => onDatabaseAction && onDatabaseAction('generate-schema')}
+                        className="w-full p-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-3"
+                        disabled={isDatabaseLoading}
+                      >
+                        <Icon name="zap" className="w-5 h-5" />
+                        {isDatabaseLoading ? 'Generating Schema...' : 'Generate Database Schema'}
+                      </button>
+
+                      <button
+                        onClick={onDatabaseConnect}
+                        className="w-full p-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-3"
+                        disabled={isDatabaseLoading || !databaseConfig}
+                      >
+                        <Icon name="cloud" className="w-5 h-5" />
+                        {isDatabaseLoading ? 'Connecting...' : 'Connect to MominAI Cloud'}
+                      </button>
+                    </div>
+
+                    <div className="mt-6 text-sm text-gray-400">
+                      <p className="mb-2">✨ <strong>How it works:</strong></p>
+                      <ol className="list-decimal list-inside space-y-1 text-left">
+                        <li>MominAI analyzes your website HTML</li>
+                        <li>Generates optimal database schema</li>
+                        <li>Creates PostgreSQL tables in the cloud</li>
+                        <li>Provides visual database management</li>
+                      </ol>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center text-green-400">
+                    <Icon name="check-circle" className="w-16 h-16 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-white mb-2">Database Connected!</h3>
+                    <p>Your database is ready for use.</p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     );
