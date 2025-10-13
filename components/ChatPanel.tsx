@@ -102,19 +102,31 @@ interface ChatPanelProps {
 
 const LOADING_TEXTS: Record<string, string[]> = {
   'MominAI is working...': [
-    'Receiving data...',
+    'Analyzing requirements...',
+    'Designing architecture...',
+    'Crafting components...',
+    'Optimizing performance...',
   ],
   'Generating application...': [
-    'Receiving data...',
+    'Building React components...',
+    'Creating sophisticated architecture...',
+    'Implementing advanced features...',
+    'Finalizing masterpiece...',
   ],
   'Applying changes...': [
-    'Receiving data...',
+    'Integrating new features...',
+    'Updating complex architecture...',
+    'Ensuring consistency...',
   ],
   'Verifying generated code...': [
-    'Receiving data...',
+    'Running comprehensive tests...',
+    'Validating all interactions...',
+    'Ensuring perfection...',
   ],
     'Errors detected. Attempting to fix...': [
-     'Receiving data...',
+     'Engaging advanced debugging...',
+     'Applying intelligent fixes...',
+     'Restoring functionality...',
    ]
 };
 
