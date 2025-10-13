@@ -157,23 +157,23 @@ const consoleInterceptorScript = `
     { event: 'click dblclick', class: 'MouseEvent' },
   ];
 
-  eventsToDelegate.forEach((obj) =>
-    obj.event.split(' ').forEach((event) => {
-      document.addEventListener(event, (ev) => {
+  eventsToDelegate.forEach(function(obj) {
+    obj.event.split(' ').forEach(function(event) {
+      document.addEventListener(event, function(ev) {
         // Create custom event and dispatch to iframe element
-        const customEvent = new CustomEvent('iframe-event', {
+        var customEvent = new CustomEvent('iframe-event', {
           detail: {
             originalEvent: {
               type: ev.type,
-              clientX: (ev as MouseEvent).clientX,
-              clientY: (ev as MouseEvent).clientY,
-              target: (ev.target as Element)?.tagName?.toLowerCase(),
-              key: (ev as KeyboardEvent).key,
-              keyCode: (ev as KeyboardEvent).keyCode,
-              ctrlKey: (ev as KeyboardEvent).ctrlKey,
-              shiftKey: (ev as KeyboardEvent).shiftKey,
-              altKey: (ev as KeyboardEvent).altKey,
-              metaKey: (ev as KeyboardEvent).metaKey,
+              clientX: ev.clientX || 0,
+              clientY: ev.clientY || 0,
+              target: ev.target ? ev.target.tagName.toLowerCase() : null,
+              key: ev.key || '',
+              keyCode: ev.keyCode || 0,
+              ctrlKey: ev.ctrlKey || false,
+              shiftKey: ev.shiftKey || false,
+              altKey: ev.altKey || false,
+              metaKey: ev.metaKey || false,
             }
           }
         });
@@ -181,22 +181,22 @@ const consoleInterceptorScript = `
 
         // Also send via postMessage for visual editor
         if (visualEditorEnabled && (ev.type === 'mouseover' || ev.type === 'mouseout' || ev.type === 'click')) {
-          const target = ev.target as Element;
+          var target = ev.target;
           if (target && target !== document.body) {
             if (ev.type === 'click') {
               ev.preventDefault();
               ev.stopPropagation();
             }
 
-            const rect = target.getBoundingClientRect();
+            var rect = target.getBoundingClientRect();
             window.parent.postMessage({
               source: 'mominai-preview-mouse-event',
               type: ev.type,
               element: {
-                id: \`\${ev.type === 'click' ? 'selected' : 'hover'}-\${Date.now()}\`,
+                id: (ev.type === 'click' ? 'selected' : 'hover') + '-' + Date.now(),
                 tagName: target.tagName.toLowerCase(),
                 className: target.className || '',
-                textContent: target.textContent?.trim() || '',
+                textContent: target.textContent ? target.textContent.trim() : '',
                 rect: {
                   left: rect.left,
                   top: rect.top,
@@ -215,8 +215,8 @@ const consoleInterceptorScript = `
           }
         }
       }, obj.opts);
-    }),
-  );
+    });
+  });
 
   // Notify parent that iframe is ready
   window.parent.postMessage({
