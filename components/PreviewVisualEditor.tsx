@@ -314,14 +314,14 @@ const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
 
   if (!isEnabled) return null;
 
-  console.log('PreviewVisualEditor rendering with isEnabled:', isEnabled);
+  console.log('PreviewVisualEditor rendering with isEnabled:', isEnabled, 'Elements count:', elements.length);
 
   return (
     <div className="absolute inset-0 pointer-events-none">
       {/* Hover overlay */}
       {editorState.hoveredElement && !isResizing && (
         <div
-          className="absolute border-2 border-blue-400 bg-blue-400/10 pointer-events-none"
+          className="absolute border-2 border-blue-400 bg-blue-400/10 pointer-events-none z-10"
           style={{
             left: editorState.hoveredElement.rect.left,
             top: editorState.hoveredElement.rect.top,
@@ -339,7 +339,7 @@ const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
       {/* Selected element overlay */}
       {editorState.selectedElement && (
         <div
-          className="absolute border-2 border-green-400 bg-green-400/10"
+          className="absolute border-2 border-green-400 bg-green-400/10 z-20"
           style={{
             left: editorState.selectedElement.rect.left,
             top: editorState.selectedElement.rect.top,
@@ -375,7 +375,7 @@ const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
 
       {/* Edit toolbar */}
       {editorState.isEditing && editorState.selectedElement && (
-        <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg p-4 pointer-events-auto max-w-sm">
+        <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg p-4 pointer-events-auto max-w-sm z-30">
           <div className="flex items-center gap-2 mb-3">
             <Icon name="edit" className="w-5 h-5 text-gray-600" />
             <span className="font-semibold text-gray-800">Edit Element</span>
