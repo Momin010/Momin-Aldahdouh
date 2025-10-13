@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Icon } from './Icon';
 import type { PreviewElement, PreviewChange, VisualEditorState } from '../types';
 
+import interact from 'interactjs';
+
 interface PreviewVisualEditorProps {
    htmlContent: string;
    onPreviewEdit: (change: PreviewChange) => void;
@@ -26,6 +28,7 @@ const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
   const overlayRef = useRef<HTMLDivElement>(null);
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const interactRef = useRef<any>(null);
 
   // Parse HTML content and create element tree
   const parseHtmlToElements = useCallback((html: string): PreviewElement[] => {
@@ -91,7 +94,7 @@ const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
     }
   }, [htmlContent, parseHtmlToElements, iframeRef]);
 
-  // Handle mouse events from iframe via postMessage
+  // Handle mouse events from iframe via postMessage and custom events
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data && event.data.source === 'mominai-preview-mouse-event') {
@@ -117,8 +120,19 @@ const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
       }
     };
 
+    const handleIframeEvent = (event: CustomEvent) => {
+      // Handle delegated iframe events for enhanced interaction
+      const { originalEvent } = event.detail;
+      console.log('Iframe event:', originalEvent);
+    };
+
     window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
+    window.addEventListener('iframe-event', handleIframeEvent as EventListener);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      window.removeEventListener('iframe-event', handleIframeEvent as EventListener);
+    };
   }, [isEnabled, isResizing]);
 
   // Listen for messages from iframe
@@ -224,7 +238,82 @@ const PreviewVisualEditor: React.FC<PreviewVisualEditorProps> = ({
     setResizeStart(null);
   }, [isResizing, editorState.selectedElement, resizeStart, onPreviewEdit]);
 
-  // Add global mouse event listeners for resize
+  // Initialize interact.js for resizing when element is selected
+  useEffect(() => {
+    if (editorState.selectedElement && iframeRef.current) {
+      const iframe = iframeRef.current;
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+
+      if (iframeDoc && typeof interact !== 'undefined') {
+        // Find the selected element in the iframe
+        const selector = `[data-gjs-type="${editorState.selectedElement.tagName}"]`;
+        const elements = iframeDoc.querySelectorAll(selector);
+
+        // For now, select the first matching element (could be improved with more specific selectors)
+        const targetElement = elements[0];
+
+        if (targetElement && !interactRef.current) {
+          interactRef.current = interact(targetElement)
+            .resizable({
+              edges: { left: true, right: true, bottom: true, top: true },
+              listeners: {
+                move(event) {
+                  const { target } = event;
+                  let x = (parseFloat(target.getAttribute('data-x')) || 0) + event.deltaRect.left;
+                  let y = (parseFloat(target.getAttribute('data-y')) || 0) + event.deltaRect.top;
+
+                  Object.assign(target.style, {
+                    width: `${event.rect.width}px`,
+                    height: `${event.rect.height}px`,
+                    transform: `translate(${x}px, ${y}px)`
+                  });
+
+                  target.setAttribute('data-x', x);
+                  target.setAttribute('data-y', y);
+                }
+              },
+              modifiers: [
+                interact.modifiers.restrictEdges({
+                  outer: 'parent'
+                }),
+                interact.modifiers.restrictSize({
+                  min: { width: 50, height: 20 }
+                })
+              ]
+            })
+            .on('resizestart', () => setIsResizing(true))
+            .on('resizeend', (event) => {
+              setIsResizing(false);
+              // Emit resize changes
+              onPreviewEdit({
+                elementId: editorState.selectedElement!.id,
+                type: 'style',
+                property: 'width',
+                value: `${event.rect.width}px`,
+                oldValue: `${editorState.selectedElement!.rect.width}px`
+              });
+
+              onPreviewEdit({
+                elementId: editorState.selectedElement!.id,
+                type: 'style',
+                property: 'height',
+                value: `${event.rect.height}px`,
+                oldValue: `${editorState.selectedElement!.rect.height}px`
+              });
+            });
+        }
+      }
+    }
+
+    return () => {
+      if (interactRef.current) {
+        interactRef.current.unset();
+        interactRef.current = null;
+      }
+    };
+  }, [editorState.selectedElement, iframeRef, onPreviewEdit]);
+
+  // Add global mouse event listeners for resize (fallback)
   useEffect(() => {
     if (isResizing) {
       document.addEventListener('mousemove', handleResizeMove);

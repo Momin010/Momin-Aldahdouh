@@ -26,3 +26,5 @@ dist-ssr
 
 # Competitor codebase - not to be committed
 bolt.diy-main/
+builder-main/
+grapesjs-dev/

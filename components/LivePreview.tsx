@@ -147,72 +147,76 @@ const consoleInterceptorScript = `
     }
   });
 
-  // Send mouse events to parent when visual editor is enabled
-  document.addEventListener('mouseover', (e) => {
-    if (visualEditorEnabled) {
-      const target = e.target as Element;
-      if (target && target !== document.body) {
-        const rect = target.getBoundingClientRect();
-        window.parent.postMessage({
-          source: 'mominai-preview-mouse-event',
-          type: 'mouseover',
-          element: {
-            id: \`hover-\${Date.now()}\`,
-            tagName: target.tagName.toLowerCase(),
-            className: target.className || '',
-            textContent: target.textContent?.trim() || '',
-            rect: {
-              left: rect.left,
-              top: rect.top,
-              width: rect.width,
-              height: rect.height,
-              right: rect.right,
-              bottom: rect.bottom
+  // Enhanced event delegation like GrapesJS - delegate all events to parent
+  const eventsToDelegate = [
+    { event: 'keydown keyup keypress', class: 'KeyboardEvent' },
+    { event: 'mousedown mousemove mouseup', class: 'MouseEvent' },
+    { event: 'pointerdown pointermove pointerup', class: 'PointerEvent' },
+    { event: 'wheel', class: 'WheelEvent', opts: { passive: false } },
+    { event: 'mouseover mouseout', class: 'MouseEvent' },
+    { event: 'click dblclick', class: 'MouseEvent' },
+  ];
+
+  eventsToDelegate.forEach((obj) =>
+    obj.event.split(' ').forEach((event) => {
+      document.addEventListener(event, (ev) => {
+        // Create custom event and dispatch to iframe element
+        const customEvent = new CustomEvent('iframe-event', {
+          detail: {
+            originalEvent: {
+              type: ev.type,
+              clientX: (ev as MouseEvent).clientX,
+              clientY: (ev as MouseEvent).clientY,
+              target: (ev.target as Element)?.tagName?.toLowerCase(),
+              key: (ev as KeyboardEvent).key,
+              keyCode: (ev as KeyboardEvent).keyCode,
+              ctrlKey: (ev as KeyboardEvent).ctrlKey,
+              shiftKey: (ev as KeyboardEvent).shiftKey,
+              altKey: (ev as KeyboardEvent).altKey,
+              metaKey: (ev as KeyboardEvent).metaKey,
             }
           }
-        }, '*');
-      }
-    }
-  }, true);
+        });
+        window.parent.document.dispatchEvent(customEvent);
 
-  document.addEventListener('mouseout', (e) => {
-    if (visualEditorEnabled) {
-      window.parent.postMessage({
-        source: 'mominai-preview-mouse-event',
-        type: 'mouseout'
-      }, '*');
-    }
-  }, true);
-
-  document.addEventListener('click', (e) => {
-    if (visualEditorEnabled) {
-      const target = e.target as Element;
-      if (target && target !== document.body) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const rect = target.getBoundingClientRect();
-        window.parent.postMessage({
-          source: 'mominai-preview-mouse-event',
-          type: 'click',
-          element: {
-            id: \`selected-\${Date.now()}\`,
-            tagName: target.tagName.toLowerCase(),
-            className: target.className || '',
-            textContent: target.textContent?.trim() || '',
-            rect: {
-              left: rect.left,
-              top: rect.top,
-              width: rect.width,
-              height: rect.height,
-              right: rect.right,
-              bottom: rect.bottom
+        // Also send via postMessage for visual editor
+        if (visualEditorEnabled && (ev.type === 'mouseover' || ev.type === 'mouseout' || ev.type === 'click')) {
+          const target = ev.target as Element;
+          if (target && target !== document.body) {
+            if (ev.type === 'click') {
+              ev.preventDefault();
+              ev.stopPropagation();
             }
+
+            const rect = target.getBoundingClientRect();
+            window.parent.postMessage({
+              source: 'mominai-preview-mouse-event',
+              type: ev.type,
+              element: {
+                id: \`\${ev.type === 'click' ? 'selected' : 'hover'}-\${Date.now()}\`,
+                tagName: target.tagName.toLowerCase(),
+                className: target.className || '',
+                textContent: target.textContent?.trim() || '',
+                rect: {
+                  left: rect.left,
+                  top: rect.top,
+                  width: rect.width,
+                  height: rect.height,
+                  right: rect.right,
+                  bottom: rect.bottom
+                }
+              }
+            }, '*');
+          } else if (ev.type === 'mouseout') {
+            window.parent.postMessage({
+              source: 'mominai-preview-mouse-event',
+              type: 'mouseout'
+            }, '*');
           }
-        }, '*');
-      }
-    }
-  }, true);
+        }
+      }, obj.opts);
+    }),
+  );
 
   // Notify parent that iframe is ready
   window.parent.postMessage({
