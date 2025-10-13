@@ -20,7 +20,7 @@ interface EditorPreviewPanelProps {
   onClearConsole: () => void;
   device: Device;
   onDeviceChange: (device: Device) => void;
-  view: 'code' | 'preview';
+  view: 'code' | 'preview' | 'database' | 'visual-editor';
 }
 
 const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
@@ -48,12 +48,26 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
   
   const displayHtml = standaloneHtml || previewHtml;
 
+  // Only show content for preview and code views
+  if (view !== 'preview' && view !== 'code') {
+    return (
+      <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
+        <div className="flex-grow flex items-center justify-center text-white">
+          <div className="text-center">
+            <Icon name="eye" className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+            <p className="text-gray-400">Switch to Preview or Code view to see content</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
       <div className="flex-grow overflow-auto relative">
         {view === 'preview' && (
-          <LivePreview 
-            htmlContent={displayHtml} 
+          <LivePreview
+            htmlContent={displayHtml}
             device={device}
             logs={consoleLogs}
             onNewLog={onNewLog}

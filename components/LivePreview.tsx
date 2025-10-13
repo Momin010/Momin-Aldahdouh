@@ -1,7 +1,5 @@
 import React, { useMemo, useEffect } from 'react';
 import { Icon } from './Icon';
-import ResizablePanel from './ResizablePanel';
-import DevToolsPanel from './DevToolsPanel';
 import type { ConsoleMessage } from '../types';
 
 export type Device = 'desktop' | 'tablet' | 'mobile';
@@ -211,14 +209,8 @@ const LivePreview: React.FC<LivePreviewProps> = ({
           />
         </div>
       ) : (
-        isMobileView ? (
-          previewIframe // On mobile, show only the preview without the console.
-        ) : (
-          <ResizablePanel direction="vertical" initialSize={window.innerHeight * 0.65} minSize={150}>
-            {previewIframe}
-            <DevToolsPanel logs={logs} onClear={onClearLogs} />
-          </ResizablePanel>
-        )
+        // Hide console from user view - only show preview
+        previewIframe
       )}
     </div>
   );

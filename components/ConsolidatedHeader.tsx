@@ -22,8 +22,8 @@ interface ConsolidatedHeaderProps {
   onDatabase?: () => void;
   device: 'desktop' | 'tablet' | 'mobile';
   onDeviceChange: (device: 'desktop' | 'tablet' | 'mobile') => void;
-  view: 'code' | 'preview';
-  onViewChange: (view: 'code' | 'preview') => void;
+  view: 'code' | 'preview' | 'database' | 'visual-editor';
+  onViewChange: (view: 'code' | 'preview' | 'database' | 'visual-editor') => void;
   onToggleFullscreen: () => void;
   userEmail?: string;
 }
@@ -94,30 +94,15 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
           </button>
         </div>
 
-        {/* Center - View toggle and device selection */}
+        {/* Center - Expanded View toggle and device selection */}
         <div className="flex items-center gap-2">
-          {/* View Toggle */}
+          {/* Expanded View Toggle */}
           <div className={`hidden md:flex items-center gap-1 p-1 rounded-xl ${
             theme === 'light' ? 'bg-gray-100' : 'bg-white/10'
           }`}>
             <button
-              onClick={() => onViewChange('code')}
-              className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                view === 'code'
-                  ? theme === 'light'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'bg-white/20 text-white'
-                  : theme === 'light'
-                    ? 'text-gray-600 hover:text-gray-900'
-                    : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              <Icon name="code" className="w-4 h-4" />
-              <span className="hidden lg:inline">Code</span>
-            </button>
-            <button
               onClick={() => onViewChange('preview')}
-              className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+              className={`relative group flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors ${
                 view === 'preview'
                   ? theme === 'light'
                     ? 'bg-white text-gray-900 shadow-sm'
@@ -126,9 +111,66 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
                     ? 'text-gray-600 hover:text-gray-900'
                     : 'text-gray-400 hover:text-white'
               }`}
+              title="Preview"
             >
               <Icon name="eye" className="w-4 h-4" />
-              <span className="hidden lg:inline">Preview</span>
+              <span className={`hidden lg:inline ${view === 'preview' ? 'inline' : 'group-hover:inline'}`}>
+                Preview
+              </span>
+            </button>
+            <button
+              onClick={() => onViewChange('code')}
+              className={`relative group flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                view === 'code'
+                  ? theme === 'light'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'bg-white/20 text-white'
+                  : theme === 'light'
+                    ? 'text-gray-600 hover:text-gray-900'
+                    : 'text-gray-400 hover:text-white'
+              }`}
+              title="Code Editor"
+            >
+              <Icon name="code" className="w-4 h-4" />
+              <span className={`hidden lg:inline ${view === 'code' ? 'inline' : 'group-hover:inline'}`}>
+                Code
+              </span>
+            </button>
+            <button
+              onClick={() => onViewChange('database')}
+              className={`relative group flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                view === 'database'
+                  ? theme === 'light'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'bg-white/20 text-white'
+                  : theme === 'light'
+                    ? 'text-gray-600 hover:text-gray-900'
+                    : 'text-gray-400 hover:text-white'
+              }`}
+              title="Database Manager"
+            >
+              <Icon name="database" className="w-4 h-4" />
+              <span className={`hidden lg:inline ${view === 'database' ? 'inline' : 'group-hover:inline'}`}>
+                Database
+              </span>
+            </button>
+            <button
+              onClick={() => onViewChange('visual-editor')}
+              className={`relative group flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                view === 'visual-editor'
+                  ? theme === 'light'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'bg-white/20 text-white'
+                  : theme === 'light'
+                    ? 'text-gray-600 hover:text-gray-900'
+                    : 'text-gray-400 hover:text-white'
+              }`}
+              title="Visual Editor"
+            >
+              <Icon name="edit" className="w-4 h-4" />
+              <span className={`hidden lg:inline ${view === 'visual-editor' ? 'inline' : 'group-hover:inline'}`}>
+                Visual Editor
+              </span>
             </button>
           </div>
 

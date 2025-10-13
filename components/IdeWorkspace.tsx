@@ -70,7 +70,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
   const [projectRunStates, setProjectRunStates] = useState<Record<string, ProjectRunState>>({});
   
   const [mobileView, setMobileView] = useState<MobileView>('chat');
-  const [view, setView] = useState<'code' | 'preview'>('preview');
+  const [view, setView] = useState<'code' | 'preview' | 'database' | 'visual-editor'>('preview');
   const [isPublishModalOpen, setPublishModalOpen] = useState(false);
   const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
@@ -860,6 +860,73 @@ DO NOT remove working code or features the user asked for.`;
     }
 
     const onStreamingCompleteForActive = (messageIndex: number) => handleStreamingComplete(activeProject.id, messageIndex);
+
+    // Database View
+    if (view === 'database') {
+      return (
+        <div className="flex flex-col h-full overflow-hidden flex-grow p-4">
+          <div className="flex-grow bg-white/5 backdrop-blur-xl md:border border-white/20 md:rounded-2xl p-6 overflow-auto">
+            <h2 className="text-2xl font-bold text-white mb-6">Database Manager</h2>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button
+                  onClick={() => handleDatabaseAction('create')}
+                  className="p-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Create Database
+                </button>
+                <button
+                  onClick={() => handleDatabaseAction('schema')}
+                  className="p-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Generate Schema
+                </button>
+                <button
+                  onClick={() => handleDatabaseAction('export')}
+                  className="p-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Export Data
+                </button>
+              </div>
+              <div className="bg-black/30 rounded-lg p-4">
+                <p className="text-gray-400 text-sm">
+                  Database management features will be displayed here. Current database: {databaseService.getCurrentDatabase()?.name || 'None'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Visual Editor View
+    if (view === 'visual-editor') {
+      return (
+        <div className="flex flex-col h-full overflow-hidden flex-grow p-4">
+          <div className="flex-grow bg-white/5 backdrop-blur-xl md:border border-white/20 md:rounded-2xl overflow-hidden">
+            <VisualEditor
+              htmlContent={standaloneHtml || previewHtml || ''}
+              onContentChange={(content) => {
+                if (activeProject) {
+                  updateProjectById(activeProject.id, project => {
+                    const newHistory = { ...project.history };
+                    const newVersions = [...newHistory.versions];
+                    const currentVersion = { ...newVersions[project.history.currentIndex] };
+                    currentVersion.standaloneHtml = content;
+                    newVersions[project.history.currentIndex] = currentVersion;
+                    newHistory.versions = newVersions;
+                    return { ...project, history: newHistory };
+                  });
+                }
+              }}
+              isEditMode={isVisualEditMode}
+              onEditModeChange={setIsVisualEditMode}
+              className="h-full"
+            />
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="flex flex-col h-full overflow-hidden flex-grow">
