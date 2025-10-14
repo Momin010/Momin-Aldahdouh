@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "dockerfilePath": "./Dockerfile",
+  "context": ".",
+  "serviceName": "mominai",
+  "ports": [
+    {
+      "containerPort": 80,
+      "hostPort": 80,
+      "protocol": "http"
+    }
+  ],
+  "environments": [
+    {
+      "key": "NODE_ENV",
+      "value": "production"
+    }
+  ],
+  "instructions": [
+    {
+      "type": "dockerfile",
+      "content": "FROM node:18-alpine\nWORKDIR /app\nCOPY package*.json ./\nRUN npm ci --only=production\nCOPY . .\nRUN npm run build\nEXPOSE 80\nCMD [\"npm\", \"run\", \"preview\"]"
+    }
+  ],
+  "deploy": {
+    "method": "git",
+    "repository": "https://github.com/Momin010/Momin-Aldahdouh.git",
+    "branch": "netlify-deployment"
+  }
+}
