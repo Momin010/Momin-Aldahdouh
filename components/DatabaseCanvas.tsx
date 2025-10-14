@@ -170,6 +170,7 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
         onDelete: onTableDelete,
       },
       selected: selectedTable === table.id,
+      style: { zIndex: 1 },
     })), [tables, selectedTable, onTableEdit, onTableDelete]
   );
 
@@ -182,9 +183,23 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
       type: 'smoothstep',
       animated: true,
       label: rel.type.replace('-', ' '),
-      style: { stroke: '#ffffff', strokeWidth: 2 },
-      markerEnd: { type: 'arrowclosed', color: '#ffffff' },
-      labelStyle: { color: '#ffffff', fontSize: 12 },
+      style: {
+        stroke: '#ffffff',
+        strokeWidth: 3,
+      },
+      markerEnd: {
+        type: 'arrowclosed',
+        color: '#ffffff',
+        width: 20,
+        height: 20,
+        strokeWidth: 2,
+      },
+      labelStyle: {
+        color: '#ffffff',
+        fontSize: 12,
+        fontWeight: 500,
+      },
+      zIndex: 999,
     })), [relationships]
   );
 
@@ -225,6 +240,7 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
         fitView
         attributionPosition="bottom-left"
         style={{ backgroundColor: 'black' }}
+        proOptions={{ hideAttribution: true }}
       >
         {/* Background with white dots on black background */}
         <Background

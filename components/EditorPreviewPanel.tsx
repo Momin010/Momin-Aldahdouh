@@ -9,6 +9,31 @@ import { Icon } from './Icon';
 import type { Files, ConsoleMessage, PreviewChange } from '../types';
 import ResizablePanel from './ResizablePanel';
 
+interface DatabaseTable {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  columns: Array<{
+    name: string;
+    type: string;
+    primaryKey?: boolean;
+    nullable?: boolean;
+  }>;
+  rowCount: number;
+}
+
+interface DatabaseRelationship {
+  id: string;
+  fromTable: string;
+  fromColumn: string;
+  toTable: string;
+  toColumn: string;
+  type: 'one-to-one' | 'one-to-many' | 'many-to-many';
+}
+
 interface EditorPreviewPanelProps {
    files: Files;
    activeFile: string;
@@ -56,8 +81,118 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
   onPreviewEdit,
   isVisualEditorEnabled,
 }) => {
-
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Database state management
+  const [databaseTables, setDatabaseTables] = useState<DatabaseTable[]>([
+    {
+      id: 'users',
+      name: 'users',
+      x: 100,
+      y: 100,
+      width: 250,
+      height: 200,
+      columns: [
+        { name: 'id', type: 'uuid', primaryKey: true, nullable: false },
+        { name: 'email', type: 'varchar(255)', nullable: false, unique: true },
+        { name: 'name', type: 'varchar(100)', nullable: false },
+        { name: 'created_at', type: 'timestamp', nullable: false }
+      ],
+      rowCount: 1250
+    },
+    {
+      id: 'projects',
+      name: 'projects',
+      x: 400,
+      y: 100,
+      width: 250,
+      height: 180,
+      columns: [
+        { name: 'id', type: 'uuid', primaryKey: true, nullable: false },
+        { name: 'user_id', type: 'uuid', nullable: false },
+        { name: 'name', type: 'varchar(200)', nullable: false },
+        { name: 'status', type: 'varchar(50)', nullable: false }
+      ],
+      rowCount: 89
+    },
+    {
+      id: 'messages',
+      name: 'messages',
+      x: 700,
+      y: 100,
+      width: 250,
+      height: 160,
+      columns: [
+        { name: 'id', type: 'uuid', primaryKey: true, nullable: false },
+        { name: 'project_id', type: 'uuid', nullable: false },
+        { name: 'content', type: 'text', nullable: false },
+        { name: 'role', type: 'varchar(50)', nullable: false }
+      ],
+      rowCount: 2341
+    }
+  ]);
+
+  const [databaseRelationships] = useState<DatabaseRelationship[]>([
+    {
+      id: 'user-projects',
+      fromTable: 'users',
+      fromColumn: 'id',
+      toTable: 'projects',
+      toColumn: 'user_id',
+      type: 'one-to-many'
+    },
+    {
+      id: 'project-messages',
+      fromTable: 'projects',
+      fromColumn: 'id',
+      toTable: 'messages',
+      toColumn: 'project_id',
+      type: 'one-to-many'
+    }
+  ]);
+
+  const [selectedTable, setSelectedTable] = useState<string | null>(null);
+
+  // Database handlers
+  const handleTableSelect = (table: DatabaseTable) => {
+    setSelectedTable(table.id);
+  };
+
+  const handleTableMove = (tableId: string, x: number, y: number) => {
+    setDatabaseTables(prev => prev.map(table =>
+      table.id === tableId ? { ...table, x, y } : table
+    ));
+  };
+
+  const handleTableEdit = (updatedTable: DatabaseTable) => {
+    setDatabaseTables(prev => prev.map(table =>
+      table.id === updatedTable.id ? updatedTable : table
+    ));
+  };
+
+  const handleTableDelete = (tableId: string) => {
+    setDatabaseTables(prev => prev.filter(table => table.id !== tableId));
+  };
+
+  const handleAddTable = () => {
+    const newTable: DatabaseTable = {
+      id: `table_${Date.now()}`,
+      name: 'New Table',
+      x: Math.random() * 400 + 100,
+      y: Math.random() * 300 + 100,
+      width: 250,
+      height: 150,
+      columns: [
+        { name: 'id', type: 'uuid', primaryKey: true, nullable: false }
+      ],
+      rowCount: 0
+    };
+    setDatabaseTables(prev => [...prev, newTable]);
+  };
+
+  const handleToggleFullscreen = () => {
+    onToggleFullscreen();
+  };
 
   const deviceButtons: { name: Device, icon: string }[] = [
     { name: 'desktop', icon: 'desktop' },
@@ -88,79 +223,15 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
       <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
         <div className="flex-grow overflow-hidden">
           <DatabaseCanvas
-            tables={[
-              {
-                id: 'users',
-                name: 'users',
-                x: 100,
-                y: 100,
-                width: 250,
-                height: 200,
-                columns: [
-                  { name: 'id', type: 'uuid', primaryKey: true, nullable: false },
-                  { name: 'email', type: 'varchar(255)', nullable: false, unique: true },
-                  { name: 'name', type: 'varchar(100)', nullable: false },
-                  { name: 'created_at', type: 'timestamp', nullable: false }
-                ],
-                rowCount: 1250
-              },
-              {
-                id: 'projects',
-                name: 'projects',
-                x: 400,
-                y: 100,
-                width: 250,
-                height: 180,
-                columns: [
-                  { name: 'id', type: 'uuid', primaryKey: true, nullable: false },
-                  { name: 'user_id', type: 'uuid', nullable: false },
-                  { name: 'name', type: 'varchar(200)', nullable: false },
-                  { name: 'status', type: 'varchar(50)', nullable: false }
-                ],
-                rowCount: 89
-              },
-              {
-                id: 'messages',
-                name: 'messages',
-                x: 700,
-                y: 100,
-                width: 250,
-                height: 160,
-                columns: [
-                  { name: 'id', type: 'uuid', primaryKey: true, nullable: false },
-                  { name: 'project_id', type: 'uuid', nullable: false },
-                  { name: 'content', type: 'text', nullable: false },
-                  { name: 'role', type: 'varchar(50)', nullable: false }
-                ],
-                rowCount: 2341
-              }
-            ]}
-            relationships={[
-              {
-                id: 'user-projects',
-                fromTable: 'users',
-                fromColumn: 'id',
-                toTable: 'projects',
-                toColumn: 'user_id',
-                type: 'one-to-many'
-              },
-              {
-                id: 'project-messages',
-                fromTable: 'projects',
-                fromColumn: 'id',
-                toTable: 'messages',
-                toColumn: 'project_id',
-                type: 'one-to-many'
-              }
-            ]}
-            onTableSelect={(table) => console.log('Selected table:', table)}
-            onTableMove={(tableId, x, y) => console.log('Moved table:', tableId, 'to', x, y)}
-            onTableEdit={(table) => console.log('Edit table:', table)}
-            onTableDelete={(tableId) => console.log('Delete table:', tableId)}
-            onAddTable={() => console.log('Add new table')}
-            selectedTable={null}
-            isFullscreen={false}
-            onToggleFullscreen={() => console.log('Toggle fullscreen')}
+            tables={databaseTables}
+            relationships={databaseRelationships}
+            onTableSelect={handleTableSelect}
+            onTableMove={handleTableMove}
+            onTableEdit={handleTableEdit}
+            onTableDelete={handleTableDelete}
+            onAddTable={handleAddTable}
+            selectedTable={selectedTable}
+            onToggleFullscreen={handleToggleFullscreen}
           />
         </div>
       </div>
