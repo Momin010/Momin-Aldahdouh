@@ -182,8 +182,9 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
       type: 'smoothstep',
       animated: true,
       label: rel.type.replace('-', ' '),
-      style: { stroke: '#60a5fa', strokeWidth: 2 },
-      markerEnd: { type: 'arrowclosed', color: '#60a5fa' },
+      style: { stroke: '#ffffff', strokeWidth: 2 },
+      markerEnd: { type: 'arrowclosed', color: '#ffffff' },
+      labelStyle: { color: '#ffffff', fontSize: 12 },
     })), [relationships]
   );
 
@@ -211,7 +212,7 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
   }, [onTableSelect]);
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full bg-white" style={{ backgroundColor: 'white' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -223,23 +224,26 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
         nodeTypes={nodeTypes}
         fitView
         attributionPosition="bottom-left"
+        style={{ backgroundColor: 'white' }}
       >
-        {/* Background with dots */}
+        {/* Background with black dots on white background */}
         <Background
           variant={BackgroundVariant.Dots}
           gap={50}
-          size={1}
+          size={3}
           color="#000000"
         />
 
         {/* Built-in controls */}
-        <Controls className="bg-gray-100 border-gray-300" />
+        <Controls className="bg-white border-gray-300 shadow-lg" />
 
-        {/* Mini map */}
+        {/* Smaller Mini map */}
         <MiniMap
           nodeColor={(node) => selectedTable === node.id ? '#3b82f6' : '#000000'}
-          maskColor="rgba(255, 255, 255, 0.1)"
-          className="bg-gray-100 border border-gray-300"
+          maskColor="rgba(255, 255, 255, 0.2)"
+          className="bg-white border border-gray-300"
+          style={{ height: 120, width: 200 }}
+          position="bottom-right"
         />
 
         {/* Custom control panel */}
