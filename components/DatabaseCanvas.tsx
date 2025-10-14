@@ -35,7 +35,6 @@ interface DatabaseCanvasProps {
   onTableDelete?: (tableId: string) => void;
   onAddTable?: () => void;
   selectedTable?: string;
-  isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
 }
 
@@ -48,7 +47,6 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
   onTableDelete,
   onAddTable,
   selectedTable,
-  isFullscreen = false,
   onToggleFullscreen
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -62,6 +60,7 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [showGrid, setShowGrid] = useState(true);
   const [showRelationships, setShowRelationships] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Initialize table positions
   useEffect(() => {
@@ -123,8 +122,7 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
     if (isPanning) {
       const deltaX = e.clientX - panStart.x;
       const deltaY = e.clientY - panStart.y;
-      setPan(prev => ({ x: prev.x + deltaX, y: prev.y + deltaY }));
-      setPanStart({ x: e.clientX, y: e.clientY });
+      setPan({ x: deltaX, y: deltaY });
     }
   }, [isDragging, draggedTable, dragOffset, isPanning, panStart, tables, onTableMove]);
 
@@ -137,11 +135,13 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
 
   // Handle canvas pan
   const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
+    // Only start panning if clicking on empty canvas space, not on tables
     if (e.target === e.currentTarget) {
+      e.preventDefault();
       setIsPanning(true);
-      setPanStart({ x: e.clientX, y: e.clientY });
+      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
     }
-  }, []);
+  }, [pan]);
 
 
   // Add global mouse event listeners
@@ -202,68 +202,54 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
     });
   };
 
-  // Render grid
+  // Render grid dots
   const renderGrid = () => {
     if (!showGrid) return null;
 
     const gridSize = 50;
-    const lines = [];
+    const dots = [];
 
     for (let x = 0; x < 2000; x += gridSize) {
-      lines.push(
-        <line
-          key={`v-${x}`}
-          x1={x}
-          y1={0}
-          x2={x}
-          y2={1500}
-          stroke="#374151"
-          strokeWidth="1"
-        />
-      );
+      for (let y = 0; y < 1500; y += gridSize) {
+        dots.push(
+          <circle
+            key={`dot-${x}-${y}`}
+            cx={x}
+            cy={y}
+            r="1"
+            fill="#000000"
+          />
+        );
+      }
     }
 
-    for (let y = 0; y < 1500; y += gridSize) {
-      lines.push(
-        <line
-          key={`h-${y}`}
-          x1={0}
-          y1={y}
-          x2={2000}
-          y2={y}
-          stroke="#374151"
-          strokeWidth="1"
-        />
-      );
-    }
-
-    return lines;
+    return dots;
   };
 
   return (
-    <div className="relative h-full bg-gray-900 overflow-hidden">
+    <div className="relative h-full bg-white overflow-hidden">
       {/* Canvas Controls */}
       <div className="absolute top-4 left-4 z-20 flex gap-2">
         <button
           onClick={() => setZoom(prev => Math.min(3, prev + 0.2))}
-          className="p-2 bg-gray-800 text-white rounded-lg shadow-lg hover:bg-gray-700 transition-colors border border-gray-600"
+          className="p-2 bg-gray-100 text-gray-800 rounded-lg shadow-lg hover:bg-gray-200 transition-colors border border-gray-300"
           title="Zoom In"
         >
-          <Icon name="plus" className="w-4 h-4" />
+          <Icon name="zoom-in" className="w-4 h-4" />
         </button>
         <button
           onClick={() => setZoom(prev => Math.max(0.1, prev - 0.2))}
-          className="p-2 bg-gray-800 text-white rounded-lg shadow-lg hover:bg-gray-700 transition-colors border border-gray-600"
+          className="p-2 bg-gray-100 text-gray-800 rounded-lg shadow-lg hover:bg-gray-200 transition-colors border border-gray-300"
           title="Zoom Out"
         >
-          <Icon name="minus" className="w-4 h-4" />
+          <Icon name="zoom-out" className="w-4 h-4" />
         </button>
         <button
           onClick={() => {
             setZoom(1);
             setPan({ x: 0, y: 0 });
           }}
-          className="p-2 bg-gray-800 text-white rounded-lg shadow-lg hover:bg-gray-700 transition-colors border border-gray-600"
+          className="p-2 bg-gray-100 text-gray-800 rounded-lg shadow-lg hover:bg-gray-200 transition-colors border border-gray-300"
           title="Reset View"
         >
           <Icon name="refresh" className="w-4 h-4" />
@@ -271,7 +257,7 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
         <button
           onClick={() => setShowGrid(!showGrid)}
           className={`p-2 rounded-lg shadow-lg transition-colors border ${
-            showGrid ? 'bg-blue-600 text-white border-blue-500' : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border-gray-600'
+            showGrid ? 'bg-blue-600 text-white border-blue-500' : 'bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300'
           }`}
           title="Toggle Grid"
         >
@@ -280,7 +266,7 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
         <button
           onClick={() => setShowRelationships(!showRelationships)}
           className={`p-2 rounded-lg shadow-lg transition-colors border ${
-            showRelationships ? 'bg-blue-600 text-white border-blue-500' : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border-gray-600'
+            showRelationships ? 'bg-blue-600 text-white border-blue-500' : 'bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300'
           }`}
           title="Toggle Relationships"
         >
@@ -288,11 +274,14 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
         </button>
         {onToggleFullscreen && (
           <button
-            onClick={onToggleFullscreen}
-            className="p-2 bg-gray-800 text-white rounded-lg shadow-lg hover:bg-gray-700 transition-colors border border-gray-600"
+            onClick={() => {
+              setIsFullscreen(!isFullscreen);
+              onToggleFullscreen();
+            }}
+            className="p-2 bg-gray-100 text-gray-800 rounded-lg shadow-lg hover:bg-gray-200 transition-colors border border-gray-300"
             title="Toggle Fullscreen"
           >
-            <Icon name="fullscreen" className="w-4 h-4" />
+            <Icon name={isFullscreen ? "fullscreen-exit" : "fullscreen"} className="w-4 h-4" />
           </button>
         )}
         {onAddTable && (
@@ -307,8 +296,8 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
       </div>
 
       {/* Zoom indicator */}
-      <div className="absolute top-4 right-4 z-20 bg-gray-800/90 backdrop-blur-sm rounded-lg px-3 py-1 shadow-lg border border-gray-600">
-        <span className="text-sm text-gray-300">{Math.round(zoom * 100)}%</span>
+      <div className="absolute top-4 right-4 z-20 bg-gray-100/90 backdrop-blur-sm rounded-lg px-3 py-1 shadow-lg border border-gray-300">
+        <span className="text-sm text-gray-800">{Math.round(zoom * 100)}%</span>
       </div>
 
       {/* Canvas */}
@@ -366,10 +355,10 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
           {tables.map(table => (
             <div
               key={table.id}
-              className={`absolute bg-gray-800 border-2 rounded-lg shadow-lg cursor-move transition-all duration-200 ${
+              className={`absolute bg-black border-2 rounded-lg shadow-lg cursor-move transition-all duration-300 ${
                 selectedTable === table.id
-                  ? 'border-blue-400 shadow-blue-200'
-                  : 'border-gray-600 hover:border-gray-500 hover:shadow-xl'
+                  ? 'border-blue-500 shadow-blue-200 scale-105'
+                  : 'border-gray-400 hover:border-gray-600 hover:shadow-xl hover:scale-102'
               }`}
               style={{
                 left: table.x,
@@ -382,37 +371,44 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
               onClick={() => onTableSelect && onTableSelect(table)}
             >
               {/* Table Header */}
-              <div className="bg-gray-700 px-3 py-2 rounded-t-lg border-b border-gray-600 flex items-center justify-between">
+              <div className="bg-gray-100 px-3 py-2 rounded-t-lg border-b border-gray-300 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Icon name="database" className="w-4 h-4 text-gray-300" />
-                  <span className="font-semibold text-white text-sm">{table.name}</span>
+                  <Icon name="database" className="w-4 h-4 text-gray-800" />
+                  <span className="font-semibold text-black text-sm">{table.name}</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-xs text-gray-400 bg-gray-600 px-2 py-1 rounded">
+                  <span className="text-xs text-gray-600 bg-gray-200 px-2 py-1 rounded">
                     {table.rowCount} rows
                   </span>
                   {onTableEdit && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onTableEdit(table);
+                        // Create editable table name
+                        const newName = prompt('Enter new table name:', table.name);
+                        if (newName && newName !== table.name) {
+                          const updatedTable = { ...table, name: newName };
+                          onTableEdit(updatedTable);
+                        }
                       }}
-                      className="p-1 hover:bg-gray-600 rounded transition-colors"
+                      className="p-1 hover:bg-gray-200 rounded transition-colors"
                       title="Edit table"
                     >
-                      <Icon name="edit" className="w-3 h-3 text-gray-300" />
+                      <Icon name="edit" className="w-3 h-3 text-gray-800" />
                     </button>
                   )}
                   {onTableDelete && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onTableDelete(table.id);
+                        if (confirm(`Are you sure you want to delete the "${table.name}" table?`)) {
+                          onTableDelete(table.id);
+                        }
                       }}
-                      className="p-1 hover:bg-red-900 rounded transition-colors"
+                      className="p-1 hover:bg-red-100 rounded transition-colors"
                       title="Delete table"
                     >
-                      <Icon name="trash" className="w-3 h-3 text-red-400" />
+                      <Icon name="trash" className="w-3 h-3 text-red-600" />
                     </button>
                   )}
                 </div>
@@ -423,29 +419,29 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
                 {table.columns.slice(0, 8).map(column => (
                   <div
                     key={column.name}
-                    className="flex items-center justify-between py-1 px-2 rounded text-xs hover:bg-gray-700"
+                    className="flex items-center justify-between py-1 px-2 rounded text-xs hover:bg-gray-100"
                   >
                     <div className="flex items-center gap-2">
                       <span className={`w-2 h-2 rounded-full ${
-                        column.primaryKey ? 'bg-yellow-400' :
-                        column.type === 'string' ? 'bg-blue-400' :
-                        column.type === 'number' ? 'bg-green-400' :
-                        column.type === 'boolean' ? 'bg-yellow-400' :
-                        column.type === 'date' ? 'bg-purple-400' :
-                        'bg-gray-400'
+                        column.primaryKey ? 'bg-yellow-500' :
+                        column.type === 'string' ? 'bg-blue-500' :
+                        column.type === 'number' ? 'bg-green-500' :
+                        column.type === 'boolean' ? 'bg-yellow-500' :
+                        column.type === 'date' ? 'bg-purple-500' :
+                        'bg-gray-500'
                       }`} />
-                      <span className="font-medium text-gray-200">{column.name}</span>
+                      <span className="font-medium text-gray-800">{column.name}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="text-gray-400">{column.type}</span>
-                      {column.primaryKey && <Icon name="key" className="w-3 h-3 text-yellow-500" />}
-                      {!column.nullable && <span className="text-red-400">*</span>}
+                      <span className="text-gray-600">{column.type}</span>
+                      {column.primaryKey && <Icon name="key" className="w-3 h-3 text-yellow-600" />}
+                      {!column.nullable && <span className="text-red-600">*</span>}
                     </div>
                   </div>
                 ))}
 
                 {table.columns.length > 8 && (
-                  <div className="text-xs text-gray-400 text-center py-1">
+                  <div className="text-xs text-gray-600 text-center py-1">
                     +{table.columns.length - 8} more columns
                   </div>
                 )}
@@ -456,7 +452,7 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
           {/* Empty state */}
           {tables.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center text-gray-400">
+              <div className="text-center text-gray-600">
                 <Icon name="database" className="w-16 h-16 mx-auto mb-4 opacity-50" />
                 <h3 className="text-lg font-semibold mb-2">No Database Tables</h3>
                 <p className="text-sm">Create your first table to get started</p>
