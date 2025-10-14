@@ -5,6 +5,15 @@
     },
     "api/images/search.ts": {
       "maxDuration": 30
+    },
+    "api/auth/*.ts": {
+      "maxDuration": 30
+    },
+    "api/database/*.ts": {
+      "maxDuration": 60
+    },
+    "api/projects/*.ts": {
+      "maxDuration": 30
     }
   }
 }
