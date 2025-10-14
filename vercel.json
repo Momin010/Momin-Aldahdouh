@@ -6,13 +6,37 @@
     "api/images/search.ts": {
       "maxDuration": 30
     },
-    "api/auth/*.ts": {
+    "api/auth/session.ts": {
       "maxDuration": 30
     },
-    "api/database/*.ts": {
+    "api/auth/signin.ts": {
+      "maxDuration": 30
+    },
+    "api/auth/signout.ts": {
+      "maxDuration": 30
+    },
+    "api/auth/signup.ts": {
+      "maxDuration": 30
+    },
+    "api/database/backup.ts": {
       "maxDuration": 60
     },
-    "api/projects/*.ts": {
+    "api/database/create-cloud-db.ts": {
+      "maxDuration": 60
+    },
+    "api/database/crud.ts": {
+      "maxDuration": 60
+    },
+    "api/database/generate-schema.ts": {
+      "maxDuration": 60
+    },
+    "api/database/status.ts": {
+      "maxDuration": 60
+    },
+    "api/projects/[id].ts": {
+      "maxDuration": 30
+    },
+    "api/projects/index.ts": {
       "maxDuration": 30
     }
   }
