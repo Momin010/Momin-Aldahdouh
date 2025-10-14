@@ -14,7 +14,7 @@ import VisualEditor from './VisualEditor';
 import TemplateLibrary from './TemplateLibrary';
 import StylePresets from './StylePresets';
 import { aiAgentService, AVAILABLE_AGENTS, AIAgent } from '../services/aiAgentService';
-import { deploymentService, DEPLOYMENT_PLATFORMS } from '../services/deploymentService';
+import { deploymentService } from '../services/deploymentService';
 import { databaseService } from '../services/databaseService';
 import { ThemeProvider } from '../lib/themeContext';
 import { CreditService } from '../lib/creditService';
