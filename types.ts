@@ -131,3 +131,142 @@ export interface VisualEditorState {
   selectedElement: PreviewElement | null;
   isEditing: boolean;
 }
+
+// New types for Database Management
+export interface DatabaseColumn {
+  name: string;
+  type: string;
+  primaryKey?: boolean;
+  nullable?: boolean;
+  unique?: boolean;
+  default?: string;
+  foreignKey?: {
+    table: string;
+    column: string;
+  };
+}
+
+export interface DatabaseIndex {
+  name: string;
+  columns: string[];
+  unique?: boolean;
+}
+
+export interface DatabaseTable {
+  id: string;
+  name: string;
+  columns: DatabaseColumn[];
+  indexes: DatabaseIndex[];
+  rowCount: number;
+}
+
+export interface DatabaseConnection {
+  id: string;
+  name: string;
+  host: string;
+  port: number;
+  database: string;
+  username: string;
+  status: 'connected' | 'disconnected' | 'connecting' | 'error';
+  tables: DatabaseTable[];
+}
+
+export interface DatabaseSchema {
+  tables: DatabaseTable[];
+  connections: DatabaseConnection[];
+}
+
+// New types for Deployment Services
+export interface DeploymentPlatform {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  features: string[];
+  pricing: string;
+  status: 'available' | 'maintenance' | 'disabled';
+}
+
+export interface DeploymentConfig {
+  platform: string;
+  projectName: string;
+  buildSettings?: {
+    buildCommand: string;
+    outputDir: string;
+    nodeVersion?: string;
+  };
+}
+
+export interface DeploymentResult {
+  id: string;
+  platform: string;
+  projectName: string;
+  url: string;
+  status: 'pending' | 'building' | 'success' | 'failed';
+  createdAt: string;
+  buildTime?: number;
+  size?: string;
+}
+
+export interface DeploymentStatus {
+  id: string;
+  status: string;
+  url?: string;
+  buildTime?: number;
+  size?: string;
+  logs?: string[];
+}
+
+// New types for Git Integration
+export interface GitRepository {
+  id: string;
+  name: string;
+  fullName: string;
+  description?: string;
+  url: string;
+  cloneUrl: string;
+  defaultBranch: string;
+  isPrivate: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GitCommit {
+  id: string;
+  message: string;
+  author: {
+    name: string;
+    email: string;
+  };
+  date: string;
+  url: string;
+}
+
+export interface GitBranch {
+  name: string;
+  commit: {
+    sha: string;
+    message: string;
+  };
+  protected: boolean;
+}
+
+// New types for Supabase Integration
+export interface SupabaseTable {
+  id: string;
+  name: string;
+  schema: string;
+  columns: DatabaseColumn[];
+  rowCount: number;
+  createdAt: string;
+}
+
+export interface SupabaseProject {
+  id: string;
+  name: string;
+  databaseUrl: string;
+  anonKey: string;
+  serviceRoleKey: string;
+  tables: SupabaseTable[];
+  status: 'active' | 'suspended' | 'deleted';
+}

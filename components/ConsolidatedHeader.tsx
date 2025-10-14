@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Icon } from './Icon';
 import { useTheme } from '../lib/themeContext';
 import ProjectActionsModal from './ProjectActionsModal';
-import PublishWorkflowModal from './PublishWorkflowModal';
+import VercelPublishModal from './VercelPublishModal';
+import { features } from '../services/serviceManager';
 
 interface ConsolidatedHeaderProps {
   projectName: string;
@@ -27,6 +28,9 @@ interface ConsolidatedHeaderProps {
   onViewChange: (view: 'code' | 'preview' | 'database' | 'visual-editor') => void;
   onToggleFullscreen: () => void;
   userEmail?: string;
+  // New Vercel publishing props
+  files?: Record<string, string>;
+  projectId?: string;
 }
 
 const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
@@ -56,7 +60,7 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
   projectId
 }) => {
   const [isProjectModalOpen, setProjectModalOpen] = useState(false);
-  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [isVercelPublishModalOpen, setVercelPublishModalOpen] = useState(false);
   const [expandedButton, setExpandedButton] = useState<string | null>(null);
   const { theme, toggleTheme } = useTheme();
 
@@ -73,6 +77,13 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
           ? 'bg-white/80 border-gray-200'
           : 'bg-black/80 border-white/10'
       }`}>
+        {/* Mock Mode Indicator */}
+        {features.mockMode && (
+          <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-orange-500/20 to-yellow-500/20 border-b border-orange-400/30 text-orange-200 text-xs text-center py-1">
+            🎭 Demo Mode - Features are simulated for demonstration
+          </div>
+        )}
+
         {/* Left side - Project name and mobile menu */}
         <div className="flex items-center gap-3">
           <button
@@ -420,7 +431,7 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
           </button>
 
           <button
-            onClick={() => setIsPublishModalOpen(true)}
+            onClick={() => setVercelPublishModalOpen(true)}
             disabled={!isProjectLoaded}
             className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 ${
               theme === 'light'
@@ -428,7 +439,7 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
                 : 'bg-blue-600 hover:bg-blue-700 text-white'
             }`}
           >
-            Publish to Web
+            {features.mockMode ? 'Demo Deploy' : 'Publish to Vercel'}
           </button>
         </div>
       </header>
@@ -442,13 +453,17 @@ const ConsolidatedHeader: React.FC<ConsolidatedHeaderProps> = ({
         userEmail={userEmail}
       />
 
-      <PublishWorkflowModal
-        isOpen={isPublishModalOpen}
-        onClose={() => setIsPublishModalOpen(false)}
+      <VercelPublishModal
+        isOpen={isVercelPublishModalOpen}
+        onClose={() => setVercelPublishModalOpen(false)}
         projectName={projectName}
         files={files || {}}
         userEmail={userEmail}
         projectId={projectId}
+        onDeploymentSuccess={(url) => {
+          console.log('Deployment successful:', url);
+          // Could trigger database connection workflow here
+        }}
       />
     </>
   );
