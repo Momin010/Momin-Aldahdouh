@@ -159,8 +159,8 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
                       <div className="flex items-start gap-3">
                         <Icon name="alert-triangle" className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
                         <div className="text-sm text-yellow-200">
-                          <p className="font-semibold mb-1">Important: Publish First</p>
-                          <p>You must publish your app to Vercel before connecting the database. This ensures your database is hosted in your own Vercel account.</p>
+                          <p className="font-semibold mb-1">Important: Connect to Supabase</p>
+                          <p>You need to connect to your Supabase account to create and manage your database. Supabase provides powerful PostgreSQL databases with built-in authentication, real-time subscriptions, and more.</p>
                         </div>
                       </div>
                     </div>
@@ -186,12 +186,12 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
                     </div>
 
                     <div className="mt-6 text-sm text-gray-400">
-                      <p className="mb-2">✨ <strong>New Workflow:</strong></p>
+                      <p className="mb-2">✨ <strong>How it works:</strong></p>
                       <ol className="list-decimal list-inside space-y-1 text-left">
-                        <li>Publish your app to Vercel (creates your cloud account)</li>
+                        <li>Connect to your Supabase account</li>
                         <li>MominAI analyzes your website HTML</li>
                         <li>Generates optimal database schema</li>
-                        <li>Creates PostgreSQL tables in YOUR Vercel account</li>
+                        <li>Creates PostgreSQL tables in YOUR Supabase project</li>
                         <li>Provides visual database management</li>
                       </ol>
                     </div>
