@@ -1,312 +1,240 @@
-import type { Files } from '../types';
-
-export interface DeploymentPlatform {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  features: string[];
-  freeTier: boolean;
-  customDomains: boolean;
-  buildSettings?: {
-    buildCommand?: string;
-    outputDir?: string;
-    installCommand?: string;
-  };
-}
+import { githubManager, GitHubRepo } from '../lib/github';
+import { netlifyManager, NetlifySite, NetlifyDeploy } from '../lib/netlify';
 
 export interface DeploymentConfig {
-  platform: string;
   projectName: string;
-  customDomain?: string;
-  buildSettings?: {
-    buildCommand?: string;
-    outputDir?: string;
-    installCommand?: string;
-  };
-  environment?: Record<string, string>;
+  files: Record<string, string>;
+  userEmail?: string;
+  projectId?: string;
 }
 
 export interface DeploymentResult {
   success: boolean;
-  url?: string;
-  buildId?: string;
+  githubRepo?: GitHubRepo;
+  netlifySite?: NetlifySite;
+  deployment?: NetlifyDeploy;
   error?: string;
-  logs?: string[];
 }
 
-// Available deployment platforms
-export const DEPLOYMENT_PLATFORMS: DeploymentPlatform[] = [
-  {
-    id: 'netlify',
-    name: 'Netlify',
-    description: 'Modern web hosting with continuous deployment',
-    icon: '🌐',
-    features: ['CDN', 'Form handling', 'Serverless functions', 'Custom domains'],
-    freeTier: true,
-    customDomains: true,
-    buildSettings: {
-      buildCommand: 'npm run build',
-      outputDir: 'dist',
-      installCommand: 'npm install'
-    }
-  },
-  {
-    id: 'vercel',
-    name: 'Vercel',
-    description: 'Frontend cloud platform for static sites and serverless functions',
-    icon: '▲',
-    features: ['Edge functions', 'Analytics', 'Custom domains', 'Preview deployments'],
-    freeTier: true,
-    customDomains: true,
-    buildSettings: {
-      buildCommand: 'npm run build',
-      outputDir: 'dist',
-      installCommand: 'npm install'
-    }
-  },
-  {
-    id: 'github-pages',
-    name: 'GitHub Pages',
-    description: 'Free hosting for public repositories',
-    icon: '📄',
-    features: ['Free hosting', 'Custom domains', 'Jekyll support'],
-    freeTier: true,
-    customDomains: true
-  },
-  {
-    id: 'surge',
-    name: 'Surge.sh',
-    description: 'Static web publishing for front-end developers',
-    icon: '📦',
-    features: ['Custom domains', 'Password protection', 'Team collaboration'],
-    freeTier: true,
-    customDomains: true
-  }
-];
+export interface DeploymentStatus {
+  step: 'connecting' | 'creating-repo' | 'uploading-files' | 'creating-site' | 'connecting-repo' | 'deploying' | 'completed' | 'error';
+  message: string;
+  progress: number;
+  githubRepo?: GitHubRepo;
+  netlifySite?: NetlifySite;
+  deployment?: NetlifyDeploy;
+  error?: string;
+}
 
-export class DeploymentService {
-  private activeDeployments: Map<string, DeploymentResult> = new Map();
+class DeploymentService {
+  private statusCallback?: (status: DeploymentStatus) => void;
 
-  // Get available platforms
-  getAvailablePlatforms(): DeploymentPlatform[] {
-    return DEPLOYMENT_PLATFORMS;
+  setStatusCallback(callback: (status: DeploymentStatus) => void) {
+    this.statusCallback = callback;
   }
 
-  // Deploy project to specified platform
-  async deployProject(
-    files: Files,
-    config: DeploymentConfig,
-    onProgress?: (progress: number, message: string) => void
-  ): Promise<DeploymentResult> {
-    const deploymentId = `deploy_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  private updateStatus(status: Partial<DeploymentStatus>) {
+    if (this.statusCallback) {
+      this.statusCallback(status as DeploymentStatus);
+    }
+  }
 
+  // Main deployment workflow
+  async deployProject(config: DeploymentConfig): Promise<DeploymentResult> {
     try {
-      onProgress?.(10, 'Preparing deployment...');
+      // Step 1: Check connections
+      this.updateStatus({
+        step: 'connecting',
+        message: 'Checking connections...',
+        progress: 10
+      });
 
-      // Get platform configuration
-      const platform = DEPLOYMENT_PLATFORMS.find(p => p.id === config.platform);
-      if (!platform) {
-        throw new Error(`Platform ${config.platform} not found`);
+      if (!githubManager.isAuthenticated()) {
+        throw new Error('GitHub not connected. Please connect your GitHub account first.');
       }
 
-      onProgress?.(30, `Configuring ${platform.name} deployment...`);
+      if (!netlifyManager.isAuthenticated()) {
+        throw new Error('Netlify not connected. Please connect your Netlify account first.');
+      }
 
-      // Prepare files for deployment
-      const deploymentFiles = await this.prepareDeploymentFiles(files, platform, config);
+      // Step 2: Create GitHub repository
+      this.updateStatus({
+        step: 'creating-repo',
+        message: 'Creating GitHub repository...',
+        progress: 20
+      });
 
-      onProgress?.(50, 'Uploading files...');
+      const repoName = this.generateRepoName(config.projectName);
+      const githubRepo = await githubManager.createRepo(
+        repoName,
+        `MominAI generated project: ${config.projectName}`,
+        false
+      );
 
-      // Simulate upload process
-      await this.simulateUpload(deploymentFiles);
+      this.updateStatus({
+        step: 'creating-repo',
+        message: 'GitHub repository created successfully',
+        progress: 30,
+        githubRepo
+      });
 
-      onProgress?.(70, 'Building project...');
+      // Step 3: Upload files to GitHub
+      this.updateStatus({
+        step: 'uploading-files',
+        message: 'Uploading files to GitHub...',
+        progress: 40,
+        githubRepo
+      });
 
-      // Simulate build process
-      await this.simulateBuild(platform, config);
+      await githubManager.uploadFiles(
+        githubRepo.full_name.split('/')[0], // owner
+        githubRepo.name,
+        config.files
+      );
 
-      onProgress?.(90, 'Finalizing deployment...');
+      this.updateStatus({
+        step: 'uploading-files',
+        message: 'Files uploaded to GitHub successfully',
+        progress: 50,
+        githubRepo
+      });
 
-      // Generate deployment URL
-      const deploymentUrl = await this.generateDeploymentUrl(platform, config);
+      // Step 4: Create Netlify site
+      this.updateStatus({
+        step: 'creating-site',
+        message: 'Creating Netlify site...',
+        progress: 60,
+        githubRepo
+      });
 
-      const result: DeploymentResult = {
+      const siteName = this.generateSiteName(config.projectName);
+      const netlifySite = await netlifyManager.createSite(siteName);
+
+      this.updateStatus({
+        step: 'creating-site',
+        message: 'Netlify site created successfully',
+        progress: 70,
+        githubRepo,
+        netlifySite
+      });
+
+      // Step 5: Connect repository to site
+      this.updateStatus({
+        step: 'connecting-repo',
+        message: 'Connecting GitHub repository to Netlify...',
+        progress: 80,
+        githubRepo,
+        netlifySite
+      });
+
+      await netlifyManager.connectSiteToRepo(netlifySite.id, {
+        provider: 'github',
+        repo_path: githubRepo.full_name,
+        repo_branch: 'main'
+      });
+
+      this.updateStatus({
+        step: 'connecting-repo',
+        message: 'Repository connected successfully',
+        progress: 90,
+        githubRepo,
+        netlifySite
+      });
+
+      // Step 6: Trigger initial deployment
+      this.updateStatus({
+        step: 'deploying',
+        message: 'Starting initial deployment...',
+        progress: 95,
+        githubRepo,
+        netlifySite
+      });
+
+      // The connection should trigger an automatic deployment
+      // Wait a moment for deployment to start
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Get deployment status
+      const deploys = await netlifyManager.getSiteDeploys(netlifySite.id);
+      const latestDeploy = deploys[0];
+
+      this.updateStatus({
+        step: 'completed',
+        message: 'Deployment initiated successfully!',
+        progress: 100,
+        githubRepo,
+        netlifySite,
+        deployment: latestDeploy
+      });
+
+      return {
         success: true,
-        url: deploymentUrl,
-        buildId: deploymentId
+        githubRepo,
+        netlifySite,
+        deployment: latestDeploy
       };
 
-      this.activeDeployments.set(deploymentId, result);
-      onProgress?.(100, 'Deployment completed successfully!');
+    } catch (error: any) {
+      const errorMessage = error.message || 'Deployment failed';
 
-      return result;
+      this.updateStatus({
+        step: 'error',
+        message: errorMessage,
+        progress: 0,
+        error: errorMessage
+      });
 
-    } catch (error) {
-      const errorResult: DeploymentResult = {
+      return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown deployment error'
+        error: errorMessage
       };
-
-      this.activeDeployments.set(deploymentId, errorResult);
-      onProgress?.(0, 'Deployment failed');
-
-      return errorResult;
     }
   }
 
-  // Prepare files for deployment based on platform
-  private async prepareDeploymentFiles(
-    files: Files,
-    platform: DeploymentPlatform,
-    config: DeploymentConfig
-  ): Promise<Files> {
-    const deploymentFiles = { ...files };
+  // Generate unique repository name
+  private generateRepoName(projectName: string): string {
+    const baseName = projectName
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
 
-    // Add deployment-specific files
-    switch (platform.id) {
-      case 'netlify':
-        deploymentFiles['netlify.toml'] = this.generateNetlifyConfig(config);
-        break;
-      case 'vercel':
-        deploymentFiles['vercel.json'] = this.generateVercelConfig(config);
-        break;
-      case 'github-pages':
-        // GitHub Pages specific configuration
-        break;
-    }
-
-    // Ensure build configuration exists
-    if (!deploymentFiles['package.json']) {
-      deploymentFiles['package.json'] = this.generatePackageJson(config);
-    }
-
-    return deploymentFiles;
+    const timestamp = Date.now();
+    return `${baseName}-${timestamp}`;
   }
 
-  // Generate Netlify configuration
-  private generateNetlifyConfig(config: DeploymentConfig): string {
-    return `[build]
-  command = "${config.buildSettings?.buildCommand || 'npm run build'}"
-  publish = "${config.buildSettings?.outputDir || 'dist'}"
+  // Generate unique site name
+  private generateSiteName(projectName: string): string {
+    const baseName = projectName
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
 
-[build.environment]
-  NODE_VERSION = "18"
-
-${config.customDomain ? `[build]
-  command = "npm run build"
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200` : ''}`;
+    const timestamp = Date.now();
+    return `${baseName}-${timestamp}`;
   }
 
-  // Generate Vercel configuration
-  private generateVercelConfig(config: DeploymentConfig): string {
-    return `{
-  "version": 2,
-  "buildCommand": "${config.buildSettings?.buildCommand || 'npm run build'}",
-  "outputDirectory": "${config.buildSettings?.outputDir || 'dist'}",
-  "installCommand": "${config.buildSettings?.installCommand || 'npm install'}",
-  "framework": "vite"
-}`;
-  }
-
-  // Generate package.json if it doesn't exist
-  private generatePackageJson(config: DeploymentConfig): string {
-    return `{
-  "name": "${config.projectName.toLowerCase().replace(/\\s+/g, '-')}",
-  "version": "1.0.0",
-  "description": "Generated by MominAI",
-  "type": "module",
-  "scripts": {
-    "build": "vite build",
-    "preview": "vite preview",
-    "dev": "vite"
-  },
-  "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
-  },
-  "devDependencies": {
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "@vitejs/plugin-react": "^4.0.0",
-    "typescript": "^5.0.0",
-    "vite": "^4.4.0"
-  }
-}`;
-  }
-
-  // Simulate file upload
-  private async simulateUpload(files: Files): Promise<void> {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // Simulate progress updates
-    for (let i = 0; i <= 100; i += 20) {
-      await new Promise(resolve => setTimeout(resolve, 200));
+  // Get deployment status for a site
+  async getDeploymentStatus(siteId: string): Promise<NetlifyDeploy | null> {
+    try {
+      const deploys = await netlifyManager.getSiteDeploys(siteId);
+      return deploys[0] || null;
+    } catch (error) {
+      console.error('Failed to get deployment status:', error);
+      return null;
     }
   }
 
-  // Simulate build process
-  private async simulateBuild(platform: DeploymentPlatform, config: DeploymentConfig): Promise<void> {
-    // Simulate build time
-    await new Promise(resolve => setTimeout(resolve, 3000));
+  // Check if deployment is complete
+  isDeploymentComplete(deploy: NetlifyDeploy): boolean {
+    return ['ready', 'error'].includes(deploy.state);
   }
 
-  // Generate deployment URL
-  private async generateDeploymentUrl(platform: DeploymentPlatform, config: DeploymentConfig): Promise<string> {
-    // Simulate URL generation delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    switch (platform.id) {
-      case 'netlify':
-        return `https://${config.projectName.toLowerCase().replace(/\\s+/g, '-')}-${Date.now().toString(36)}.netlify.app`;
-      case 'vercel':
-        return `https://${config.projectName.toLowerCase().replace(/\\s+/g, '-')}-${Date.now().toString(36)}.vercel.app`;
-      case 'github-pages':
-        return `https://${config.projectName.toLowerCase()}.github.io`;
-      case 'surge':
-        return `https://${config.projectName.toLowerCase()}-${Date.now().toString(36)}.surge.sh`;
-      default:
-        return `https://${config.projectName.toLowerCase()}.example.com`;
-    }
-  }
-
-  // Get deployment status
-  getDeploymentStatus(deploymentId: string): DeploymentResult | undefined {
-    return this.activeDeployments.get(deploymentId);
-  }
-
-  // Cancel deployment
-  cancelDeployment(deploymentId: string): boolean {
-    const deployment = this.activeDeployments.get(deploymentId);
-    if (deployment && !deployment.success) {
-      this.activeDeployments.delete(deploymentId);
-      return true;
-    }
-    return false;
-  }
-
-  // Clean up old deployments
-  cleanupOldDeployments(): void {
-    const cutoffTime = Date.now() - (24 * 60 * 60 * 1000); // 24 hours ago
-    const oldDeployments: string[] = [];
-
-    this.activeDeployments.forEach((deployment, id) => {
-      // In a real implementation, you'd track deployment timestamps
-      // For now, we'll clean up failed deployments older than 1 hour
-      if (!deployment.success) {
-        oldDeployments.push(id);
-      }
-    });
-
-    oldDeployments.forEach(id => {
-      this.activeDeployments.delete(id);
-    });
+  // Get deployment URL
+  getDeploymentUrl(deploy: NetlifyDeploy): string {
+    return deploy.url || '';
   }
 }
 
-// Singleton instance
 export const deploymentService = new DeploymentService();
