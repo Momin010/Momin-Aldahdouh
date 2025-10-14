@@ -87,7 +87,8 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
       <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
         <div className="flex-grow p-6 overflow-auto">
           <h2 className="text-2xl font-bold text-white mb-6">Database Manager</h2>
-          <div className="space-y-4">
+          <div className="space-y-6">
+            {/* Database Actions */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <button
                 onClick={() => onDatabaseAction && onDatabaseAction('create')}
@@ -108,9 +109,159 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
                 Export Data
               </button>
             </div>
+
+            {/* Mock Database Tables */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-white">Tables</h3>
+
+              {/* Users Table */}
+              <div className="bg-white/5 rounded-lg border border-white/10 overflow-hidden">
+                <div className="px-4 py-3 bg-white/10 border-b border-white/10">
+                  <h4 className="font-semibold text-white">Users</h4>
+                  <p className="text-sm text-gray-400">User accounts and profiles</p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-black/20">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-gray-300">ID</th>
+                        <th className="px-4 py-2 text-left text-gray-300">Email</th>
+                        <th className="px-4 py-2 text-left text-gray-300">Name</th>
+                        <th className="px-4 py-2 text-left text-gray-300">Created</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-t border-white/5">
+                        <td className="px-4 py-2 text-gray-300">1</td>
+                        <td className="px-4 py-2 text-gray-300">john@example.com</td>
+                        <td className="px-4 py-2 text-gray-300">John Doe</td>
+                        <td className="px-4 py-2 text-gray-300">2024-01-15</td>
+                      </tr>
+                      <tr className="border-t border-white/5 bg-white/5">
+                        <td className="px-4 py-2 text-gray-300">2</td>
+                        <td className="px-4 py-2 text-gray-300">jane@example.com</td>
+                        <td className="px-4 py-2 text-gray-300">Jane Smith</td>
+                        <td className="px-4 py-2 text-gray-300">2024-01-16</td>
+                      </tr>
+                      <tr className="border-t border-white/5">
+                        <td className="px-4 py-2 text-gray-300">3</td>
+                        <td className="px-4 py-2 text-gray-300">bob@example.com</td>
+                        <td className="px-4 py-2 text-gray-300">Bob Johnson</td>
+                        <td className="px-4 py-2 text-gray-300">2024-01-17</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Products Table */}
+              <div className="bg-white/5 rounded-lg border border-white/10 overflow-hidden">
+                <div className="px-4 py-3 bg-white/10 border-b border-white/10">
+                  <h4 className="font-semibold text-white">Products</h4>
+                  <p className="text-sm text-gray-400">Product catalog</p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-black/20">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-gray-300">ID</th>
+                        <th className="px-4 py-2 text-left text-gray-300">Name</th>
+                        <th className="px-4 py-2 text-left text-gray-300">Price</th>
+                        <th className="px-4 py-2 text-left text-gray-300">Category</th>
+                        <th className="px-4 py-2 text-left text-gray-300">Stock</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-t border-white/5">
+                        <td className="px-4 py-2 text-gray-300">1</td>
+                        <td className="px-4 py-2 text-gray-300">Laptop</td>
+                        <td className="px-4 py-2 text-gray-300">$999.99</td>
+                        <td className="px-4 py-2 text-gray-300">Electronics</td>
+                        <td className="px-4 py-2 text-gray-300">50</td>
+                      </tr>
+                      <tr className="border-t border-white/5 bg-white/5">
+                        <td className="px-4 py-2 text-gray-300">2</td>
+                        <td className="px-4 py-2 text-gray-300">Mouse</td>
+                        <td className="px-4 py-2 text-gray-300">$29.99</td>
+                        <td className="px-4 py-2 text-gray-300">Electronics</td>
+                        <td className="px-4 py-2 text-gray-300">200</td>
+                      </tr>
+                      <tr className="border-t border-white/5">
+                        <td className="px-4 py-2 text-gray-300">3</td>
+                        <td className="px-4 py-2 text-gray-300">Book</td>
+                        <td className="px-4 py-2 text-gray-300">$19.99</td>
+                        <td className="px-4 py-2 text-gray-300">Books</td>
+                        <td className="px-4 py-2 text-gray-300">150</td>
+                      </tr>
+                      <tr className="border-t border-white/5 bg-white/5">
+                        <td className="px-4 py-2 text-gray-300">4</td>
+                        <td className="px-4 py-2 text-gray-300">Headphones</td>
+                        <td className="px-4 py-2 text-gray-300">$79.99</td>
+                        <td className="px-4 py-2 text-gray-300">Electronics</td>
+                        <td className="px-4 py-2 text-gray-300">75</td>
+                      </tr>
+                      <tr className="border-t border-white/5">
+                        <td className="px-4 py-2 text-gray-300">5</td>
+                        <td className="px-4 py-2 text-gray-300">Chair</td>
+                        <td className="px-4 py-2 text-gray-300">$149.99</td>
+                        <td className="px-4 py-2 text-gray-300">Furniture</td>
+                        <td className="px-4 py-2 text-gray-300">25</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Orders Table */}
+              <div className="bg-white/5 rounded-lg border border-white/10 overflow-hidden">
+                <div className="px-4 py-3 bg-white/10 border-b border-white/10">
+                  <h4 className="font-semibold text-white">Orders</h4>
+                  <p className="text-sm text-gray-400">Customer orders</p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-black/20">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-gray-300">ID</th>
+                        <th className="px-4 py-2 text-left text-gray-300">Customer ID</th>
+                        <th className="px-4 py-2 text-left text-gray-300">Total</th>
+                        <th className="px-4 py-2 text-left text-gray-300">Status</th>
+                        <th className="px-4 py-2 text-left text-gray-300">Created</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-t border-white/5">
+                        <td className="px-4 py-2 text-gray-300">1</td>
+                        <td className="px-4 py-2 text-gray-300">1</td>
+                        <td className="px-4 py-2 text-gray-300">$1029.98</td>
+                        <td className="px-4 py-2 text-green-400">completed</td>
+                        <td className="px-4 py-2 text-gray-300">2024-01-20</td>
+                      </tr>
+                      <tr className="border-t border-white/5 bg-white/5">
+                        <td className="px-4 py-2 text-gray-300">2</td>
+                        <td className="px-4 py-2 text-gray-300">2</td>
+                        <td className="px-4 py-2 text-gray-300">$49.98</td>
+                        <td className="px-4 py-2 text-yellow-400">pending</td>
+                        <td className="px-4 py-2 text-gray-300">2024-01-21</td>
+                      </tr>
+                      <tr className="border-t border-white/5">
+                        <td className="px-4 py-2 text-gray-300">3</td>
+                        <td className="px-4 py-2 text-gray-300">1</td>
+                        <td className="px-4 py-2 text-gray-300">$199.98</td>
+                        <td className="px-4 py-2 text-blue-400">shipped</td>
+                        <td className="px-4 py-2 text-gray-300">2024-01-22</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Database Info */}
             <div className="bg-black/30 rounded-lg p-4">
               <p className="text-gray-400 text-sm">
-                Database management features will be displayed here.
+                <strong>Demo Database:</strong> This is a mock database with sample data for demonstration purposes.
+                Total records: 11 across 3 tables. Use the buttons above to interact with the database.
               </p>
             </div>
           </div>
