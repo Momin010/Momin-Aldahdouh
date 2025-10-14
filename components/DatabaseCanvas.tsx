@@ -18,8 +18,8 @@ import 'reactflow/dist/style.css';
 // Custom Database Table Node Component
 const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }) => {
   return (
-    <div className={`bg-black border-2 rounded-lg shadow-lg transition-all duration-300 min-w-[250px] ${
-      selected ? 'border-blue-500 scale-105' : 'border-gray-400 hover:border-gray-600'
+    <div className={`bg-white border-2 rounded-lg shadow-lg transition-all duration-300 min-w-[250px] ${
+      selected ? 'border-blue-500 scale-105' : 'border-gray-300 hover:border-gray-500'
     }`}>
       {/* Table Header */}
       <div className="bg-gray-100 px-3 py-2 rounded-t-lg border-b border-gray-300 flex items-center justify-between">
@@ -85,10 +85,10 @@ const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }
                 column.type === 'date' ? 'bg-purple-500' :
                 'bg-gray-500'
               }`} />
-              <span className="font-medium text-gray-800">{column.name}</span>
+              <span className="font-medium text-gray-900">{column.name}</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-gray-600">{column.type}</span>
+              <span className="text-gray-700">{column.type}</span>
               {column.primaryKey && (
                 <svg className="w-3 h-3 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
@@ -100,7 +100,7 @@ const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }
         ))}
 
         {data.table.columns.length > 8 && (
-          <div className="text-xs text-gray-600 text-center py-1">
+          <div className="text-xs text-gray-700 text-center py-1">
             +{data.table.columns.length - 8} more columns
           </div>
         )}
@@ -212,7 +212,7 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
   }, [onTableSelect]);
 
   return (
-    <div className="h-full w-full bg-white" style={{ backgroundColor: 'white' }}>
+    <div className="h-full w-full bg-black" style={{ backgroundColor: 'black' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -224,35 +224,35 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
         nodeTypes={nodeTypes}
         fitView
         attributionPosition="bottom-left"
-        style={{ backgroundColor: 'white' }}
+        style={{ backgroundColor: 'black' }}
       >
-        {/* Background with black dots on white background */}
+        {/* Background with white dots on black background */}
         <Background
           variant={BackgroundVariant.Dots}
           gap={50}
           size={3}
-          color="#000000"
+          color="#ffffff"
         />
 
         {/* Built-in controls */}
-        <Controls className="bg-white border-gray-300 shadow-lg" />
+        <Controls className="bg-gray-800 border-gray-600 shadow-lg" />
 
         {/* Smaller Mini map */}
         <MiniMap
-          nodeColor={(node) => selectedTable === node.id ? '#3b82f6' : '#000000'}
-          maskColor="rgba(255, 255, 255, 0.2)"
-          className="bg-white border border-gray-300"
+          nodeColor={(node) => selectedTable === node.id ? '#3b82f6' : '#ffffff'}
+          maskColor="rgba(0, 0, 0, 0.1)"
+          className="bg-gray-900 border border-gray-600"
           style={{ height: 120, width: 200 }}
           position="bottom-right"
         />
 
         {/* Custom control panel */}
         <Panel position="top-left">
-          <div className="flex gap-2 p-2 bg-gray-100 rounded-lg border border-gray-300">
+          <div className="flex gap-2 p-2 bg-gray-800 rounded-lg border border-gray-600">
             {onAddTable && (
               <button
                 onClick={onAddTable}
-                className="p-2 bg-green-600 text-white rounded-lg shadow-lg hover:bg-green-700 transition-colors"
+                className="p-2 bg-green-600 text-white rounded-lg shadow-lg hover:bg-green-700 transition-colors border border-green-500"
                 title="Add Table"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -263,7 +263,7 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
             {onToggleFullscreen && (
               <button
                 onClick={onToggleFullscreen}
-                className="p-2 bg-gray-100 text-gray-800 rounded-lg shadow-lg hover:bg-gray-200 transition-colors border border-gray-300"
+                className="p-2 bg-gray-700 text-gray-200 rounded-lg shadow-lg hover:bg-gray-600 transition-colors border border-gray-500"
                 title="Toggle Fullscreen"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
