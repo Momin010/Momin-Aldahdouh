@@ -321,10 +321,19 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
     setNodes(initialNodes);
   }, [initialNodes, setNodes]);
 
-  // Update edges when initialEdges changes
+  // Update edges when initialEdges changes - with delay to ensure nodes are rendered first
   React.useEffect(() => {
-    setEdges(initialEdges);
+    const timer = setTimeout(() => {
+      setEdges(initialEdges);
+    }, 50); // Small delay to ensure nodes are mounted
+    return () => clearTimeout(timer);
   }, [initialEdges, setEdges]);
+
+  // Debug: Log nodes and edges for troubleshooting
+  React.useEffect(() => {
+    console.log('NODES:', nodes.map(n => n.id));
+    console.log('EDGES:', edges.map(e => ({ id: e.id, from: e.source, to: e.target })));
+  }, [nodes, edges]);
 
   // Handle new connections
   const onConnect = useCallback(
@@ -376,6 +385,15 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
           color="#ffffff"
         />
 
+
+        {/* Debug overlay for relationship validation */}
+        <div className="absolute top-16 left-0 bg-black text-green-400 p-2 text-xs z-50 max-w-md">
+          {relationships.map(r => (
+            <div key={r.id}>
+              {r.id}: {r.fromTable} → {r.toTable} {nodes.some(n => n.id === r.fromTable) ? '✅' : '❌'} → {nodes.some(n => n.id === r.toTable) ? '✅' : '❌'}
+            </div>
+          ))}
+        </div>
 
         {/* Built-in controls */}
         <Controls className="bg-gray-800 border-gray-600 shadow-lg" />
