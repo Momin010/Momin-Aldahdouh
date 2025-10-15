@@ -266,9 +266,28 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
   onStartEditing,
   onStopEditing
 }) => {
+  // Search and filter state
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [filterType, setFilterType] = React.useState('');
+  // Filter tables based on search and filter criteria
+  const filteredTables = useMemo(() => {
+    return tables.filter((table) => {
+      const matchesSearch = searchTerm === '' ||
+        table.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        table.columns.some(col => col.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+      const matchesFilter = filterType === '' ||
+        (filterType === 'fact' && table.rowCount > 1000) ||
+        (filterType === 'dimension' && table.columns.some(col => col.primaryKey)) ||
+        (filterType === 'lookup' && table.columns.length <= 3);
+
+      return matchesSearch && matchesFilter;
+    });
+  }, [tables, searchTerm, filterType]);
+
   // Convert tables to React Flow nodes
   const initialNodes: Node[] = useMemo(() =>
-    tables.map((table) => ({
+    filteredTables.map((table) => ({
       id: table.id,
       type: 'databaseTable',
       position: { x: table.x, y: table.y },
@@ -282,7 +301,7 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
       },
       selected: selectedTable === table.id,
       style: { zIndex: 1 },
-    })), [tables, selectedTable, onTableEdit, onTableDelete]
+    })), [filteredTables, selectedTable, onTableEdit, onTableDelete]
   );
 
   // Convert relationships to React Flow edges
@@ -413,6 +432,28 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
         {/* Custom control panel */}
         <Panel position="top-left">
           <div className="flex gap-2 p-2 bg-gray-800 rounded-lg border border-gray-600">
+            {/* Search and Filter Section */}
+            <div className="flex items-center gap-2 mr-2 pr-2 border-r border-gray-600">
+              <input
+                type="text"
+                placeholder="Search tables..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="px-2 py-1 text-xs bg-gray-700 text-white rounded border border-gray-600 focus:outline-none focus:border-blue-500"
+                style={{ width: '120px' }}
+              />
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="px-2 py-1 text-xs bg-gray-700 text-white rounded border border-gray-600 focus:outline-none focus:border-blue-500"
+              >
+                <option value="">All Types</option>
+                <option value="fact">Fact Tables</option>
+                <option value="dimension">Dimension</option>
+                <option value="lookup">Lookup</option>
+              </select>
+            </div>
+
             {onAddTable && (
               <button
                 onClick={onAddTable}
