@@ -78,18 +78,6 @@ const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }
         [field]: value
       }
     }));
-    // Immediately save the edit to the table
-    const currentEdits = editValues[columnName] || {};
-    const updatedEdits = { ...currentEdits, [field]: value };
-    if (updatedEdits.name !== undefined || updatedEdits.type !== undefined) {
-      const updatedColumns = data.table.columns.map((col: any) =>
-        col.name === columnName
-          ? { ...col, name: updatedEdits.name || col.name, type: updatedEdits.type || col.type }
-          : col
-      );
-      data.onEdit({ ...data.table, columns: updatedColumns });
-      console.log('Column edited immediately:', columnName, updatedEdits);
-    }
   };
 
   const saveColumnEdit = (columnName: string) => {
@@ -198,6 +186,7 @@ const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }
                   }}
                   className="font-medium text-gray-900 bg-white border border-gray-300 rounded px-1"
                   autoFocus
+                  onFocus={(e) => e.target.select()}
                 />
               ) : (
                 <span className="font-medium text-gray-900">{column.name}</span>
@@ -210,6 +199,8 @@ const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }
                   onChange={(e) => handleColumnEdit(column.name, 'type', e.target.value)}
                   onBlur={() => saveColumnEdit(column.name)}
                   className="text-gray-700 bg-white border border-gray-300 rounded px-1 text-xs"
+                  onFocus={(e) => e.target.size = Math.min(8, e.target.options.length)}
+                  onBlur={(e) => e.target.size = 1}
                 >
                   <option value="string">string</option>
                   <option value="number">number</option>
