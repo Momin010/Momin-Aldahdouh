@@ -380,12 +380,22 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
           color="#ffffff"
         />
 
-        {/* Debug: Show edges if they're not visible */}
-        {edges.length > 0 && (
-          <div className="absolute top-0 left-0 z-50 bg-red-500 text-white p-2 text-xs">
-            Edges: {edges.length} | Nodes: {nodes.length}
-          </div>
-        )}
+        {/* Debug: Show edges and coordinates */}
+        <div className="absolute top-0 left-0 z-50 bg-red-500 text-white p-2 text-xs max-w-md">
+          <div>Edges: {edges.length} | Nodes: {nodes.length}</div>
+          <div className="mt-1">Tables: {tables.length}</div>
+          {tables.map((table, index) => (
+            <div key={table.id} className="text-xs">
+              {table.name}: ({Math.round(table.x)}, {Math.round(table.y)})
+              {table.x < 0 || table.y < 0 ? ' ⚠️ INVALID COORDS' : ''}
+            </div>
+          ))}
+          {tables.some(t => t.x < 0 || t.y < 0) && (
+            <div className="text-yellow-300 font-bold mt-1">
+              ⚠️ COORDINATE ERROR: Some tables have invalid positions!
+            </div>
+          )}
+        </div>
 
         {/* Built-in controls */}
         <Controls className="bg-gray-800 border-gray-600 shadow-lg" />
