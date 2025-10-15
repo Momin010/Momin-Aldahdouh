@@ -295,26 +295,21 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
       animated: true,
       label: rel.type.replace('-', ' '),
       style: {
-        stroke: '#ffffff',
-        strokeWidth: 4,
-        zIndex: 9999,
+        stroke: '#3b82f6', // blue line for visibility on black background
+        strokeWidth: 2,
       },
       markerEnd: {
         type: 'arrowclosed',
-        color: '#ffffff',
-        width: 25,
-        height: 25,
-        strokeWidth: 3,
+        color: '#3b82f6',
       },
       labelStyle: {
-        color: '#ffffff',
-        fontSize: 14,
+        fill: '#ffffff',
+        fontSize: 12,
         fontWeight: 600,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        padding: '4px 8px',
+        background: 'rgba(0,0,0,0.5)',
+        padding: '2px 4px',
         borderRadius: '4px',
       },
-      zIndex: 9999,
     })), [relationships]
   );
 
@@ -371,6 +366,7 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
         nodesDraggable={true}
         nodesConnectable={true}
         elementsSelectable={true}
+        className="[&_.react-flow__edges]:z-[100] [&_.react-flow__edge-path]:stroke-[3px]"
       >
         {/* Background with white dots on black background */}
         <Background
@@ -380,22 +376,6 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
           color="#ffffff"
         />
 
-        {/* Debug: Show edges and coordinates */}
-        <div className="absolute top-0 left-0 z-50 bg-red-500 text-white p-2 text-xs max-w-md">
-          <div>Edges: {edges.length} | Nodes: {nodes.length}</div>
-          <div className="mt-1">Tables: {tables.length}</div>
-          {tables.map((table, index) => (
-            <div key={table.id} className="text-xs">
-              {table.name}: ({Math.round(table.x)}, {Math.round(table.y)})
-              {table.x < 0 || table.y < 0 ? ' ⚠️ INVALID COORDS' : ''}
-            </div>
-          ))}
-          {tables.some(t => t.x < 0 || t.y < 0) && (
-            <div className="text-yellow-300 font-bold mt-1">
-              ⚠️ COORDINATE ERROR: Some tables have invalid positions!
-            </div>
-          )}
-        </div>
 
         {/* Built-in controls */}
         <Controls className="bg-gray-800 border-gray-600 shadow-lg" />
