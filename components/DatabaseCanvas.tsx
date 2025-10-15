@@ -377,7 +377,7 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
         nodesDraggable={true}
         nodesConnectable={true}
         elementsSelectable={true}
-        className="[&_.react-flow__edges]:z-[100] [&_.react-flow__edge-path]:stroke-[3px]"
+        className="[&_.react-flow__edges]:z-[100] [&_.react-flow__edge-path]:stroke-[3px] [&_.react-flow__edge-path]:opacity-100 [&_.react-flow__edge-path]:visible"
       >
         {/* Background with white dots on black background */}
         <Background
@@ -400,6 +400,12 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
           {edges.length === 0 && relationships.length > 0 && (
             <div className="text-red-400 font-bold mt-1">
               ⚠️ EDGES ARRAY IS EMPTY - React Flow not rendering edges!
+            </div>
+          )}
+          {edges.length > 0 && (
+            <div className="text-yellow-400 font-bold mt-1">
+              ⚠️ EDGES EXIST BUT INVISIBLE - CSS Issue!
+              <br />Check if SVG paths are hidden or have opacity: 0
             </div>
           )}
         </div>
