@@ -17,6 +17,39 @@ import 'reactflow/dist/style.css';
 
 // Custom Database Table Node Component
 const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }) => {
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editingColumn, setEditingColumn] = React.useState<string | null>(null);
+  const [editValues, setEditValues] = React.useState<{[key: string]: {name: string, type: string}}>({});
+
+  const handleColumnEdit = (columnName: string, field: 'name' | 'type', value: string) => {
+    setEditValues(prev => ({
+      ...prev,
+      [columnName]: {
+        ...prev[columnName],
+        [field]: value
+      }
+    }));
+  };
+
+  const saveColumnEdit = (columnName: string) => {
+    const edits = editValues[columnName];
+    if (edits && (edits.name !== data.table.columns.find((c: any) => c.name === columnName)?.name ||
+                  edits.type !== data.table.columns.find((c: any) => c.name === columnName)?.type)) {
+      const updatedColumns = data.table.columns.map((col: any) =>
+        col.name === columnName
+          ? { ...col, name: edits.name || col.name, type: edits.type || col.type }
+          : col
+      );
+      data.onEdit({ ...data.table, columns: updatedColumns });
+    }
+    setEditingColumn(null);
+    setEditValues(prev => {
+      const newState = {...prev};
+      delete newState[columnName];
+      return newState;
+    });
+  };
+
   return (
     <div className={`bg-white border-2 rounded-lg shadow-lg transition-all duration-300 min-w-[250px] ${
       selected ? 'border-blue-500 scale-105' : 'border-gray-300 hover:border-gray-500'
@@ -33,28 +66,23 @@ const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }
           <span className="text-xs text-gray-600 bg-gray-200 px-2 py-1 rounded">
             {data.table.rowCount} rows
           </span>
-          {data.onEdit && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                const newName = prompt('Enter new table name:', data.table.name);
-                if (newName && newName !== data.table.name) {
-                  data.onEdit({ ...data.table, name: newName });
-                }
-              }}
-              className="p-1 hover:bg-gray-200 rounded transition-colors"
-              title="Edit table"
-            >
-              <svg className="w-3 h-3 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-            </button>
-          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsEditing(!isEditing);
+            }}
+            className="p-1 hover:bg-gray-200 rounded transition-colors"
+            title="Edit table structure"
+          >
+            <svg className="w-3 h-3 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </button>
           {data.onDelete && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                if (confirm(`Are you sure you want to delete the "${data.table.name}" table?`)) {
+                if (confirm(`Are you sure you want to delete the "${data.table.name}" table? This cannot be undone!`)) {
                   data.onDelete(data.table.id);
                 }
               }}
@@ -75,6 +103,12 @@ const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }
           <div
             key={column.name}
             className="flex items-center justify-between py-1 px-2 rounded text-xs hover:bg-gray-100"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isEditing) {
+                setEditingColumn(column.name);
+              }
+            }}
           >
             <div className="flex items-center gap-2">
               <span className={`w-2 h-2 rounded-full ${
@@ -85,10 +119,44 @@ const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }
                 column.type === 'date' ? 'bg-purple-500' :
                 'bg-gray-500'
               }`} />
-              <span className="font-medium text-gray-900">{column.name}</span>
+              {editingColumn === column.name ? (
+                <input
+                  type="text"
+                  value={editValues[column.name]?.name || column.name}
+                  onChange={(e) => handleColumnEdit(column.name, 'name', e.target.value)}
+                  onBlur={() => saveColumnEdit(column.name)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      saveColumnEdit(column.name);
+                    }
+                  }}
+                  className="font-medium text-gray-900 bg-white border border-gray-300 rounded px-1"
+                  autoFocus
+                />
+              ) : (
+                <span className="font-medium text-gray-900">{column.name}</span>
+              )}
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-gray-700">{column.type}</span>
+              {editingColumn === column.name ? (
+                <select
+                  value={editValues[column.name]?.type || column.type}
+                  onChange={(e) => handleColumnEdit(column.name, 'type', e.target.value)}
+                  onBlur={() => saveColumnEdit(column.name)}
+                  className="text-gray-700 bg-white border border-gray-300 rounded px-1 text-xs"
+                >
+                  <option value="string">string</option>
+                  <option value="number">number</option>
+                  <option value="boolean">boolean</option>
+                  <option value="date">date</option>
+                  <option value="uuid">uuid</option>
+                  <option value="text">text</option>
+                  <option value="varchar(255)">varchar(255)</option>
+                  <option value="timestamp">timestamp</option>
+                </select>
+              ) : (
+                <span className="text-gray-700">{column.type}</span>
+              )}
               {column.primaryKey && (
                 <svg className="w-3 h-3 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
@@ -102,6 +170,17 @@ const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }
         {data.table.columns.length > 8 && (
           <div className="text-xs text-gray-700 text-center py-1">
             +{data.table.columns.length - 8} more columns
+          </div>
+        )}
+
+        {isEditing && (
+          <div className="mt-2 pt-2 border-t border-gray-200">
+            <button
+              onClick={() => setIsEditing(false)}
+              className="w-full py-1 px-2 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+            >
+              Done Editing
+            </button>
           </div>
         )}
       </div>
@@ -185,21 +264,25 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
       label: rel.type.replace('-', ' '),
       style: {
         stroke: '#ffffff',
-        strokeWidth: 3,
+        strokeWidth: 4,
+        zIndex: 9999,
       },
       markerEnd: {
         type: 'arrowclosed',
         color: '#ffffff',
-        width: 20,
-        height: 20,
-        strokeWidth: 2,
+        width: 25,
+        height: 25,
+        strokeWidth: 3,
       },
       labelStyle: {
         color: '#ffffff',
-        fontSize: 12,
-        fontWeight: 500,
+        fontSize: 14,
+        fontWeight: 600,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        padding: '4px 8px',
+        borderRadius: '4px',
       },
-      zIndex: 999,
+      zIndex: 9999,
     })), [relationships]
   );
 
@@ -227,7 +310,7 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
   }, [onTableSelect]);
 
   return (
-    <div className="h-full w-full bg-black" style={{ backgroundColor: 'black' }}>
+    <div className="database-canvas-container h-full w-full bg-black" style={{ backgroundColor: 'black' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -241,6 +324,11 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
         attributionPosition="bottom-left"
         style={{ backgroundColor: 'black' }}
         proOptions={{ hideAttribution: true }}
+        edgesUpdatable={true}
+        edgesFocusable={true}
+        nodesDraggable={true}
+        nodesConnectable={true}
+        elementsSelectable={true}
       >
         {/* Background with white dots on black background */}
         <Background
@@ -249,6 +337,13 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
           size={3}
           color="#ffffff"
         />
+
+        {/* Debug: Show edges if they're not visible */}
+        {edges.length > 0 && (
+          <div className="absolute top-0 left-0 z-50 bg-red-500 text-white p-2 text-xs">
+            Edges: {edges.length} | Nodes: {nodes.length}
+          </div>
+        )}
 
         {/* Built-in controls */}
         <Controls className="bg-gray-800 border-gray-600 shadow-lg" />
@@ -276,17 +371,24 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
                 </svg>
               </button>
             )}
-            {onToggleFullscreen && (
-              <button
-                onClick={onToggleFullscreen}
-                className="p-2 bg-gray-700 text-gray-200 rounded-lg shadow-lg hover:bg-gray-600 transition-colors border border-gray-500"
-                title="Toggle Fullscreen"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                </svg>
-              </button>
-            )}
+            <button
+              onClick={() => {
+                const element = document.querySelector('.database-canvas-container');
+                if (element) {
+                  if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                  } else {
+                    element.requestFullscreen();
+                  }
+                }
+              }}
+              className="p-2 bg-gray-700 text-gray-200 rounded-lg shadow-lg hover:bg-gray-600 transition-colors border border-gray-500"
+              title="Toggle Fullscreen Database Canvas"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              </svg>
+            </button>
           </div>
         </Panel>
       </ReactFlow>

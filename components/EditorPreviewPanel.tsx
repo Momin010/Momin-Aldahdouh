@@ -175,19 +175,25 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
   };
 
   const handleAddTable = () => {
-    const newTable: DatabaseTable = {
-      id: `table_${Date.now()}`,
-      name: 'New Table',
-      x: Math.random() * 400 + 100,
-      y: Math.random() * 300 + 100,
-      width: 250,
-      height: 150,
-      columns: [
-        { name: 'id', type: 'uuid', primaryKey: true, nullable: false }
-      ],
-      rowCount: 0
-    };
-    setDatabaseTables(prev => [...prev, newTable]);
+    // Create a copy of one of the existing tables (users table as default)
+    const sourceTable = databaseTables[0] || databaseTables.find(t => t.name === 'users');
+    if (sourceTable) {
+      const newTable: DatabaseTable = {
+        id: `table_${Date.now()}`,
+        name: `${sourceTable.name}_copy`,
+        x: Math.random() * 400 + 100,
+        y: Math.random() * 300 + 100,
+        width: 250,
+        height: 150,
+        columns: [...sourceTable.columns],
+        rowCount: 0
+      };
+      setDatabaseTables(prev => [...prev, newTable]);
+
+      // Also add to the hardcoded tables array in the component for persistence
+      const updatedTables = [...databaseTables, newTable];
+      // This would normally be saved to a file/database, but for now we'll keep it in state
+    }
   };
 
   const handleToggleFullscreen = () => {
