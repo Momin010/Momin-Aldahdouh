@@ -31,7 +31,7 @@ interface DatabaseRelationship {
   fromColumn: string;
   toTable: string;
   toColumn: string;
-  type: 'one-to-one' | 'one-to-many' | 'many-to-many';
+  type: 'one-to-one' | 'one-to-many' | 'many-to-many' | 'many-to-one';
 }
 
 interface EditorPreviewPanelProps {
@@ -83,73 +83,11 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
 }) => {
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Database state management
-  const [databaseTables, setDatabaseTables] = useState<DatabaseTable[]>([
-    {
-      id: 'users',
-      name: 'users',
-      x: 100,
-      y: 100,
-      width: 250,
-      height: 200,
-      columns: [
-        { name: 'id', type: 'uuid', primaryKey: true, nullable: false },
-        { name: 'email', type: 'varchar(255)', nullable: false, unique: true },
-        { name: 'name', type: 'varchar(100)', nullable: false },
-        { name: 'created_at', type: 'timestamp', nullable: false }
-      ],
-      rowCount: 1250
-    },
-    {
-      id: 'projects',
-      name: 'projects',
-      x: 400,
-      y: 100,
-      width: 250,
-      height: 180,
-      columns: [
-        { name: 'id', type: 'uuid', primaryKey: true, nullable: false },
-        { name: 'user_id', type: 'uuid', nullable: false },
-        { name: 'name', type: 'varchar(200)', nullable: false },
-        { name: 'status', type: 'varchar(50)', nullable: false }
-      ],
-      rowCount: 89
-    },
-    {
-      id: 'messages',
-      name: 'messages',
-      x: 700,
-      y: 100,
-      width: 250,
-      height: 160,
-      columns: [
-        { name: 'id', type: 'uuid', primaryKey: true, nullable: false },
-        { name: 'project_id', type: 'uuid', nullable: false },
-        { name: 'content', type: 'text', nullable: false },
-        { name: 'role', type: 'varchar(50)', nullable: false }
-      ],
-      rowCount: 2341
-    }
-  ]);
+  // Database state management - start with empty database
+  const [databaseTables, setDatabaseTables] = useState<DatabaseTable[]>([]);
+  const [databaseInitialized, setDatabaseInitialized] = useState(false);
 
-  const [databaseRelationships] = useState<DatabaseRelationship[]>([
-    {
-      id: 'user-projects',
-      fromTable: 'users',
-      fromColumn: 'id',
-      toTable: 'projects',
-      toColumn: 'user_id',
-      type: 'one-to-many'
-    },
-    {
-      id: 'project-messages',
-      fromTable: 'projects',
-      fromColumn: 'id',
-      toTable: 'messages',
-      toColumn: 'project_id',
-      type: 'one-to-many'
-    }
-  ]);
+  const [databaseRelationships, setDatabaseRelationships] = useState<DatabaseRelationship[]>([]);
 
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [editingTableId, setEditingTableId] = useState<string | null>(null);
@@ -234,6 +172,228 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
   ];
 
   const displayHtml = standaloneHtml || previewHtml;
+
+  // Auto-populate database when standalone HTML is generated
+  useEffect(() => {
+    if (standaloneHtml && !databaseInitialized) {
+      console.log('Standalone HTML detected, initializing database schema...');
+      initializeDatabaseFromHTML(standaloneHtml);
+      setDatabaseInitialized(true);
+    }
+  }, [standaloneHtml, databaseInitialized]);
+
+  // Function to analyze HTML and create appropriate database schema
+  const initializeDatabaseFromHTML = (htmlContent: string) => {
+    const tables: DatabaseTable[] = [];
+    const relationships: DatabaseRelationship[] = [];
+
+    // Detect app type from HTML content
+    const isEcommerce = htmlContent.includes('product') || htmlContent.includes('cart') || htmlContent.includes('checkout');
+    const hasAuth = htmlContent.includes('login') || htmlContent.includes('signup') || htmlContent.includes('auth');
+    const hasBlog = htmlContent.includes('post') || htmlContent.includes('article') || htmlContent.includes('blog');
+
+    let tableX = 100;
+    const tableSpacing = 300;
+
+    // Always create users table if auth is detected
+    if (hasAuth) {
+      tables.push({
+        id: 'users',
+        name: 'users',
+        x: tableX,
+        y: 100,
+        width: 250,
+        height: 180,
+        columns: [
+          { name: 'id', type: 'uuid', primaryKey: true, nullable: false },
+          { name: 'email', type: 'varchar(255)', nullable: false },
+          { name: 'password', type: 'varchar(255)', nullable: false },
+          { name: 'name', type: 'varchar(100)', nullable: true },
+          { name: 'created_at', type: 'timestamp', nullable: false }
+        ],
+        rowCount: 0 // Empty initially, populated when users sign up
+      });
+      tableX += tableSpacing;
+    }
+
+    // Create products table for ecommerce
+    if (isEcommerce) {
+      tables.push({
+        id: 'products',
+        name: 'products',
+        x: tableX,
+        y: 100,
+        width: 250,
+        height: 200,
+        columns: [
+          { name: 'id', type: 'uuid', primaryKey: true, nullable: false },
+          { name: 'name', type: 'varchar(255)', nullable: false },
+          { name: 'description', type: 'text', nullable: true },
+          { name: 'price', type: 'decimal(10,2)', nullable: false },
+          { name: 'image_url', type: 'varchar(500)', nullable: true },
+          { name: 'category', type: 'varchar(100)', nullable: true },
+          { name: 'stock_quantity', type: 'integer', nullable: false },
+          { name: 'created_at', type: 'timestamp', nullable: false }
+        ],
+        rowCount: 0 // Will be populated from HTML content
+      });
+
+      // Extract products from HTML and populate the table
+      populateProductsFromHTML(htmlContent, tables[tables.length - 1]);
+
+      tableX += tableSpacing;
+    }
+
+    // Create cart/orders table for ecommerce
+    if (isEcommerce && hasAuth) {
+      tables.push({
+        id: 'cart_items',
+        name: 'cart_items',
+        x: tableX,
+        y: 100,
+        width: 250,
+        height: 160,
+        columns: [
+          { name: 'id', type: 'uuid', primaryKey: true, nullable: false },
+          { name: 'user_id', type: 'uuid', nullable: false },
+          { name: 'product_id', type: 'uuid', nullable: false },
+          { name: 'quantity', type: 'integer', nullable: false },
+          { name: 'added_at', type: 'timestamp', nullable: false }
+        ],
+        rowCount: 0 // Populated when users add items to cart
+      });
+      tableX += tableSpacing;
+
+      // Add relationships
+      relationships.push(
+        {
+          id: 'cart_user_fk',
+          fromTable: 'cart_items',
+          fromColumn: 'user_id',
+          toTable: 'users',
+          toColumn: 'id',
+          type: 'many-to-one'
+        },
+        {
+          id: 'cart_product_fk',
+          fromTable: 'cart_items',
+          fromColumn: 'product_id',
+          toTable: 'products',
+          toColumn: 'id',
+          type: 'many-to-one'
+        }
+      );
+    }
+
+    // Create posts/articles table for blog
+    if (hasBlog && hasAuth) {
+      tables.push({
+        id: 'posts',
+        name: 'posts',
+        x: tableX,
+        y: 100,
+        width: 250,
+        height: 180,
+        columns: [
+          { name: 'id', type: 'uuid', primaryKey: true, nullable: false },
+          { name: 'author_id', type: 'uuid', nullable: false },
+          { name: 'title', type: 'varchar(255)', nullable: false },
+          { name: 'content', type: 'text', nullable: false },
+          { name: 'published_at', type: 'timestamp', nullable: true },
+          { name: 'created_at', type: 'timestamp', nullable: false }
+        ],
+        rowCount: 0
+      });
+      tableX += tableSpacing;
+
+      relationships.push({
+        id: 'post_author_fk',
+        fromTable: 'posts',
+        fromColumn: 'author_id',
+        toTable: 'users',
+        toColumn: 'id',
+        type: 'many-to-one'
+      });
+    }
+
+    // Create sessions table for auth
+    if (hasAuth) {
+      tables.push({
+        id: 'sessions',
+        name: 'sessions',
+        x: tableX,
+        y: 100,
+        width: 250,
+        height: 140,
+        columns: [
+          { name: 'id', type: 'uuid', primaryKey: true, nullable: false },
+          { name: 'user_id', type: 'uuid', nullable: false },
+          { name: 'token', type: 'varchar(500)', nullable: false },
+          { name: 'expires_at', type: 'timestamp', nullable: false },
+          { name: 'created_at', type: 'timestamp', nullable: false }
+        ],
+        rowCount: 0
+      });
+
+      relationships.push({
+        id: 'session_user_fk',
+        fromTable: 'sessions',
+        fromColumn: 'user_id',
+        toTable: 'users',
+        toColumn: 'id',
+        type: 'many-to-one'
+      });
+    }
+
+    setDatabaseTables(tables);
+    setDatabaseRelationships(relationships);
+    console.log('Database initialized with', tables.length, 'tables and', relationships.length, 'relationships');
+  };
+
+  // Function to extract products from HTML and populate products table
+  const populateProductsFromHTML = (htmlContent: string, productsTable: DatabaseTable) => {
+    // Look for product data in various formats
+
+    // 1. Look for products array in script tags
+    const scriptProducts = htmlContent.match(/products\s*:\s*\[([^\]]*)\]/gi);
+    if (scriptProducts && scriptProducts.length > 0) {
+      productsTable.rowCount = scriptProducts.length;
+      console.log('Found', productsTable.rowCount, 'products in script data');
+      return;
+    }
+
+    // 2. Look for individual product elements
+    const productElements = htmlContent.match(/class="[^"]*product[^"]*"/gi) || [];
+    if (productElements.length > 0) {
+      productsTable.rowCount = productElements.length;
+      console.log('Found', productsTable.rowCount, 'product elements');
+      return;
+    }
+
+    // 3. Look for price indicators (common in ecommerce)
+    const priceIndicators = htmlContent.match(/\$[\d,]+\.?\d*/g) || [];
+    if (priceIndicators.length > 0) {
+      productsTable.rowCount = Math.max(1, Math.floor(priceIndicators.length / 2)); // Estimate products from prices
+      console.log('Detected', productsTable.rowCount, 'products from price indicators');
+      return;
+    }
+
+    // 4. Look for cart/product related keywords
+    const productKeywords = ['product', 'item', 'cart', 'shop', 'store', 'buy', 'purchase'];
+    let keywordCount = 0;
+    productKeywords.forEach(keyword => {
+      keywordCount += (htmlContent.toLowerCase().match(new RegExp(keyword, 'g')) || []).length;
+    });
+
+    if (keywordCount > 5) {
+      productsTable.rowCount = Math.max(1, Math.floor(keywordCount / 3));
+      console.log('Detected', productsTable.rowCount, 'products from content analysis');
+    } else {
+      // Default: assume some products exist
+      productsTable.rowCount = 3; // Sample data
+      console.log('Defaulting to 3 sample products');
+    }
+  };
 
   // Show placeholder only when there's no content to display in preview mode
   if (!displayHtml && view === 'preview') {
