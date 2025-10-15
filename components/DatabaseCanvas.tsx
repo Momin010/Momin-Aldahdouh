@@ -345,16 +345,6 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
     return () => clearTimeout(timer);
   }, [initialEdges, setEdges]);
 
-  // Debug: Log nodes and edges for troubleshooting
-  React.useEffect(() => {
-    console.log('NODES:', nodes.map(n => n.id));
-    console.log('EDGES:', edges.map(e => ({ id: e.id, from: e.source, to: e.target })));
-
-    // Force re-render of edges by updating a dummy state
-    const forceUpdate = () => setEdges(prev => [...prev]);
-    const timer = setTimeout(forceUpdate, 200);
-    return () => clearTimeout(timer);
-  }, [nodes, edges, setEdges]);
 
   // Handle new connections
   const onConnect = useCallback(
@@ -407,27 +397,6 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
         />
 
 
-        {/* Debug overlay for relationship validation */}
-        <div className="absolute top-16 left-0 bg-black text-green-400 p-2 text-xs z-50 max-w-md">
-          <div>Edges in state: {edges.length}</div>
-          <div>Relationships: {relationships.length}</div>
-          {relationships.map(r => (
-            <div key={r.id}>
-              {r.id}: {r.fromTable} → {r.toTable} {nodes.some(n => n.id === r.fromTable) ? '✅' : '❌'} → {nodes.some(n => n.id === r.toTable) ? '✅' : '❌'}
-            </div>
-          ))}
-          {edges.length === 0 && relationships.length > 0 && (
-            <div className="text-red-400 font-bold mt-1">
-              ⚠️ EDGES ARRAY IS EMPTY - React Flow not rendering edges!
-            </div>
-          )}
-          {edges.length > 0 && (
-            <div className="text-yellow-400 font-bold mt-1">
-              ⚠️ EDGES EXIST BUT INVISIBLE - CSS Issue!
-              <br />Check if SVG paths are hidden or have opacity: 0
-            </div>
-          )}
-        </div>
 
         {/* Built-in controls */}
         <Controls className="bg-gray-800 border-gray-600 shadow-lg" />
