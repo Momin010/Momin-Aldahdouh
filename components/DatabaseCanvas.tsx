@@ -327,6 +327,16 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
     const timer = setTimeout(() => {
       setEdges(initialEdges);
       console.log('Edges set to:', initialEdges.length, 'edges');
+
+      // Force DOM update by triggering a re-render
+      setTimeout(() => {
+        const canvas = document.querySelector('.database-canvas-container') as HTMLElement;
+        if (canvas) {
+          canvas.style.display = 'none';
+          canvas.offsetHeight; // Trigger reflow
+          canvas.style.display = '';
+        }
+      }, 50);
     }, 100); // Increased delay to ensure nodes are mounted
     return () => clearTimeout(timer);
   }, [initialEdges, setEdges]);
@@ -335,7 +345,12 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
   React.useEffect(() => {
     console.log('NODES:', nodes.map(n => n.id));
     console.log('EDGES:', edges.map(e => ({ id: e.id, from: e.source, to: e.target })));
-  }, [nodes, edges]);
+
+    // Force re-render of edges by updating a dummy state
+    const forceUpdate = () => setEdges(prev => [...prev]);
+    const timer = setTimeout(forceUpdate, 200);
+    return () => clearTimeout(timer);
+  }, [nodes, edges, setEdges]);
 
   // Handle new connections
   const onConnect = useCallback(
