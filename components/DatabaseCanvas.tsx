@@ -323,9 +323,11 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
 
   // Update edges when initialEdges changes - with delay to ensure nodes are rendered first
   React.useEffect(() => {
+    console.log('Setting edges:', initialEdges);
     const timer = setTimeout(() => {
       setEdges(initialEdges);
-    }, 50); // Small delay to ensure nodes are mounted
+      console.log('Edges set to:', initialEdges.length, 'edges');
+    }, 100); // Increased delay to ensure nodes are mounted
     return () => clearTimeout(timer);
   }, [initialEdges, setEdges]);
 
@@ -388,11 +390,18 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
 
         {/* Debug overlay for relationship validation */}
         <div className="absolute top-16 left-0 bg-black text-green-400 p-2 text-xs z-50 max-w-md">
+          <div>Edges in state: {edges.length}</div>
+          <div>Relationships: {relationships.length}</div>
           {relationships.map(r => (
             <div key={r.id}>
               {r.id}: {r.fromTable} → {r.toTable} {nodes.some(n => n.id === r.fromTable) ? '✅' : '❌'} → {nodes.some(n => n.id === r.toTable) ? '✅' : '❌'}
             </div>
           ))}
+          {edges.length === 0 && relationships.length > 0 && (
+            <div className="text-red-400 font-bold mt-1">
+              ⚠️ EDGES ARRAY IS EMPTY - React Flow not rendering edges!
+            </div>
+          )}
         </div>
 
         {/* Built-in controls */}
