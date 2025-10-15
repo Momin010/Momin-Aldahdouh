@@ -269,6 +269,7 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
   // Search and filter state
   const [searchTerm, setSearchTerm] = React.useState('');
   const [filterType, setFilterType] = React.useState('');
+  const [showStats, setShowStats] = React.useState(false);
   // Filter tables based on search and filter criteria
   const filteredTables = useMemo(() => {
     return tables.filter((table) => {
@@ -454,6 +455,17 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
               </select>
             </div>
 
+            {/* Statistics Button */}
+            <button
+              onClick={() => setShowStats(!showStats)}
+              className="p-2 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition-colors border border-blue-500"
+              title="Show Schema Statistics"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </button>
+
             {onAddTable && (
               <button
                 onClick={onAddTable}
@@ -485,6 +497,53 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
             </button>
           </div>
         </Panel>
+
+        {/* Statistics Panel */}
+        {showStats && (
+          <Panel position="top-right">
+            <div className="bg-gray-800 text-white p-4 rounded-lg border border-gray-600 min-w-[250px]">
+              <h3 className="text-lg font-semibold mb-3 text-blue-400">Schema Statistics</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Total Tables:</span>
+                  <span className="font-mono text-green-400">{tables.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Visible Tables:</span>
+                  <span className="font-mono text-blue-400">{filteredTables.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Total Columns:</span>
+                  <span className="font-mono text-purple-400">
+                    {tables.reduce((sum, table) => sum + table.columns.length, 0)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Relationships:</span>
+                  <span className="font-mono text-red-400">{relationships.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Total Rows:</span>
+                  <span className="font-mono text-yellow-400">
+                    {tables.reduce((sum, table) => sum + table.rowCount, 0).toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Data Types:</span>
+                  <span className="font-mono text-cyan-400">
+                    {new Set(tables.flatMap(t => t.columns.map(c => c.type))).size}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Orphan Tables:</span>
+                  <span className="font-mono text-orange-400">
+                    {tables.filter(t => !relationships.some(r => r.fromTable === t.id || r.toTable === t.id)).length}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </Panel>
+        )}
       </ReactFlow>
     </div>
   );
