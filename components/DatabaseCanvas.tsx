@@ -291,24 +291,28 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
       id: rel.id,
       source: rel.fromTable,
       target: rel.toTable,
-      type: 'smoothstep',
-      animated: true,
+      type: 'default', // Try default edge type instead of smoothstep
+      animated: false, // Disable animation to ensure basic rendering works
       label: rel.type.replace('-', ' '),
       style: {
-        stroke: '#3b82f6', // blue line for visibility on black background
-        strokeWidth: 2,
+        stroke: '#ff0000', // Bright red for maximum visibility
+        strokeWidth: 4, // Thicker line
+        opacity: 1,
       },
       markerEnd: {
         type: 'arrowclosed',
-        color: '#3b82f6',
+        color: '#ff0000',
+        width: 20,
+        height: 20,
       },
       labelStyle: {
         fill: '#ffffff',
-        fontSize: 12,
-        fontWeight: 600,
-        background: 'rgba(0,0,0,0.5)',
-        padding: '2px 4px',
-        borderRadius: '4px',
+        fontSize: 14,
+        fontWeight: 700,
+        background: '#000000',
+        padding: '4px 6px',
+        borderRadius: '6px',
+        opacity: 1,
       },
     })), [relationships]
   );
