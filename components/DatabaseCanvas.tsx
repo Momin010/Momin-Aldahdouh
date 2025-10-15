@@ -101,19 +101,19 @@ const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }
   };
 
   return (
-    <div className={`bg-white border-2 rounded-lg shadow-lg transition-all duration-300 min-w-[250px] ${
-      selected ? 'border-blue-500 scale-105' : 'border-gray-300 hover:border-gray-500'
+    <div className={`backdrop-blur-md bg-white/20 border-2 border-white/30 rounded-lg shadow-lg transition-all duration-300 min-w-[250px] ${
+      selected ? 'border-blue-400 scale-105 shadow-blue-500/50' : 'border-white/20 hover:border-white/40'
     }`}>
       {/* Table Header */}
-      <div className="bg-gray-100 px-3 py-2 rounded-t-lg border-b border-gray-300 flex items-center justify-between">
+      <div className="bg-white/10 backdrop-blur-sm px-3 py-2 rounded-t-lg border-b border-white/20 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <svg className="w-4 h-4 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
           </svg>
-          <span className="font-semibold text-black text-sm">{data.table.name}</span>
+          <span className="font-semibold text-white text-sm">{data.table.name}</span>
         </div>
         <div className="flex items-center gap-1">
-          <span className="text-xs text-gray-600 bg-gray-200 px-2 py-1 rounded">
+          <span className="text-xs text-white/80 bg-white/10 backdrop-blur-sm px-2 py-1 rounded">
             {data.table.rowCount} rows
           </span>
           <button
@@ -156,7 +156,7 @@ const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }
         {data.table.columns.slice(0, 8).map((column: any) => (
           <div
             key={column.name}
-            className="flex items-center justify-between py-1 px-2 rounded text-xs hover:bg-gray-100"
+            className="flex items-center justify-between py-1 px-2 rounded text-xs hover:bg-white/10"
             onClick={(e) => {
               e.stopPropagation();
               if (isEditing) {
@@ -184,12 +184,12 @@ const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }
                       saveColumnEdit(column.name);
                     }
                   }}
-                  className="font-medium text-gray-900 bg-white border border-gray-300 rounded px-1"
+                  className="font-medium text-white bg-white/20 backdrop-blur-sm border border-white/30 rounded px-1"
                   autoFocus
                   onFocus={(e) => e.target.select()}
                 />
               ) : (
-                <span className="font-medium text-gray-900">{column.name}</span>
+                <span className="font-medium text-white">{column.name}</span>
               )}
             </div>
             <div className="flex items-center gap-1">
@@ -198,7 +198,7 @@ const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }
                   value={editValues[column.name]?.type || column.type}
                   onChange={(e) => handleColumnEdit(column.name, 'type', e.target.value)}
                   onBlur={() => saveColumnEdit(column.name)}
-                  className="text-gray-700 bg-white border border-gray-300 rounded px-1 text-xs"
+                  className="text-white bg-white/20 backdrop-blur-sm border border-white/30 rounded px-1 text-xs"
                   onFocus={(e) => e.target.size = Math.min(8, e.target.options.length)}
                   onBlur={(e) => e.target.size = 1}
                 >
@@ -212,7 +212,7 @@ const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }
                   <option value="timestamp">timestamp</option>
                 </select>
               ) : (
-                <span className="text-gray-700">{column.type}</span>
+                <span className="text-white/90">{column.type}</span>
               )}
               {column.primaryKey && (
                 <svg className="w-3 h-3 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -225,13 +225,13 @@ const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }
         ))}
 
         {data.table.columns.length > 8 && (
-          <div className="text-xs text-gray-700 text-center py-1">
+          <div className="text-xs text-white/70 text-center py-1">
             +{data.table.columns.length - 8} more columns
           </div>
         )}
 
         {isEditing && (
-          <div className="mt-2 pt-2 border-t border-gray-200">
+          <div className="mt-2 pt-2 border-t border-white/20">
             <button
               onClick={() => {
                 // Save any pending edits before stopping editing
@@ -240,7 +240,7 @@ const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }
                 }
                 data.onStopEditing?.();
               }}
-              className="w-full py-1 px-2 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+              className="w-full py-1 px-2 bg-blue-500/80 backdrop-blur-sm text-white text-xs rounded hover:bg-blue-400/80"
             >
               Done Editing
             </button>
@@ -257,6 +257,10 @@ const nodeTypes = {
 };
 
 interface DatabaseCanvasProps {
+  isVisible: boolean;
+  onClose: () => void;
+  appState: any;
+  onUpdateAppState: (updater: (prevState: any) => any) => void;
   tables: Array<{
     id: string;
     name: string;
@@ -293,6 +297,10 @@ interface DatabaseCanvasProps {
 }
 
 const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
+  isVisible,
+  onClose,
+  appState,
+  onUpdateAppState,
   tables,
   relationships = [],
   onTableSelect,
@@ -427,7 +435,19 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
   }, [onTableSelect]);
 
   return (
-    <div className="database-canvas-container h-full w-full bg-black" style={{ backgroundColor: 'black' }}>
+    <div className="database-canvas-container h-full w-full relative">
+      {/* Background Image with Blur Overlay */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{
+          backgroundImage: `url('https://i.pinimg.com/1200x/39/63/1b/39631bc198243a44d3032af50503897f.jpg')`,
+          filter: 'blur(2px)',
+          transform: 'scale(1.1)', // Slight scale to prevent blur edges
+        }}
+      />
+      {/* Dark overlay for better contrast */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -439,7 +459,7 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
         nodeTypes={nodeTypes}
         fitView
         attributionPosition="bottom-left"
-        style={{ backgroundColor: 'black' }}
+        style={{ backgroundColor: 'transparent' }}
         proOptions={{ hideAttribution: true }}
         edgesUpdatable={true}
         edgesFocusable={true}
@@ -448,12 +468,13 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
         elementsSelectable={true}
         className="[&_.react-flow__edges]:z-[100] [&_.react-flow__edge-path]:stroke-[3px] [&_.react-flow__edge-path]:opacity-100 [&_.react-flow__edge-path]:visible [&_.react-flow__edge-path]:!block [&_.react-flow__edge-path]:!opacity-100 [&_.react-flow__edge-path]:!visible"
       >
-        {/* Background with white dots on black background */}
+        {/* Background with white dots on transparent background */}
         <Background
           variant={BackgroundVariant.Dots}
           gap={50}
           size={3}
           color="#ffffff"
+          style={{ opacity: 0.3 }}
         />
 
 
