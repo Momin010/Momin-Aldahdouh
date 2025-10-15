@@ -29,6 +29,18 @@ const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }
         [field]: value
       }
     }));
+    // Immediately save the edit to the table
+    const currentEdits = editValues[columnName] || {};
+    const updatedEdits = { ...currentEdits, [field]: value };
+    if (updatedEdits.name !== undefined || updatedEdits.type !== undefined) {
+      const updatedColumns = data.table.columns.map((col: any) =>
+        col.name === columnName
+          ? { ...col, name: updatedEdits.name || col.name, type: updatedEdits.type || col.type }
+          : col
+      );
+      data.onEdit({ ...data.table, columns: updatedColumns });
+      console.log('Column edited immediately:', columnName, updatedEdits);
+    }
   };
 
   const saveColumnEdit = (columnName: string) => {
@@ -181,7 +193,13 @@ const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }
         {isEditing && (
           <div className="mt-2 pt-2 border-t border-gray-200">
             <button
-              onClick={() => data.onStopEditing?.()}
+              onClick={() => {
+                // Save any pending edits before stopping editing
+                if (editingColumn) {
+                  saveColumnEdit(editingColumn);
+                }
+                data.onStopEditing?.();
+              }}
               className="w-full py-1 px-2 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
             >
               Done Editing
@@ -302,6 +320,16 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  // Update nodes when initialNodes changes (e.g., when tables are edited or added)
+  React.useEffect(() => {
+    setNodes(initialNodes);
+  }, [initialNodes, setNodes]);
+
+  // Update edges when initialEdges changes
+  React.useEffect(() => {
+    setEdges(initialEdges);
+  }, [initialEdges, setEdges]);
 
   // Handle new connections
   const onConnect = useCallback(
