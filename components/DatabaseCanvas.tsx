@@ -377,7 +377,7 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
         nodesDraggable={true}
         nodesConnectable={true}
         elementsSelectable={true}
-        className="[&_.react-flow__edges]:z-[100] [&_.react-flow__edge-path]:stroke-[3px] [&_.react-flow__edge-path]:opacity-100 [&_.react-flow__edge-path]:visible"
+        className="[&_.react-flow__edges]:z-[100] [&_.react-flow__edge-path]:stroke-[3px] [&_.react-flow__edge-path]:opacity-100 [&_.react-flow__edge-path]:visible [&_.react-flow__edge-path]:!block [&_.react-flow__edge-path]:!opacity-100 [&_.react-flow__edge-path]:!visible"
       >
         {/* Background with white dots on black background */}
         <Background
