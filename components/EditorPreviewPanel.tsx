@@ -116,10 +116,10 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
               {/* Database Canvas View */}
               {!selectedDatabaseTable && (
                 <DatabaseCanvas
-                  tables={databaseTables}
-                  onTableSelect={onDatabaseTableSelect}
-                  selectedTable={selectedDatabaseTable}
-                  className="h-full"
+                  isVisible={true}
+                  onClose={() => {}}
+                  appState={null as any} // TODO: Pass actual app state
+                  onUpdateAppState={() => {}} // TODO: Pass actual update function
                 />
               )}
 

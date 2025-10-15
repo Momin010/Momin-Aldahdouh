@@ -68,6 +68,8 @@ export interface AppState {
   hasGeneratedCode: boolean;
   projectName: string;
   projectPlan: Plan | null;
+  databaseSchema: any; // Store database schema per project
+  databaseData: Record<string, any[]>; // Store table data per project
 }
 
 export interface History {
