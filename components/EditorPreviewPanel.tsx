@@ -176,23 +176,42 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
   };
 
   const handleAddTable = () => {
-    // Create a copy of the users table (first table)
-    const sourceTable = databaseTables.find(t => t.id === 'users');
+    console.log('handleAddTable called, current tables:', databaseTables.length);
+
+    // Create a copy of the first available table, or create a default table if none exist
+    const sourceTable = databaseTables.length > 0 ? databaseTables[0] : null;
+
     if (sourceTable) {
       const newTable: DatabaseTable = {
-        id: `table_${Date.now()}`,
+        id: `table_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         name: `${sourceTable.name}_copy_${Math.floor(Math.random() * 1000)}`,
-        x: Math.random() * 400 + 100,
-        y: Math.random() * 300 + 100,
+        x: 100 + Math.random() * 400, // Ensure positive coordinates
+        y: 100 + Math.random() * 300, // Ensure positive coordinates
         width: 250,
         height: 150,
         columns: JSON.parse(JSON.stringify(sourceTable.columns)), // Deep copy
         rowCount: 0
       };
       setDatabaseTables(prev => [...prev, newTable]);
-      console.log('Added new table:', newTable.name);
+      console.log('Added new table:', newTable.name, 'at position:', newTable.x, newTable.y);
     } else {
-      console.log('No source table found to copy');
+      // Create a default table if no tables exist
+      const defaultTable: DatabaseTable = {
+        id: `table_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: `new_table_${Math.floor(Math.random() * 1000)}`,
+        x: 100 + Math.random() * 400, // Ensure positive coordinates
+        y: 100 + Math.random() * 300, // Ensure positive coordinates
+        width: 250,
+        height: 150,
+        columns: [
+          { name: 'id', type: 'uuid', primaryKey: true, nullable: false },
+          { name: 'name', type: 'varchar(255)', nullable: false },
+          { name: 'created_at', type: 'timestamp', nullable: false }
+        ],
+        rowCount: 0
+      };
+      setDatabaseTables(prev => [...prev, defaultTable]);
+      console.log('Created default table:', defaultTable.name, 'at position:', defaultTable.x, defaultTable.y);
     }
   };
 
