@@ -64,6 +64,113 @@ const generateSQLExport = (
   return sql;
 };
 
+// SQL Import helper function
+const parseSQLToTables = (sqlContent: string) => {
+  const tables: Array<{
+    id: string;
+    name: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    columns: Array<{
+      name: string;
+      type: string;
+      primaryKey?: boolean;
+      nullable?: boolean;
+    }>;
+    rowCount: number;
+  }> = [];
+
+  // Simple SQL parser - looks for CREATE TABLE statements
+  const createTableRegex = /CREATE\s+TABLE\s+(\w+)\s*\(([\s\S]*?)\);/gi;
+  let match;
+  let tableIndex = 0;
+
+  while ((match = createTableRegex.exec(sqlContent)) !== null) {
+    const tableName = match[1];
+    const tableBody = match[2];
+
+    // Parse columns from table body
+    const columns: Array<{
+      name: string;
+      type: string;
+      primaryKey?: boolean;
+      nullable?: boolean;
+    }> = [];
+
+    // Split by commas and parse each column definition
+    const columnDefs = tableBody.split(',').map(def => def.trim());
+
+    columnDefs.forEach(colDef => {
+      // Skip empty definitions
+      if (!colDef || colDef.toUpperCase().includes('PRIMARY KEY') || colDef.toUpperCase().includes('FOREIGN KEY')) {
+        return;
+      }
+
+      // Parse column name and type
+      const colMatch = colDef.match(/^(\w+)\s+([A-Z]+(?:\(\d+(?:,\d+)?\))?)/i);
+      if (colMatch) {
+        const colName = colMatch[1];
+        let colType = colMatch[2].toLowerCase();
+
+        // Map SQL types to our internal types
+        const typeMapping: {[key: string]: string} = {
+          'varchar': 'varchar(255)',
+          'character varying': 'varchar(255)',
+          'int': 'number',
+          'integer': 'number',
+          'bigint': 'number',
+          'smallint': 'number',
+          'decimal': 'number',
+          'numeric': 'number',
+          'real': 'number',
+          'double precision': 'number',
+          'float': 'number',
+          'boolean': 'boolean',
+          'bool': 'boolean',
+          'text': 'text',
+          'timestamp': 'timestamp',
+          'date': 'date',
+          'time': 'date',
+          'uuid': 'uuid',
+          'serial': 'number',
+          'bigserial': 'number'
+        };
+
+        colType = typeMapping[colType] || colType;
+
+        const isPrimaryKey = colDef.toUpperCase().includes('PRIMARY KEY');
+        const isNullable = !colDef.toUpperCase().includes('NOT NULL');
+
+        columns.push({
+          name: colName,
+          type: colType,
+          primaryKey: isPrimaryKey,
+          nullable: isNullable
+        });
+      }
+    });
+
+    if (columns.length > 0) {
+      tables.push({
+        id: `sql_import_${tableName}_${Date.now()}`,
+        name: tableName,
+        x: 100 + (tableIndex * 300),
+        y: 100,
+        width: 250,
+        height: 150 + (columns.length * 20),
+        columns: columns,
+        rowCount: 0 // Will be populated from data if available
+      });
+
+      tableIndex++;
+    }
+  }
+
+  return tables;
+};
+
 // Custom Database Table Node Component
 const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }) => {
   const isEditing = data.editingTableId === data.table.id;
@@ -551,10 +658,67 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
                       const content = e.target?.result as string;
                       if (file.name.endsWith('.sql')) {
                         // Handle SQL import
-                        console.log('SQL import:', content);
+                        const importedTables = parseSQLToTables(content);
+                        if (importedTables.length > 0) {
+                          console.log('SQL import successful:', importedTables.length, 'tables');
+                          // Update app state with imported tables
+                          if (onUpdateAppState) {
+                            onUpdateAppState((prevState: any) => {
+                              // Add imported tables to existing tables
+                              const existingTables = prevState.databaseSchema?.tables || [];
+                              const newTables = importedTables.map((table, index) => ({
+                                ...table,
+                                id: `imported_${table.name}_${Date.now()}_${index}`,
+                                x: 100 + (index * 300),
+                                y: 100
+                              }));
+
+                              return {
+                                ...prevState,
+                                databaseSchema: {
+                                  ...prevState.databaseSchema,
+                                  tables: [...existingTables, ...newTables],
+                                  relationships: prevState.databaseSchema?.relationships || []
+                                }
+                              };
+                            });
+                          }
+                        } else {
+                          alert('No valid tables found in SQL file');
+                        }
                       } else if (file.name.endsWith('.json')) {
                         // Handle JSON import
-                        console.log('JSON import:', content);
+                        try {
+                          const jsonData = JSON.parse(content);
+                          if (jsonData.tables && Array.isArray(jsonData.tables)) {
+                            console.log('JSON import successful:', jsonData.tables.length, 'tables');
+                            // Update app state with imported tables
+                            if (onUpdateAppState) {
+                              onUpdateAppState((prevState: any) => {
+                                const existingTables = prevState.databaseSchema?.tables || [];
+                                const newTables = jsonData.tables.map((table: any, index: number) => ({
+                                  ...table,
+                                  id: `imported_${table.name}_${Date.now()}_${index}`,
+                                  x: 100 + (index * 300),
+                                  y: 100
+                                }));
+
+                                return {
+                                  ...prevState,
+                                  databaseSchema: {
+                                    ...prevState.databaseSchema,
+                                    tables: [...existingTables, ...newTables],
+                                    relationships: jsonData.relationships || prevState.databaseSchema?.relationships || []
+                                  }
+                                };
+                              });
+                            }
+                          } else {
+                            alert('Invalid JSON format. Expected {tables: [...], relationships: [...]}');
+                          }
+                        } catch (error) {
+                          alert('Invalid JSON file: ' + error.message);
+                        }
                       }
                     };
                     reader.readAsText(file);
