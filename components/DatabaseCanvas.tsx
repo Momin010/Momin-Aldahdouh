@@ -17,7 +17,7 @@ import 'reactflow/dist/style.css';
 
 // Custom Database Table Node Component
 const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }) => {
-  const [isEditing, setIsEditing] = React.useState(false);
+  const isEditing = data.editingTableId === data.table.id;
   const [editingColumn, setEditingColumn] = React.useState<string | null>(null);
   const [editValues, setEditValues] = React.useState<{[key: string]: {name: string, type: string}}>({});
 
@@ -41,6 +41,7 @@ const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }
           : col
       );
       data.onEdit({ ...data.table, columns: updatedColumns });
+      console.log('Column edited:', columnName, edits);
     }
     setEditingColumn(null);
     setEditValues(prev => {
@@ -69,7 +70,11 @@ const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }
           <button
             onClick={(e) => {
               e.stopPropagation();
-              setIsEditing(!isEditing);
+              if (isEditing) {
+                data.onStopEditing?.();
+              } else {
+                data.onStartEditing?.(data.table.id);
+              }
             }}
             className="p-1 hover:bg-gray-200 rounded transition-colors"
             title="Edit table structure"
@@ -176,7 +181,7 @@ const DatabaseTableNode = ({ data, selected }: { data: any; selected?: boolean }
         {isEditing && (
           <div className="mt-2 pt-2 border-t border-gray-200">
             <button
-              onClick={() => setIsEditing(false)}
+              onClick={() => data.onStopEditing?.()}
               className="w-full py-1 px-2 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
             >
               Done Editing
@@ -224,6 +229,9 @@ interface DatabaseCanvasProps {
   onAddTable?: () => void;
   selectedTable?: string;
   onToggleFullscreen?: () => void;
+  editingTableId?: string | null;
+  onStartEditing?: (tableId: string) => void;
+  onStopEditing?: () => void;
 }
 
 const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
@@ -235,7 +243,10 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
   onTableDelete,
   onAddTable,
   selectedTable,
-  onToggleFullscreen
+  onToggleFullscreen,
+  editingTableId,
+  onStartEditing,
+  onStopEditing
 }) => {
   // Convert tables to React Flow nodes
   const initialNodes: Node[] = useMemo(() =>
@@ -247,6 +258,9 @@ const DatabaseCanvas: React.FC<DatabaseCanvasProps> = ({
         table,
         onEdit: onTableEdit,
         onDelete: onTableDelete,
+        editingTableId,
+        onStartEditing,
+        onStopEditing,
       },
       selected: selectedTable === table.id,
       style: { zIndex: 1 },

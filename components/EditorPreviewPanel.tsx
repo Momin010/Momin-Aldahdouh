@@ -152,6 +152,7 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
   ]);
 
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
+  const [editingTableId, setEditingTableId] = useState<string | null>(null);
 
   // Database handlers
   const handleTableSelect = (table: DatabaseTable) => {
@@ -175,29 +176,36 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
   };
 
   const handleAddTable = () => {
-    // Create a copy of one of the existing tables (users table as default)
-    const sourceTable = databaseTables[0] || databaseTables.find(t => t.name === 'users');
+    // Create a copy of the users table (first table)
+    const sourceTable = databaseTables.find(t => t.id === 'users');
     if (sourceTable) {
       const newTable: DatabaseTable = {
         id: `table_${Date.now()}`,
-        name: `${sourceTable.name}_copy`,
+        name: `${sourceTable.name}_copy_${Math.floor(Math.random() * 1000)}`,
         x: Math.random() * 400 + 100,
         y: Math.random() * 300 + 100,
         width: 250,
         height: 150,
-        columns: [...sourceTable.columns],
+        columns: JSON.parse(JSON.stringify(sourceTable.columns)), // Deep copy
         rowCount: 0
       };
       setDatabaseTables(prev => [...prev, newTable]);
-
-      // Also add to the hardcoded tables array in the component for persistence
-      const updatedTables = [...databaseTables, newTable];
-      // This would normally be saved to a file/database, but for now we'll keep it in state
+      console.log('Added new table:', newTable.name);
+    } else {
+      console.log('No source table found to copy');
     }
   };
 
   const handleToggleFullscreen = () => {
     onToggleFullscreen();
+  };
+
+  const handleStartEditing = (tableId: string) => {
+    setEditingTableId(tableId);
+  };
+
+  const handleStopEditing = () => {
+    setEditingTableId(null);
   };
 
   const deviceButtons: { name: Device, icon: string }[] = [
@@ -238,6 +246,9 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
             onAddTable={handleAddTable}
             selectedTable={selectedTable}
             onToggleFullscreen={handleToggleFullscreen}
+            editingTableId={editingTableId}
+            onStartEditing={handleStartEditing}
+            onStopEditing={handleStopEditing}
           />
         </div>
       </div>
