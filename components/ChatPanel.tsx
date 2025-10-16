@@ -236,31 +236,14 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     if (!prompt.trim() || isGeneratingImage) return;
 
     setIsGeneratingImage(true);
+
+    // Send the image generation request to the AI
     try {
-      const response = await fetch('/api/images/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt: prompt.trim() }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate image');
-      }
-
-      const data = await response.json();
-      const newImage = {
-        url: data.imageUrl,
-        prompt: prompt.trim(),
-        timestamp: Date.now()
-      };
-
-      setGeneratedImages(prev => [newImage, ...prev]);
-      setInput(''); // Clear input after successful generation
+      await onSendMessage(`generate image: ${prompt.trim()}`);
+      setInput(''); // Clear input after sending
     } catch (error) {
-      console.error('Image generation failed:', error);
-      alert('Failed to generate image. Please try again.');
+      console.error('Failed to send image generation request:', error);
+      alert('Failed to send image generation request. Please try again.');
     } finally {
       setIsGeneratingImage(false);
     }
