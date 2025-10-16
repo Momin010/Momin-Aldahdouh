@@ -121,7 +121,10 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
       onUpdateWorkspace((prevWorkspace: any) => {
         const newProjects = prevWorkspace.projects.map((project: any) => {
           if (project.id === activeProjectId) {
-            const currentState = project.history.versions[project.history.currentIndex];
+            const currentState = structuredClone(
+              project.history.versions[project.history.currentIndex]
+            );
+
             const updatedSchema = {
               ...currentState.databaseSchema,
               tables: currentState.databaseSchema.tables.map((table: any) =>
@@ -129,17 +132,23 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
               )
             };
             const newState = { ...currentState, databaseSchema: updatedSchema };
-            const newVersions = project.history.versions.slice(0, project.history.currentIndex + 1);
-            newVersions.push(newState);
-            const newHistory = {
-              versions: newVersions,
-              currentIndex: newVersions.length - 1,
+            const newVersions = [
+              ...project.history.versions.slice(0, project.history.currentIndex + 1),
+              newState
+            ];
+
+            return {
+              ...structuredClone(project),
+              history: {
+                versions: newVersions,
+                currentIndex: newVersions.length - 1,
+              },
             };
-            return { ...project, history: newHistory };
           }
           return project;
         });
-        return { ...prevWorkspace, projects: newProjects };
+
+        return structuredClone({ ...prevWorkspace, projects: newProjects });
       });
     }
   };
@@ -324,42 +333,49 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
 
   const displayHtml = standaloneHtml || previewHtml;
 
-  // Sync local state with workspace state when project changes
+  // Complete project isolation - reset everything when switching projects
   useEffect(() => {
-    if (workspace && activeProjectId) {
-      const currentProject = workspace.projects?.find((p: any) => p.id === activeProjectId);
-      const currentState = currentProject?.history?.versions?.[currentProject?.history?.currentIndex];
-      const workspaceTables = currentState?.databaseSchema?.tables || [];
-      const workspaceRelationships = currentState?.databaseSchema?.relationships || [];
+    if (!workspace || !activeProjectId) return;
 
-      console.log('🔄 Syncing with workspace state - found', workspaceTables.length, 'tables');
+    const currentProject = workspace.projects?.find((p: any) => p.id === activeProjectId);
+    const currentState = currentProject?.history?.versions?.[currentProject?.history?.currentIndex];
 
-      // Update local state to match workspace state
-      setDatabaseTables(workspaceTables);
-      setDatabaseRelationships(workspaceRelationships);
-      setDatabaseInitialized(false); // Reset so it can be initialized again for new projects
-    }
-  }, [workspace, activeProjectId]);
+    const tables = currentState?.databaseSchema?.tables || [];
+    const relationships = currentState?.databaseSchema?.relationships || [];
+
+    console.log(`🔄 Switching to isolated project ${activeProjectId} with ${tables.length} tables`);
+
+    // Ensure no old state remains - deep clone for complete isolation
+    setDatabaseTables(structuredClone(tables));
+    setDatabaseRelationships(structuredClone(relationships));
+    setSelectedTable(null);
+    setEditingTableId(null);
+    setIsDatabaseConnected(false);
+    setDatabaseInitialized(false);
+
+    console.log('✅ Project completely isolated - fresh container for project:', activeProjectId);
+  }, [activeProjectId]);
 
   // Auto-populate database when standalone HTML is generated
   useEffect(() => {
-    if (standaloneHtml && onUpdateWorkspace && activeProjectId) {
-      console.log('🔄 Standalone HTML detected, initializing database schema...');
-      console.log('📄 HTML length:', standaloneHtml.length);
-      console.log('📊 Current tables before init:', databaseTables.length);
+    if (!standaloneHtml || !activeProjectId) return;
 
-      // Clear existing database first to start fresh
-      setDatabaseTables([]);
-      setDatabaseRelationships([]);
+    console.log(`🧱 Initializing schema for project ${activeProjectId}`);
 
-      // Then initialize with new schema based on HTML content
-      setTimeout(() => {
-        console.log('🚀 Starting database initialization...');
-        initializeDatabaseFromHTML(standaloneHtml);
-        setDatabaseInitialized(true);
-      }, 200);
+    // Only initialize for the currently active project
+    if (activeProjectId !== workspace?.activeProjectId) {
+      console.warn("Skipping initialization for inactive project");
+      return;
     }
-  }, [standaloneHtml, onUpdateWorkspace, activeProjectId, databaseInitialized]);
+
+    // Always reset before initialization
+    setDatabaseTables([]);
+    setDatabaseRelationships([]);
+
+    setTimeout(() => {
+      initializeDatabaseFromHTML(standaloneHtml);
+    }, 150);
+  }, [standaloneHtml, activeProjectId]);
 
   // Function to analyze HTML and create appropriate database schema
   const initializeDatabaseFromHTML = (htmlContent: string) => {
@@ -615,7 +631,7 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
   // Show placeholder only when there's no content to display in preview mode
   if (!displayHtml && view === 'preview') {
     return (
-      <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
+      <div key={activeProjectId} className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
         <div className="flex-grow flex items-center justify-center text-white">
           <div className="text-center">
             <Icon name="eye" className="w-16 h-16 text-gray-600 mx-auto mb-4" />
