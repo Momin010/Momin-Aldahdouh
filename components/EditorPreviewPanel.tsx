@@ -98,6 +98,7 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
 
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [editingTableId, setEditingTableId] = useState<string | null>(null);
+  const [isDatabaseConnected, setIsDatabaseConnected] = useState(false);
 
   // Sync with workspace state when project changes (for isolation)
   const currentProject = workspace?.projects?.find((p: any) => p.id === activeProjectId);
@@ -628,6 +629,62 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
 
   // Database View Content - Interactive Canvas
   if (view === 'database') {
+    // Show connection screen if not connected
+    if (!isDatabaseConnected) {
+      return (
+        <div className="flex flex-col h-full bg-black md:border border-white/10 md:rounded-2xl overflow-hidden">
+          <div className="flex-grow flex items-center justify-center">
+            <div className="text-center max-w-md mx-auto px-6">
+              {/* MominAI Logo/Icon */}
+              <div className="mb-8">
+                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
+                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-white mb-2">MominAI Database</h2>
+                <p className="text-gray-400 text-sm">Connect to the cloud to access your database canvas</p>
+              </div>
+
+              {/* Connection Button */}
+              <button
+                onClick={() => setIsDatabaseConnected(true)}
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+              >
+                <div className="flex items-center justify-center gap-3">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Connect to MominAI Cloud
+                </div>
+              </button>
+
+              {/* Features */}
+              <div className="mt-8 grid grid-cols-1 gap-4 text-left">
+                <div className="flex items-center gap-3 text-gray-300">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm">Visual database design</span>
+                </div>
+                <div className="flex items-center gap-3 text-gray-300">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="text-sm">Auto-generate from code</span>
+                </div>
+                <div className="flex items-center gap-3 text-gray-300">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                  <span className="text-sm">Import/Export schemas</span>
+                </div>
+                <div className="flex items-center gap-3 text-gray-300">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                  <span className="text-sm">Project isolation</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Show database canvas if connected
     return (
       <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
         <div className="flex-grow overflow-hidden">
