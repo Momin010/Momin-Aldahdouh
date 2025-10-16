@@ -33,8 +33,8 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    // Use Gemini 2.5 Flash Image model for image generation
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-exp-image:generateContent?key=${GEMINI_API_KEY}`, {
+    // Use Gemini 1.5 Flash model for image generation (more stable)
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -42,7 +42,7 @@ export default async function handler(req: any, res: any) {
       body: JSON.stringify({
         contents: [{
           parts: [{
-            text: prompt.trim()
+            text: `Generate an image based on this description: ${prompt.trim()}. Please create a detailed, high-quality image.`
           }]
         }],
         generationConfig: {
