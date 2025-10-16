@@ -1,25 +1,54 @@
 {
   "functions": {
-    "api/setup-database.ts": {
-      "maxDuration": 60
-    },
-    "api/test-db.ts": {
-      "maxDuration": 30
-    },
-    "api/auth/*.ts": {
-      "maxDuration": 30
-    },
-    "api/gemini/chat.ts": {
-      "maxDuration": 300
+    "api/auth/github.ts": {
+      "runtime": "nodejs18.x"
     },
     "api/github/publish.ts": {
-      "maxDuration": 60
+      "runtime": "nodejs18.x"
+    },
+    "api/auth/session.ts": {
+      "runtime": "nodejs18.x"
+    },
+    "api/auth/signin.ts": {
+      "runtime": "nodejs18.x"
+    },
+    "api/auth/signout.ts": {
+      "runtime": "nodejs18.x"
+    },
+    "api/auth/signup.ts": {
+      "runtime": "nodejs18.x"
+    },
+    "api/gemini/chat.ts": {
+      "runtime": "nodejs18.x"
+    },
+    "api/setup-database.ts": {
+      "runtime": "nodejs18.x"
+    },
+    "api/test-db.ts": {
+      "runtime": "nodejs18.x"
     },
     "api/images/search.ts": {
-      "maxDuration": 30
+      "runtime": "nodejs18.x"
     },
-    "api/projects/*.ts": {
-      "maxDuration": 30
+    "api/projects/index.ts": {
+      "runtime": "nodejs18.x"
+    },
+    "api/projects/[id].ts": {
+      "runtime": "nodejs18.x"
     }
-  }
+  },
+  "routes": [
+    { "src": "/api/auth/github", "dest": "/api/auth/github.ts" },
+    { "src": "/api/github/publish", "dest": "/api/github/publish.ts" },
+    { "src": "/api/auth/session", "dest": "/api/auth/session.ts" },
+    { "src": "/api/auth/signin", "dest": "/api/auth/signin.ts" },
+    { "src": "/api/auth/signout", "dest": "/api/auth/signout.ts" },
+    { "src": "/api/auth/signup", "dest": "/api/auth/signup.ts" },
+    { "src": "/api/gemini/chat", "dest": "/api/gemini/chat.ts" },
+    { "src": "/api/setup-database", "dest": "/api/setup-database.ts" },
+    { "src": "/api/test-db", "dest": "/api/test-db.ts" },
+    { "src": "/api/images/search", "dest": "/api/images/search.ts" },
+    { "src": "/api/projects", "dest": "/api/projects/index.ts" },
+    { "src": "/api/projects/(?<id>[^/]+)", "dest": "/api/projects/[id].ts" }
+  ]
 }
