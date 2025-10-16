@@ -168,6 +168,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const [dynamicStatus, setDynamicStatus] = useState<string | null>(aiStatus);
   const [imageModal, setImageModal] = useState<{src: string, alt: string} | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [generatedImages, setGeneratedImages] = useState<Array<{url: string, prompt: string, timestamp: number}>>([]);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -227,6 +229,40 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
       if (fileInputRef.current) {
           fileInputRef.current.value = '';
       }
+    }
+  };
+
+  const handleGenerateImage = async (prompt: string) => {
+    if (!prompt.trim() || isGeneratingImage) return;
+
+    setIsGeneratingImage(true);
+    try {
+      const response = await fetch('/api/images/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: prompt.trim() }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate image');
+      }
+
+      const data = await response.json();
+      const newImage = {
+        url: data.imageUrl,
+        prompt: prompt.trim(),
+        timestamp: Date.now()
+      };
+
+      setGeneratedImages(prev => [newImage, ...prev]);
+      setInput(''); // Clear input after successful generation
+    } catch (error) {
+      console.error('Image generation failed:', error);
+      alert('Failed to generate image. Please try again.');
+    } finally {
+      setIsGeneratingImage(false);
     }
   };
   
@@ -303,6 +339,12 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  const handleImageGeneration = () => {
+    if (input.trim() && !isGeneratingImage) {
+      handleGenerateImage(input.trim());
     }
   };
 
@@ -450,13 +492,31 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                           {msg.attachments && msg.attachments.length > 0 && (
                             <div className="mt-3 flex flex-wrap gap-2">
                               {msg.attachments.map((attachment, idx) => (
-                                <img 
+                                <img
                                   key={idx}
-                                  src={`data:${attachment.type};base64,${attachment.content}`} 
-                                  alt={attachment.name} 
-                                  className="max-w-48 max-h-32 rounded-lg border border-white/20 cursor-pointer hover:opacity-80 transition-opacity" 
+                                  src={`data:${attachment.type};base64,${attachment.content}`}
+                                  alt={attachment.name}
+                                  className="max-w-48 max-h-32 rounded-lg border border-white/20 cursor-pointer hover:opacity-80 transition-opacity"
                                   onClick={() => setImageModal({src: `data:${attachment.type};base64,${attachment.content}`, alt: attachment.name})}
                                 />
+                              ))}
+                            </div>
+                          )}
+                          {/* Display generated images */}
+                          {generatedImages.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {generatedImages.map((image, idx) => (
+                                <div key={idx} className="relative group">
+                                  <img
+                                    src={image.url}
+                                    alt={image.prompt}
+                                    className="max-w-48 max-h-32 rounded-lg border border-purple-500/30 cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => setImageModal({src: image.url, alt: image.prompt})}
+                                  />
+                                  <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs p-1 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {image.prompt.length > 30 ? `${image.prompt.substring(0, 30)}...` : image.prompt}
+                                  </div>
+                                </div>
                               ))}
                             </div>
                           )}
@@ -534,10 +594,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isDragOver ? "Drop images here..." : "Describe your web app or attach an image reference..."}
+            placeholder={isDragOver ? "Drop images here..." : isGeneratingImage ? "Generating image..." : "Describe your web app, generate images, or attach image reference..."}
             className="w-full bg-white/5 backdrop-blur-xl rounded-xl p-2.5 md:p-3 pr-16 sm:pr-20 md:pr-24 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-white/50 placeholder-gray-500 transition-shadow border border-white/20"
             rows={1}
-            disabled={isLoading || isCancelling}
+            disabled={isLoading || isCancelling || isGeneratingImage}
           />
           <div className="absolute right-1 sm:right-1.5 md:right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 md:gap-1">
             {isCancelling ? (
@@ -551,6 +611,19 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             ) : (
                 <>
                     <button onClick={() => fileInputRef.current?.click()} className="p-1.5 md:p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10" aria-label="Attach file" disabled={isLoading}><Icon name="paperclip" className="w-4 h-4 md:w-5 md:h-5"/></button>
+                    <button
+                        onClick={handleImageGeneration}
+                        disabled={isGeneratingImage || !input.trim()}
+                        className="p-1.5 md:p-2 rounded-lg text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        aria-label="Generate image"
+                        title="Generate image from prompt"
+                    >
+                        {isGeneratingImage ? (
+                            <div className="w-4 h-4 md:w-5 md:h-5 animate-spin rounded-full border-2 border-purple-400 border-t-transparent"></div>
+                        ) : (
+                            <Icon name="image" className="w-4 h-4 md:w-5 md:h-5" />
+                        )}
+                    </button>
                     <button onClick={handleSend} disabled={isLoading || (!input.trim() && attachments.length === 0)} className="p-1.5 md:p-2 rounded-lg text-white bg-white/20 backdrop-blur-xl hover:bg-white/30 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors border border-white/20" aria-label="Send message">
                     <Icon name="send" className="w-4 h-4 md:w-5 md:h-5" />
                     </button>
