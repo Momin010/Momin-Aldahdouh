@@ -56,6 +56,10 @@ interface EditorPreviewPanelProps {
    onVisualEditModeChange?: (mode: boolean) => void;
    onPreviewEdit?: (change: PreviewChange) => void;
    isVisualEditorEnabled?: boolean;
+   // Project state management
+   workspace?: any;
+   onUpdateWorkspace?: (updater: (prevWorkspace: any) => any) => void;
+   activeProjectId?: string;
 }
 
 const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
@@ -80,6 +84,9 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
   onVisualEditModeChange,
   onPreviewEdit,
   isVisualEditorEnabled,
+  workspace,
+  onUpdateWorkspace,
+  activeProjectId,
 }) => {
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -92,25 +99,112 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [editingTableId, setEditingTableId] = useState<string | null>(null);
 
+  // Sync with workspace state when project changes (for isolation)
+  const currentProject = workspace?.projects?.find((p: any) => p.id === activeProjectId);
+  const workspaceTables = currentProject?.history?.versions?.[currentProject?.history?.currentIndex]?.databaseSchema?.tables || [];
+  const workspaceRelationships = currentProject?.history?.versions?.[currentProject?.history?.currentIndex]?.databaseSchema?.relationships || [];
+
   // Database handlers
   const handleTableSelect = (table: DatabaseTable) => {
     setSelectedTable(table.id);
   };
 
   const handleTableMove = (tableId: string, x: number, y: number) => {
+    // Update local state immediately for UI responsiveness
     setDatabaseTables(prev => prev.map(table =>
       table.id === tableId ? { ...table, x, y } : table
     ));
+
+    // Also save to workspace state for persistence
+    if (onUpdateWorkspace && activeProjectId) {
+      onUpdateWorkspace((prevWorkspace: any) => {
+        const newProjects = prevWorkspace.projects.map((project: any) => {
+          if (project.id === activeProjectId) {
+            const currentState = project.history.versions[project.history.currentIndex];
+            const updatedSchema = {
+              ...currentState.databaseSchema,
+              tables: currentState.databaseSchema.tables.map((table: any) =>
+                table.id === tableId ? { ...table, x, y } : table
+              )
+            };
+            const newState = { ...currentState, databaseSchema: updatedSchema };
+            const newVersions = project.history.versions.slice(0, project.history.currentIndex + 1);
+            newVersions.push(newState);
+            const newHistory = {
+              versions: newVersions,
+              currentIndex: newVersions.length - 1,
+            };
+            return { ...project, history: newHistory };
+          }
+          return project;
+        });
+        return { ...prevWorkspace, projects: newProjects };
+      });
+    }
   };
 
   const handleTableEdit = (updatedTable: DatabaseTable) => {
+    // Update local state immediately for UI responsiveness
     setDatabaseTables(prev => prev.map(table =>
       table.id === updatedTable.id ? updatedTable : table
     ));
+
+    // Also save to workspace state for persistence
+    if (onUpdateWorkspace && activeProjectId) {
+      onUpdateWorkspace((prevWorkspace: any) => {
+        const newProjects = prevWorkspace.projects.map((project: any) => {
+          if (project.id === activeProjectId) {
+            const currentState = project.history.versions[project.history.currentIndex];
+            const updatedSchema = {
+              ...currentState.databaseSchema,
+              tables: currentState.databaseSchema.tables.map((table: any) =>
+                table.id === updatedTable.id ? updatedTable : table
+              )
+            };
+            const newState = { ...currentState, databaseSchema: updatedSchema };
+            const newVersions = project.history.versions.slice(0, project.history.currentIndex + 1);
+            newVersions.push(newState);
+            const newHistory = {
+              versions: newVersions,
+              currentIndex: newVersions.length - 1,
+            };
+            return { ...project, history: newHistory };
+          }
+          return project;
+        });
+        return { ...prevWorkspace, projects: newProjects };
+      });
+    }
   };
 
   const handleTableDelete = (tableId: string) => {
+    // Update local state immediately for UI responsiveness
     setDatabaseTables(prev => prev.filter(table => table.id !== tableId));
+
+    // Also save to workspace state for persistence
+    if (onUpdateWorkspace && activeProjectId) {
+      onUpdateWorkspace((prevWorkspace: any) => {
+        const newProjects = prevWorkspace.projects.map((project: any) => {
+          if (project.id === activeProjectId) {
+            const currentState = project.history.versions[project.history.currentIndex];
+            const updatedSchema = {
+              ...currentState.databaseSchema,
+              tables: currentState.databaseSchema.tables.filter((table: any) => table.id !== tableId)
+            };
+            const newState = { ...currentState, databaseSchema: updatedSchema };
+            const newVersions = project.history.versions.slice(0, project.history.currentIndex + 1);
+            newVersions.push(newState);
+            const newHistory = {
+              versions: newVersions,
+              currentIndex: newVersions.length - 1,
+            };
+            return { ...project, history: newHistory };
+          }
+          return project;
+        });
+        return { ...prevWorkspace, projects: newProjects };
+      });
+    }
   };
 
   const handleAddTable = () => {
@@ -130,7 +224,35 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
         columns: JSON.parse(JSON.stringify(sourceTable.columns)), // Deep copy
         rowCount: 0
       };
+
+      // Update local state immediately for UI responsiveness
       setDatabaseTables(prev => [...prev, newTable]);
+
+      // Also save to workspace state for persistence
+      if (onUpdateWorkspace && activeProjectId) {
+        onUpdateWorkspace((prevWorkspace: any) => {
+          const newProjects = prevWorkspace.projects.map((project: any) => {
+            if (project.id === activeProjectId) {
+              const currentState = project.history.versions[project.history.currentIndex];
+              const updatedSchema = {
+                ...currentState.databaseSchema,
+                tables: [...currentState.databaseSchema.tables, newTable]
+              };
+              const newState = { ...currentState, databaseSchema: updatedSchema };
+              const newVersions = project.history.versions.slice(0, project.history.currentIndex + 1);
+              newVersions.push(newState);
+              const newHistory = {
+                versions: newVersions,
+                currentIndex: newVersions.length - 1,
+              };
+              return { ...project, history: newHistory };
+            }
+            return project;
+          });
+          return { ...prevWorkspace, projects: newProjects };
+        });
+      }
+
       console.log('Added new table:', newTable.name, 'at position:', newTable.x, newTable.y);
     } else {
       // Create a default table if no tables exist
@@ -148,7 +270,35 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
         ],
         rowCount: 0
       };
+
+      // Update local state immediately for UI responsiveness
       setDatabaseTables(prev => [...prev, defaultTable]);
+
+      // Also save to workspace state for persistence
+      if (onUpdateWorkspace && activeProjectId) {
+        onUpdateWorkspace((prevWorkspace: any) => {
+          const newProjects = prevWorkspace.projects.map((project: any) => {
+            if (project.id === activeProjectId) {
+              const currentState = project.history.versions[project.history.currentIndex];
+              const updatedSchema = {
+                ...currentState.databaseSchema,
+                tables: [...currentState.databaseSchema.tables, defaultTable]
+              };
+              const newState = { ...currentState, databaseSchema: updatedSchema };
+              const newVersions = project.history.versions.slice(0, project.history.currentIndex + 1);
+              newVersions.push(newState);
+              const newHistory = {
+                versions: newVersions,
+                currentIndex: newVersions.length - 1,
+              };
+              return { ...project, history: newHistory };
+            }
+            return project;
+          });
+          return { ...prevWorkspace, projects: newProjects };
+        });
+      }
+
       console.log('Created default table:', defaultTable.name, 'at position:', defaultTable.x, defaultTable.y);
     }
   };
@@ -173,14 +323,42 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
 
   const displayHtml = standaloneHtml || previewHtml;
 
+  // Sync local state with workspace state when project changes
+  useEffect(() => {
+    if (workspace && activeProjectId) {
+      const currentProject = workspace.projects?.find((p: any) => p.id === activeProjectId);
+      const currentState = currentProject?.history?.versions?.[currentProject?.history?.currentIndex];
+      const workspaceTables = currentState?.databaseSchema?.tables || [];
+      const workspaceRelationships = currentState?.databaseSchema?.relationships || [];
+
+      console.log('🔄 Syncing with workspace state - found', workspaceTables.length, 'tables');
+
+      // Update local state to match workspace state
+      setDatabaseTables(workspaceTables);
+      setDatabaseRelationships(workspaceRelationships);
+      setDatabaseInitialized(false); // Reset so it can be initialized again for new projects
+    }
+  }, [workspace, activeProjectId]);
+
   // Auto-populate database when standalone HTML is generated
   useEffect(() => {
-    if (standaloneHtml && !databaseInitialized) {
-      console.log('Standalone HTML detected, initializing database schema...');
-      initializeDatabaseFromHTML(standaloneHtml);
-      setDatabaseInitialized(true);
+    if (standaloneHtml && onUpdateWorkspace && activeProjectId) {
+      console.log('🔄 Standalone HTML detected, initializing database schema...');
+      console.log('📄 HTML length:', standaloneHtml.length);
+      console.log('📊 Current tables before init:', databaseTables.length);
+
+      // Clear existing database first to start fresh
+      setDatabaseTables([]);
+      setDatabaseRelationships([]);
+
+      // Then initialize with new schema based on HTML content
+      setTimeout(() => {
+        console.log('🚀 Starting database initialization...');
+        initializeDatabaseFromHTML(standaloneHtml);
+        setDatabaseInitialized(true);
+      }, 200);
     }
-  }, [standaloneHtml, databaseInitialized]);
+  }, [standaloneHtml, onUpdateWorkspace, activeProjectId, databaseInitialized]);
 
   // Function to analyze HTML and create appropriate database schema
   const initializeDatabaseFromHTML = (htmlContent: string) => {
@@ -345,9 +523,47 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
       });
     }
 
+    // Update local state immediately for UI responsiveness (like working version)
+    console.log('🔄 Updating local database state...');
     setDatabaseTables(tables);
     setDatabaseRelationships(relationships);
-    console.log('Database initialized with', tables.length, 'tables and', relationships.length, 'relationships');
+    console.log('✅ Local state updated with', tables.length, 'tables and', relationships.length, 'relationships');
+
+    // Also save to workspace state for persistence
+    if (onUpdateWorkspace && activeProjectId) {
+      console.log('🔄 Also updating workspace with new database schema...');
+      onUpdateWorkspace((prevWorkspace: any) => {
+        const newProjects = prevWorkspace.projects.map((project: any) => {
+          if (project.id === activeProjectId) {
+            console.log('📝 Found active project:', project.id);
+            const currentState = project.history.versions[project.history.currentIndex];
+            console.log('📋 Current state database tables:', currentState?.databaseSchema?.tables?.length || 0);
+
+            const newState = {
+              ...currentState,
+              databaseSchema: { tables, relationships }
+            };
+
+            console.log('✨ New state with', tables.length, 'tables created');
+
+            const newVersions = project.history.versions.slice(0, project.history.currentIndex + 1);
+            newVersions.push(newState);
+            const newHistory = {
+              versions: newVersions,
+              currentIndex: newVersions.length - 1,
+            };
+
+            console.log('💾 History updated, new version count:', newVersions.length);
+            return { ...project, history: newHistory };
+          }
+          return project;
+        });
+        return { ...prevWorkspace, projects: newProjects };
+      });
+      console.log('💾 Workspace also updated with database schema');
+    } else {
+      console.error('❌ Cannot save database schema to workspace - missing onUpdateWorkspace or activeProjectId');
+    }
   };
 
   // Function to extract products from HTML and populate products table
@@ -416,6 +632,10 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
       <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
         <div className="flex-grow overflow-hidden">
           <DatabaseCanvas
+            isVisible={view === 'database'}
+            onClose={() => {}}
+            appState={currentProject?.history?.versions?.[currentProject?.history?.currentIndex]}
+            onUpdateAppState={onUpdateWorkspace}
             tables={databaseTables}
             relationships={databaseRelationships}
             onTableSelect={handleTableSelect}
