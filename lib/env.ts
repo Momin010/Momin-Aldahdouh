@@ -14,6 +14,14 @@ export function validateEnvironment(): EnvValidationResult {
     'GEMINI_API_KEY', // At least one GEMINI_API_KEY_n should be set
   ];
 
+  const optionalVarGroups = [
+    {
+      name: 'GitHub OAuth',
+      vars: ['GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET'],
+      description: 'GitHub OAuth credentials for publishing projects to GitHub. Optional - GitHub publishing will be disabled if not configured.'
+    }
+  ];
+
   const missingVars: string[] = [];
   const errors: string[] = [];
 
@@ -31,6 +39,18 @@ export function validateEnvironment(): EnvValidationResult {
   if (!hasGeminiKey) {
     missingVars.push('GEMINI_API_KEY');
     errors.push('At least one GEMINI_API_KEY environment variable is required. Please set GEMINI_API_KEY_1, GEMINI_API_KEY_2, etc.');
+  }
+
+  // Check optional GitHub OAuth variables (both should be set together)
+  const hasGitHubClientId = process.env.GITHUB_CLIENT_ID?.trim();
+  const hasGitHubClientSecret = process.env.GITHUB_CLIENT_SECRET?.trim();
+
+  if (hasGitHubClientId && !hasGitHubClientSecret) {
+    errors.push('GITHUB_CLIENT_SECRET is required when GITHUB_CLIENT_ID is set.');
+  }
+
+  if (!hasGitHubClientId && hasGitHubClientSecret) {
+    errors.push('GITHUB_CLIENT_ID is required when GITHUB_CLIENT_SECRET is set.');
   }
 
   return {

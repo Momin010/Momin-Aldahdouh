@@ -67,6 +67,26 @@ export async function createRepo(token: string, name: string, isPrivate: boolean
   }
 }
 
+export async function getUserRepos(token: string) {
+  try {
+    const repos = await githubApiRequest('/user/repos?sort=updated&per_page=100', token);
+    return repos;
+  } catch (error) {
+    console.error('Failed to fetch user repositories:', error);
+    throw new Error('Failed to fetch repositories from GitHub.');
+  }
+}
+
+export async function getRepo(token: string, owner: string, repo: string) {
+  try {
+    const repository = await githubApiRequest(`/repos/${owner}/${repo}`, token);
+    return repository;
+  } catch (error) {
+    console.error('Failed to fetch repository:', error);
+    throw new Error('Repository not found or access denied.');
+  }
+}
+
 export async function pushFiles(token: string, owner: string, repo: string, files: Files, message: string) {
   // 1. Get the latest commit SHA of the main branch
   const branch = await githubApiRequest(`/repos/${owner}/${repo}/branches/main`, token);
