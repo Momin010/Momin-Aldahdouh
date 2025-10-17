@@ -1,40 +1,40 @@
 {
   "functions": {
     "api/auth/github.ts": {
-      "runtime": "nodejs18.x"
+      "runtime": "@vercel/node"
     },
     "api/github/publish.ts": {
-      "runtime": "nodejs18.x"
+      "runtime": "@vercel/node"
     },
     "api/auth/session.ts": {
-      "runtime": "nodejs18.x"
+      "runtime": "@vercel/node"
     },
     "api/auth/signin.ts": {
-      "runtime": "nodejs18.x"
+      "runtime": "@vercel/node"
     },
     "api/auth/signout.ts": {
-      "runtime": "nodejs18.x"
+      "runtime": "@vercel/node"
     },
     "api/auth/signup.ts": {
-      "runtime": "nodejs18.x"
+      "runtime": "@vercel/node"
     },
     "api/gemini/chat.ts": {
-      "runtime": "nodejs18.x"
+      "runtime": "@vercel/node"
     },
     "api/setup-database.ts": {
-      "runtime": "nodejs18.x"
+      "runtime": "@vercel/node"
     },
     "api/test-db.ts": {
-      "runtime": "nodejs18.x"
+      "runtime": "@vercel/node"
     },
     "api/images/search.ts": {
-      "runtime": "nodejs18.x"
+      "runtime": "@vercel/node"
     },
     "api/projects/index.ts": {
-      "runtime": "nodejs18.x"
+      "runtime": "@vercel/node"
     },
     "api/projects/[id].ts": {
-      "runtime": "nodejs18.x"
+      "runtime": "@vercel/node"
     }
   },
   "routes": [
