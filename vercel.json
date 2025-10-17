@@ -1,54 +1,10 @@
 {
   "functions": {
-    "api/auth/github.ts": {
-      "runtime": "@vercel/node"
-    },
-    "api/github/publish.ts": {
-      "runtime": "@vercel/node"
-    },
-    "api/auth/session.ts": {
-      "runtime": "@vercel/node"
-    },
-    "api/auth/signin.ts": {
-      "runtime": "@vercel/node"
-    },
-    "api/auth/signout.ts": {
-      "runtime": "@vercel/node"
-    },
-    "api/auth/signup.ts": {
-      "runtime": "@vercel/node"
-    },
-    "api/gemini/chat.ts": {
-      "runtime": "@vercel/node"
-    },
-    "api/setup-database.ts": {
-      "runtime": "@vercel/node"
-    },
-    "api/test-db.ts": {
-      "runtime": "@vercel/node"
-    },
-    "api/images/search.ts": {
-      "runtime": "@vercel/node"
-    },
-    "api/projects/index.ts": {
-      "runtime": "@vercel/node"
-    },
-    "api/projects/[id].ts": {
-      "runtime": "@vercel/node"
+    "api/**/*.ts": {
+      "runtime": "@vercel/node@3"
     }
   },
   "routes": [
-    { "src": "/api/auth/github", "dest": "/api/auth/github.ts" },
-    { "src": "/api/github/publish", "dest": "/api/github/publish.ts" },
-    { "src": "/api/auth/session", "dest": "/api/auth/session.ts" },
-    { "src": "/api/auth/signin", "dest": "/api/auth/signin.ts" },
-    { "src": "/api/auth/signout", "dest": "/api/auth/signout.ts" },
-    { "src": "/api/auth/signup", "dest": "/api/auth/signup.ts" },
-    { "src": "/api/gemini/chat", "dest": "/api/gemini/chat.ts" },
-    { "src": "/api/setup-database", "dest": "/api/setup-database.ts" },
-    { "src": "/api/test-db", "dest": "/api/test-db.ts" },
-    { "src": "/api/images/search", "dest": "/api/images/search.ts" },
-    { "src": "/api/projects", "dest": "/api/projects/index.ts" },
-    { "src": "/api/projects/(?<id>[^/]+)", "dest": "/api/projects/[id].ts" }
+    { "src": "/api/(.*)", "dest": "/api/$1.ts" }
   ]
 }
