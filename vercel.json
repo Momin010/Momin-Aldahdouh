@@ -1,10 +1,25 @@
 {
   "functions": {
-    "api/**/*.ts": {
-      "runtime": "nodejs18.x"
+    "api/setup-database.ts": {
+      "maxDuration": 60
+    },
+    "api/test-db.ts": {
+      "maxDuration": 30
+    },
+    "api/auth/*.ts": {
+      "maxDuration": 30
+    },
+    "api/gemini/chat.ts": {
+      "maxDuration": 300
+    },
+    "api/github/publish.ts": {
+      "maxDuration": 60
+    },
+    "api/images/search.ts": {
+      "maxDuration": 30
+    },
+    "api/projects/*.ts": {
+      "maxDuration": 30
     }
-  },
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1.ts" }
-  ]
+  }
 }
