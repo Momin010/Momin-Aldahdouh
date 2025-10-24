@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Force React Flow edges to be visible */
+.react-flow__edge-path {
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+  stroke: #3b82f6 !important;
+  stroke-width: 3px !important;
+}
+
+.react-flow__edges {
+  z-index: 100 !important;
+}
