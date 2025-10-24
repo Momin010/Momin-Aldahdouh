@@ -18,57 +18,14 @@ const ModelMessageContent: React.FC<{
   index: number;
   onComplete: (index: number) => void;
 }> = React.memo(({ message, index, onComplete }) => {
-  const [displayedText, setDisplayedText] = useState(message.content);
-  const [isTyping, setIsTyping] = useState(false);
-
   useEffect(() => {
     if (message.streaming) {
-      setIsTyping(true);
-      setDisplayedText('');
-      let charIndex = 0;
-      const text = message.content;
-
-      const typeNextChar = () => {
-        if (charIndex < text.length) {
-          charIndex++;
-          setDisplayedText(text.substring(0, charIndex));
-
-          // Add pause for punctuation
-          const char = text[charIndex - 1];
-          let delay = 50; // Default delay
-          if (char === '.' || char === '!' || char === '?') {
-            delay = 300;
-          } else if (char === ',' || char === ';') {
-            delay = 150;
-          }
-
-          setTimeout(typeNextChar, delay);
-        } else {
-          setIsTyping(false);
-          setTimeout(() => onComplete(index), 100);
-        }
-      };
-
-      setTimeout(typeNextChar, 100);
-    } else {
-      setDisplayedText(message.content);
-      setIsTyping(false);
+      setTimeout(() => onComplete(index), 100);
     }
-  }, [message.streaming, message.content, onComplete, index]);
+  }, [message.streaming, onComplete, index]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-    >
-      <p className="whitespace-pre-wrap text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(displayedText).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
-      {isTyping && <motion.span
-        animate={{ opacity: [1, 0] }}
-        transition={{ duration: 0.8, repeat: Infinity }}
-        className="inline-block w-2 h-4 bg-gray-400 ml-1"
-      />}
-    </motion.div>
+    <p className="whitespace-pre-wrap text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(message.content).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
   );
 });
 
