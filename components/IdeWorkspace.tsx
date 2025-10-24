@@ -412,34 +412,96 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
     }));
 
     if (isPlanApproval) {
-        // Send three sequential requests: backend -> frontend -> standalone
-        const agents = ['backend', 'frontend', 'standalone'];
-        const responses: (ApiResponse | null)[] = [];
+        // Check if it's a simple request
+        const lastUserMessage = messagesForAI.find(m => m.role === 'user')?.content || '';
+        const isSimpleRequest = /portfolio|landing page|simple|basic/i.test(lastUserMessage);
 
-        try {
-            for (const agentId of agents) {
-                const agentMessages = [...messagesForAI];
-                const lastMessage = agentMessages[agentMessages.length - 1];
-                lastMessage.content += `\n\nAgent: ${agentId.charAt(0).toUpperCase() + agentId.slice(1)} Agent. Generate the ${agentId} code as specified in the PRD.`;
+        if (isSimpleRequest) {
+            // Use universal agent for simple requests
+            const agentMessages = [...messagesForAI];
+            const lastMessage = agentMessages[agentMessages.length - 1];
+            lastMessage.content += `\n\nAgent: Universal Agent. Generate the complete application (React frontend, backend API, and standalone HTML) in one response as specified in the PRD.`;
 
-                // Update status for current agent
+            setProjectRunStates(prev => ({
+                ...prev,
+                [projectId]: {
+                    ...prev[projectId],
+                    aiStatus: 'Generating complete application...'
+                }
+            }));
+
+            try {
+                const response = await makeAiRequest(projectId, agentMessages, filesForContext, attachments, null);
+                if (response && response.responseType === 'MODIFY_CODE') {
+                    applyModification(projectId, response.modification);
+                }
+                setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], aiStatus: null, isCancelling: false } }));
+            } catch (error) {
+                console.error('Error in universal agent request:', error);
+                setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], aiStatus: null, isCancelling: false } }));
+            }
+        } else {
+            // Complex request: split backend into 2 simultaneous calls, average progress
+            const agents = ['backend', 'frontend', 'standalone'];
+            const responses: (ApiResponse | null)[] = [];
+
+            try {
+                // Split backend into 2 parts
+                const backendParts = ['API endpoints and database schema', 'Services and authentication'];
+                const backendPromises = backendParts.map(async (part, index) => {
+                    const agentMessages = [...messagesForAI];
+                    const lastMessage = agentMessages[agentMessages.length - 1];
+                    lastMessage.content += `\n\nAgent: Backend Agent. Generate the ${part} as specified in the PRD. This is part ${index + 1} of 2.`;
+
+                    return await makeAiRequest(projectId, agentMessages, filesForContext, attachments, null);
+                });
+
+                // Start backend calls simultaneously
                 setProjectRunStates(prev => ({
                     ...prev,
                     [projectId]: {
                         ...prev[projectId],
-                        aiStatus: `Generating ${agentId} code...`
+                        aiStatus: 'Generating backend code (2 parts)...'
                     }
                 }));
 
-                const response = await makeAiRequest(projectId, agentMessages, filesForContext, attachments, null);
-                responses.push(response);
+                const backendResponses = await Promise.all(backendPromises);
 
-                if (response && response.responseType === 'MODIFY_CODE') {
-                    applyModification(projectId, response.modification);
+                // Average progress for backend
+                const totalBackendProgress = backendResponses.reduce((sum, response) => {
+                    return sum + (response ? 100 : 0);
+                }, 0) / backendParts.length;
+
+                // Apply backend modifications
+                backendResponses.forEach((response) => {
+                    if (response && response.responseType === 'MODIFY_CODE') {
+                        applyModification(projectId, response.modification);
+                    }
+                });
+
+                // Continue with frontend and standalone sequentially
+                for (const agentId of ['frontend', 'standalone']) {
+                    const agentMessages = [...messagesForAI];
+                    const lastMessage = agentMessages[agentMessages.length - 1];
+                    lastMessage.content += `\n\nAgent: ${agentId.charAt(0).toUpperCase() + agentId.slice(1)} Agent. Generate the ${agentId} code as specified in the PRD.`;
+
+                    setProjectRunStates(prev => ({
+                        ...prev,
+                        [projectId]: {
+                            ...prev[projectId],
+                            aiStatus: `Generating ${agentId} code...`
+                        }
+                    }));
+
+                    const response = await makeAiRequest(projectId, agentMessages, filesForContext, attachments, null);
+                    responses.push(response);
+
+                    if (response && response.responseType === 'MODIFY_CODE') {
+                        applyModification(projectId, response.modification);
+                    }
                 }
-            }
 
-            setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], aiStatus: null, isCancelling: false } }));
+                setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], aiStatus: null, isCancelling: false } }));
 
             // Validate after all modifications
             setTimeout(() => {
