@@ -503,27 +503,28 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
 
                 setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], aiStatus: null, isCancelling: false } }));
 
-            // Validate after all modifications
-            setTimeout(() => {
-                const project = workspace.projects.find(p => p.id === projectId);
-                if (project) {
-                    const currentState = project.history.versions[project.history.currentIndex];
-                    const previewHtml = currentState.standaloneHtml || currentState.previewHtml || '';
-                    if (previewHtml.trim()) {
-                        const validationErrors = validatePreviewHtml(previewHtml);
-                        if (validationErrors.length > 0) {
-                            const consoleMessages = validationErrorsToConsoleMessages(validationErrors);
-                            setConsoleLogs(consoleMessages);
-                            triggerSelfCorrection(projectId, consoleMessages);
-                        } else {
-                            setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], isVerifying: false, aiStatus: null, isStopwatchRunning: false, isCancelling: false} }));
+                // Validate after all modifications
+                setTimeout(() => {
+                    const project = workspace.projects.find(p => p.id === projectId);
+                    if (project) {
+                        const currentState = project.history.versions[project.history.currentIndex];
+                        const previewHtml = currentState.standaloneHtml || currentState.previewHtml || '';
+                        if (previewHtml.trim()) {
+                            const validationErrors = validatePreviewHtml(previewHtml);
+                            if (validationErrors.length > 0) {
+                                const consoleMessages = validationErrorsToConsoleMessages(validationErrors);
+                                setConsoleLogs(consoleMessages);
+                                triggerSelfCorrection(projectId, consoleMessages);
+                            } else {
+                                setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], isVerifying: false, aiStatus: null, isStopwatchRunning: false, isCancelling: false} }));
+                            }
                         }
                     }
-                }
-            }, 100);
-        } catch (error) {
-            console.error('Error in multi-agent requests:', error);
-            setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], aiStatus: null, isCancelling: false } }));
+                }, 100);
+            } catch (error) {
+                console.error('Error in multi-agent requests:', error);
+                setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], aiStatus: null, isCancelling: false } }));
+            }
         }
     } else {
         const response = await makeAiRequest(projectId, messagesForAI, filesForContext, attachments, null);
