@@ -12,6 +12,8 @@ import Terms from './components/pages/Terms';
 import Gallery from './components/pages/Gallery';
 import Status from './components/pages/Status';
 import Careers from './components/pages/Careers';
+import { Logo } from './components/Logo';
+import { Icon } from './components/Icon';
 import Footer from './components/Footer';
 import { ThemeProvider } from './lib/themeContext';
 import * as authService from './services/authService';
@@ -209,6 +211,26 @@ const App: React.FC = () => {
 
   // Simple routing function
   const renderCurrentPage = () => {
+    const isMainApp = currentPage === 'home' && workspaceForRender;
+
+    if (isMainApp) {
+      return (
+        <IdeWorkspace
+          key={currentUser?.email || 'guest'}
+          user={currentUser}
+          workspace={workspaceForRender}
+          onWorkspaceChange={handleWorkspaceChange}
+          onSignOut={handleSignOut}
+          onSignUpClick={() => handleOpenAuthModal('signUp')}
+          initialPrompt={initialPrompt}
+          clearInitialPrompt={() => setInitialPrompt(null)}
+          initialAttachment={initialAttachment}
+          clearInitialAttachment={() => setInitialAttachment(null)}
+        />
+      );
+    }
+
+    // Public pages
     const pageContent = (() => {
       switch (currentPage) {
         case 'support':
@@ -227,38 +249,40 @@ const App: React.FC = () => {
           return <Terms />;
         case 'home':
         default:
-          if (workspaceForRender) {
-            return (
-              <IdeWorkspace
-                key={currentUser?.email || 'guest'}
-                user={currentUser}
-                workspace={workspaceForRender}
-                onWorkspaceChange={handleWorkspaceChange}
-                onSignOut={handleSignOut}
-                onSignUpClick={() => handleOpenAuthModal('signUp')}
-                initialPrompt={initialPrompt}
-                clearInitialPrompt={() => setInitialPrompt(null)}
-                initialAttachment={initialAttachment}
-                clearInitialAttachment={() => setInitialAttachment(null)}
-              />
-            );
-          } else {
-            return <LandingPage onStart={handleStartFromLanding} onSignInClick={() => handleOpenAuthModal('signIn')} />;
-          }
+          return <LandingPage onStart={handleStartFromLanding} onSignInClick={() => handleOpenAuthModal('signIn')} onNavigate={setCurrentPage} />;
       }
     })();
 
-    // Add footer to non-IDE pages
-    if (currentPage !== 'home' || workspaceForRender === null) {
-      return (
-        <div className="min-h-screen flex flex-col">
-          {pageContent}
-          <Footer onNavigate={setCurrentPage} />
-        </div>
-      );
-    }
+    // Wrap public pages with navigation header and footer
+    return (
+      <div className="min-h-screen bg-black text-white flex flex-col">
+        {/* Navigation Header for Public Pages */}
+        {currentPage !== 'home' && (
+          <nav className="bg-black/30 backdrop-blur-xl border-b border-white/10 p-4">
+            <div className="max-w-7xl mx-auto flex items-center justify-between">
+              <button
+                onClick={() => setCurrentPage('home')}
+                className="flex items-center gap-2 text-white hover:text-gray-300 transition-colors"
+              >
+                <Icon name="arrow-left" className="w-5 h-5" />
+                <span>Back to MominAI</span>
+              </button>
+              <Logo className="h-8 w-auto" />
+            </div>
+          </nav>
+        )}
 
-    return pageContent;
+        {/* Page Content */}
+        <div className="flex-1">
+          {pageContent}
+        </div>
+
+        {/* Footer for Public Pages */}
+        {currentPage !== 'home' && (
+          <Footer onNavigate={setCurrentPage} />
+        )}
+      </div>
+    );
   };
 
   return (

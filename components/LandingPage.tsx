@@ -8,9 +8,10 @@ import type { FileAttachment } from '../types';
 interface LandingPageProps {
   onStart: (prompt: string, attachment?: FileAttachment | null) => void;
   onSignInClick: () => void;
+  onNavigate?: (page: string) => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onStart, onSignInClick }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onStart, onSignInClick, onNavigate }) => {
   const [input, setInput] = useState('');
   const [attachment, setAttachment] = useState<FileAttachment | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -180,7 +181,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onSignInClick }) => 
       </div>
 
       {/* Footer Section */}
-      <Footer />
+      <Footer onNavigate={onNavigate} />
     </div>
   );
 };

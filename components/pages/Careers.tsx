@@ -46,7 +46,7 @@ const Careers: React.FC = () => {
                       <span className="text-gray-400">{position.type}</span>
                     </div>
                   </div>
-                  <button className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
+                  <button className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
                     Apply
                   </button>
                 </div>

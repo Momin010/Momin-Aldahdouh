@@ -13,26 +13,26 @@ const Support: React.FC = () => {
         <div className="grid md:grid-cols-2 gap-8 mb-12">
           <div className="bg-gray-800/50 p-6 rounded-xl border border-gray-700">
             <div className="flex items-center mb-4">
-              <Icon name="help" className="w-8 h-8 text-purple-400 mr-3" />
+              <Icon name="help" className="w-8 h-8 text-gray-400 mr-3" />
               <h2 className="text-2xl font-semibold text-white">Documentation</h2>
             </div>
             <p className="text-gray-300 mb-4">
               Comprehensive guides and tutorials to help you get started with MominAI.
             </p>
-            <a href="#" className="inline-flex items-center text-purple-400 hover:text-purple-300 transition-colors">
+            <a href="#" className="inline-flex items-center text-gray-400 hover:text-gray-300 transition-colors">
               View Documentation <Icon name="external-link" className="w-4 h-4 ml-1" />
             </a>
           </div>
 
           <div className="bg-gray-800/50 p-6 rounded-xl border border-gray-700">
             <div className="flex items-center mb-4">
-              <Icon name="discord" className="w-8 h-8 text-purple-400 mr-3" />
+              <Icon name="discord" className="w-8 h-8 text-gray-400 mr-3" />
               <h2 className="text-2xl font-semibold text-white">Community</h2>
             </div>
             <p className="text-gray-300 mb-4">
               Join our Discord community to connect with other developers and get real-time help.
             </p>
-            <a href="#" className="inline-flex items-center text-purple-400 hover:text-purple-300 transition-colors">
+            <a href="#" className="inline-flex items-center text-gray-400 hover:text-gray-300 transition-colors">
               Join Discord <Icon name="external-link" className="w-4 h-4 ml-1" />
             </a>
           </div>

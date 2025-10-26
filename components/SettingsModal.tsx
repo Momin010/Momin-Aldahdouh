@@ -255,8 +255,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ user, project, onClose, o
                   onClick={() => setActiveTab('project')}
                   className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                     activeTab === 'project'
-                      ? 'bg-purple-600 text-white'
-                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                      ? 'bg-white/20 text-white'
+                      : 'text-gray-300 hover:bg-white/10 hover:text-white'
                   }`}
                 >
                   <Icon name="settings" className="w-4 h-4" />
@@ -266,8 +266,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ user, project, onClose, o
                   onClick={() => setActiveTab('database')}
                   className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                     activeTab === 'database'
-                      ? 'bg-purple-600 text-white'
-                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                      ? 'bg-white/20 text-white'
+                      : 'text-gray-300 hover:bg-white/10 hover:text-white'
                   }`}
                 >
                   <Icon name="database" className="w-4 h-4" />
@@ -283,8 +283,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ user, project, onClose, o
                   onClick={() => setActiveTab('agents')}
                   className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                     activeTab === 'agents'
-                      ? 'bg-purple-600 text-white'
-                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                      ? 'bg-white/20 text-white'
+                      : 'text-gray-300 hover:bg-white/10 hover:text-white'
                   }`}
                 >
                   <Icon name="bot" className="w-4 h-4" />

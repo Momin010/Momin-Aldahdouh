@@ -39,7 +39,7 @@ const Gallery: React.FC = () => {
                 <p className="text-gray-300 mb-4">{project.description}</p>
                 <div className="flex flex-wrap gap-2">
                   {project.tags.map((tag, tagIndex) => (
-                    <span key={tagIndex} className="px-3 py-1 text-sm bg-purple-600/20 text-purple-300 rounded-full">
+                    <span key={tagIndex} className="px-3 py-1 text-sm bg-gray-600/20 text-gray-300 rounded-full">
                       {tag}
                     </span>
                   ))}

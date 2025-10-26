@@ -30,7 +30,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   ];
 
   return (
-    <footer className="bg-black/20 backdrop-blur-lg border-t border-white/10 mt-auto py-12 px-4 sm:px-6 lg:px-8">
+    <footer className="bg-black backdrop-blur-lg border-t border-white/10 mt-auto py-12 px-4 sm:px-6 lg:px-8">
       <div className="container mx-auto">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           <div className="col-span-2 md:col-span-2">

@@ -44,7 +44,7 @@ const Blog: React.FC = () => {
               <p className="text-gray-300 mb-4">{post.excerpt}</p>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-400">{post.date}</span>
-                <button className="inline-flex items-center text-purple-400 hover:text-purple-300 transition-colors">
+                <button className="inline-flex items-center text-gray-400 hover:text-gray-300 transition-colors">
                   Read More <Icon name="arrow-right" className="w-4 h-4 ml-1" />
                 </button>
               </div>
