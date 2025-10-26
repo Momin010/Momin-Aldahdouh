@@ -24,6 +24,7 @@ import { downloadProjectAsZip } from '../services/zipService';
 import * as projectService from '../services/projectService';
 import { validateJavaScriptCode, validateHtmlContent, validatePreviewHtml, validationErrorsToConsoleMessages } from '../lib/codeValidation';
 import { v4 as uuidv4 } from 'uuid';
+import { contextManager } from '../services/contextManager';
 
 type MobileView = 'chat' | 'preview';
 
@@ -431,7 +432,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
             }));
 
             try {
-                const response = await makeAiRequest(projectId, agentMessages, filesForContext, attachments, null);
+                const response = await makeAiRequest(projectId, agentMessages, filesForContext, attachments, null, true);
                 if (response && response.responseType === 'MODIFY_CODE') {
                     applyModification(projectId, response.modification);
                 }
@@ -453,7 +454,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
                     const lastMessage = agentMessages[agentMessages.length - 1];
                     lastMessage.content += `\n\nAgent: Backend Agent. Generate the ${part} as specified in the PRD. This is part ${index + 1} of 2.`;
 
-                    return await makeAiRequest(projectId, agentMessages, filesForContext, attachments, null);
+                    return await makeAiRequest(projectId, agentMessages, filesForContext, attachments, null, true);
                 });
 
                 // Start backend calls simultaneously
@@ -493,7 +494,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
                         }
                     }));
 
-                    const response = await makeAiRequest(projectId, agentMessages, filesForContext, attachments, null);
+                    const response = await makeAiRequest(projectId, agentMessages, filesForContext, attachments, null, true);
                     responses.push(response);
 
                     if (response && response.responseType === 'MODIFY_CODE') {
@@ -527,7 +528,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
             }
         }
     } else {
-        const response = await makeAiRequest(projectId, messagesForAI, filesForContext, attachments, null);
+        const response = await makeAiRequest(projectId, messagesForAI, filesForContext, attachments, null, true);
         if (!response) return;
 
         setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], aiStatus: null, isCancelling: false } }));
@@ -567,7 +568,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
                 break;
         }
     }
-  }, [workspace.projects, addHistoryStateForProject, makeAiRequest, applyModification]);
+  }, [workspace.projects, addHistoryStateForProject, makeAiRequest, applyModification, contextManager]);
   
   const handleSendMessage = useCallback(async (message: string, attachments?: FileAttachment[]) => {
     if (!activeProject || !currentState) return;
@@ -693,7 +694,7 @@ DO NOT remove working code or features the user asked for.`;
     const filesForContext = currentProjectState.hasGeneratedCode ? currentProjectState.files : null;
     const prototypeForContext = null;
 
-    const response = await makeAiRequest(projectId, messagesForCorrection, filesForContext, null, prototypeForContext);
+    const response = await makeAiRequest(projectId, messagesForCorrection, filesForContext, null, prototypeForContext, true);
     if (!response) return;
 
     if (response.responseType === 'MODIFY_CODE') {

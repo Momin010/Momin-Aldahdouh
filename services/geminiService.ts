@@ -1,4 +1,5 @@
 import type { Message, Files, FileAttachment, ApiResponse } from '../types';
+import { contextManager } from './contextManager';
 
 // Progress callback type
 type ProgressCallback = (receivedBytes: number, totalBytes?: number, isRetry?: boolean) => void;
@@ -11,15 +12,32 @@ export const sendAiChatRequest = async (
     signal?: AbortSignal,
     onProgress?: ProgressCallback,
     retryCount: number = 0,
-    maxRetries: number = 2
+    maxRetries: number = 2,
+    useSmartContext: boolean = true
 ): Promise<ApiResponse> => {
     try {
+        // Optimize context if enabled
+        let optimizedMessages = messages;
+        let optimizedFiles = files;
+
+        if (useSmartContext && files) {
+            const contextStats = contextManager.getContextStats(messages, files);
+            console.log('Context stats before optimization:', contextStats);
+
+            if (contextStats.compressionNeeded) {
+                const optimized = contextManager.optimizeContext(messages, files);
+                optimizedMessages = optimized.messages;
+                optimizedFiles = optimized.files;
+                console.log('Context optimized, compression ratio:', optimized.compressionRatio);
+            }
+        }
+
         const response = await fetch('/api/gemini/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ messages, files, attachments }),
+            body: JSON.stringify({ messages: optimizedMessages, files: optimizedFiles, attachments }),
             signal,
         });
 
@@ -91,7 +109,7 @@ export const sendAiChatRequest = async (
                 }
                 // Wait a bit before retrying
                 await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
-                return sendAiChatRequest(messages, files, attachments, signal, onProgress, retryCount + 1, maxRetries);
+                return sendAiChatRequest(messages, files, attachments, signal, onProgress, retryCount + 1, maxRetries, useSmartContext);
             }
 
             throw new Error("Received a malformed or incomplete response from the AI service.");

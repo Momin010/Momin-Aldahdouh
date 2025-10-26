@@ -22,7 +22,7 @@ export interface AgentTask {
   error?: string;
 }
 
-// Available AI Agents
+// Available AI Agents with multiple provider support
 export const AVAILABLE_AGENTS: AIAgent[] = [
   {
     id: 'universal',
@@ -63,6 +63,36 @@ export const AVAILABLE_AGENTS: AIAgent[] = [
     systemPrompt: 'You are a vanilla JavaScript expert specializing in converting React applications to standalone HTML. Create pixel-perfect, fully functional conversions with advanced state management, component systems, and butter-smooth interactions. Ensure every feature works identically to the original React app.',
     icon: '🌐',
     color: 'purple'
+  }
+];
+
+// AI Provider configurations
+export interface AIProvider {
+  id: string;
+  name: string;
+  model: string;
+  apiKey: string;
+  baseURL?: string;
+}
+
+export const AI_PROVIDERS: AIProvider[] = [
+  {
+    id: 'gemini',
+    name: 'Google Gemini',
+    model: 'gemini-2.5-flash',
+    apiKey: 'GEMINI_API_KEY_1'
+  },
+  {
+    id: 'claude',
+    name: 'Anthropic Claude',
+    model: 'claude-3-5-sonnet-20241022',
+    apiKey: 'ANTHROPIC_API_KEY'
+  },
+  {
+    id: 'openai',
+    name: 'OpenAI GPT-4',
+    model: 'gpt-4',
+    apiKey: 'OPENAI_API_KEY'
   }
 ];
 
