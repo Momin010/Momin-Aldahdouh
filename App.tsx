@@ -5,6 +5,14 @@ import IdeWorkspace from './components/IdeWorkspace';
 import AuthModal from './components/AuthModal';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
+import Support from './components/pages/Support';
+import Blog from './components/pages/Blog';
+import Privacy from './components/pages/Privacy';
+import Terms from './components/pages/Terms';
+import Gallery from './components/pages/Gallery';
+import Status from './components/pages/Status';
+import Careers from './components/pages/Careers';
+import Footer from './components/Footer';
 import { ThemeProvider } from './lib/themeContext';
 import * as authService from './services/authService';
 import * as projectService from './services/projectService';
@@ -49,6 +57,7 @@ const App: React.FC = () => {
   const [initialAttachment, setInitialAttachment] = useState<FileAttachment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMigrating, setIsMigrating] = useState(false);
+  const [currentPage, setCurrentPage] = useState<string>('home');
 
   const isInitialMountRef = useRef(true);
 
@@ -198,25 +207,64 @@ const App: React.FC = () => {
   
   const workspaceForRender = currentUser ? userWorkspace : (isGuest ? guestWorkspace : null);
 
+  // Simple routing function
+  const renderCurrentPage = () => {
+    const pageContent = (() => {
+      switch (currentPage) {
+        case 'support':
+          return <Support />;
+        case 'blog':
+          return <Blog />;
+        case 'gallery':
+          return <Gallery />;
+        case 'status':
+          return <Status />;
+        case 'careers':
+          return <Careers />;
+        case 'privacy':
+          return <Privacy />;
+        case 'terms':
+          return <Terms />;
+        case 'home':
+        default:
+          if (workspaceForRender) {
+            return (
+              <IdeWorkspace
+                key={currentUser?.email || 'guest'}
+                user={currentUser}
+                workspace={workspaceForRender}
+                onWorkspaceChange={handleWorkspaceChange}
+                onSignOut={handleSignOut}
+                onSignUpClick={() => handleOpenAuthModal('signUp')}
+                initialPrompt={initialPrompt}
+                clearInitialPrompt={() => setInitialPrompt(null)}
+                initialAttachment={initialAttachment}
+                clearInitialAttachment={() => setInitialAttachment(null)}
+              />
+            );
+          } else {
+            return <LandingPage onStart={handleStartFromLanding} onSignInClick={() => handleOpenAuthModal('signIn')} />;
+          }
+      }
+    })();
+
+    // Add footer to non-IDE pages
+    if (currentPage !== 'home' || workspaceForRender === null) {
+      return (
+        <div className="min-h-screen flex flex-col">
+          {pageContent}
+          <Footer onNavigate={setCurrentPage} />
+        </div>
+      );
+    }
+
+    return pageContent;
+  };
+
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        {workspaceForRender ? (
-          <IdeWorkspace
-            key={currentUser?.email || 'guest'}
-            user={currentUser}
-            workspace={workspaceForRender}
-            onWorkspaceChange={handleWorkspaceChange}
-            onSignOut={handleSignOut}
-            onSignUpClick={() => handleOpenAuthModal('signUp')}
-            initialPrompt={initialPrompt}
-            clearInitialPrompt={() => setInitialPrompt(null)}
-            initialAttachment={initialAttachment}
-            clearInitialAttachment={() => setInitialAttachment(null)}
-          />
-        ) : (
-          <LandingPage onStart={handleStartFromLanding} onSignInClick={() => handleOpenAuthModal('signIn')} />
-        )}
+        {renderCurrentPage()}
         <AuthModal
           isOpen={isAuthModalOpen}
           onClose={() => setAuthModalOpen(false)}

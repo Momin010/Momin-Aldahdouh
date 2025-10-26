@@ -93,9 +93,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ user, project, onClose, o
             <input
               type="text"
               defaultValue={project.projectName}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
-            <button className="mt-2 px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded">
+            <button className="mt-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-colors">
               Save
             </button>
           </div>
@@ -103,18 +103,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ user, project, onClose, o
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">Project Agent</label>
             <div className="space-y-2">
-              <button className="w-full p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-left flex items-center gap-2">
+              <button className="w-full p-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-left flex items-center gap-2">
                 <Icon name="bot" className="w-4 h-4" />
-                Claude Agent
-              </button>
-              <button className="w-full p-3 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-left flex items-center gap-2 opacity-50">
-                <Icon name="code" className="w-4 h-4" />
-                Codex
-                <span className="text-xs bg-yellow-600 px-2 py-1 rounded ml-auto">COMING SOON</span>
+                Universal Agent (Recommended)
               </button>
               <button className="w-full p-3 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-left flex items-center gap-2">
-                <Icon name="zap" className="w-4 h-4" />
-                v1 Agent (Legacy)
+                <Icon name="code" className="w-4 h-4" />
+                Specialized Agents
               </button>
             </div>
           </div>
@@ -124,7 +119,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ user, project, onClose, o
             <p className="text-sm text-gray-400 mb-2">
               Free up context. This is useful when a part of your app is completed and you want to work on a new one.
             </p>
-            <button className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded">
+            <button className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors">
               Clear context
             </button>
           </div>
@@ -215,7 +210,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ user, project, onClose, o
             <p className="text-sm text-gray-400 mb-3">
               Powerful AI models with zero setup. Add chat, image generation, and text analysis instantly.
             </p>
-            <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded">
+            <button className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-colors">
               Enable AI Features
             </button>
           </div>
@@ -234,11 +229,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ user, project, onClose, o
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
-      <div className="relative w-full max-w-2xl bg-gray-900 rounded-xl border border-gray-700 shadow-2xl">
-        <div className="flex items-center justify-between p-6 border-b border-gray-700">
-          <h2 className="text-xl font-semibold text-white">Settings</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="relative w-full max-w-4xl max-h-[90vh] bg-gray-900 rounded-xl border border-gray-700 shadow-2xl flex flex-col md:flex-row overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Mobile Header */}
+        <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-700">
+          <h2 className="text-lg font-semibold text-white">Settings</h2>
           <button
             onClick={onClose}
             className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
@@ -247,79 +245,141 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ user, project, onClose, o
           </button>
         </div>
 
-        <div className="flex">
-          <div className="w-64 border-r border-gray-700 bg-gray-800/50">
-            <nav className="p-4 space-y-1">
-              <div className="mb-6">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Project Settings</h3>
-                <div className="space-y-1">
-                  <button
-                    onClick={() => setActiveTab('project')}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                      activeTab === 'project'
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                    }`}
-                  >
-                    <Icon name="settings" className="w-4 h-4" />
-                    General
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('database')}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                      activeTab === 'database'
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                    }`}
-                  >
-                    <Icon name="database" className="w-4 h-4" />
-                    Database
-                  </button>
-                </div>
+        {/* Desktop Sidebar */}
+        <div className="hidden md:flex w-64 border-r border-gray-700 bg-gray-800/50 flex-shrink-0">
+          <nav className="p-4 space-y-1 w-full">
+            <div className="mb-6">
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Project Settings</h3>
+              <div className="space-y-1">
+                <button
+                  onClick={() => setActiveTab('project')}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                    activeTab === 'project'
+                      ? 'bg-purple-600 text-white'
+                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                  }`}
+                >
+                  <Icon name="settings" className="w-4 h-4" />
+                  General
+                </button>
+                <button
+                  onClick={() => setActiveTab('database')}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                    activeTab === 'database'
+                      ? 'bg-purple-600 text-white'
+                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                  }`}
+                >
+                  <Icon name="database" className="w-4 h-4" />
+                  Database
+                </button>
               </div>
+            </div>
 
-              <div className="mb-6">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">AI & Tools</h3>
-                <div className="space-y-1">
-                  <button
-                    onClick={() => setActiveTab('agents')}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                      activeTab === 'agents'
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                    }`}
-                  >
-                    <Icon name="bot" className="w-4 h-4" />
-                    AI Agents
-                  </button>
-                </div>
+            <div className="mb-6">
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">AI & Tools</h3>
+              <div className="space-y-1">
+                <button
+                  onClick={() => setActiveTab('agents')}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                    activeTab === 'agents'
+                      ? 'bg-purple-600 text-white'
+                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                  }`}
+                >
+                  <Icon name="bot" className="w-4 h-4" />
+                  AI Agents
+                </button>
               </div>
+            </div>
 
-              <div>
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">History</h3>
-                <div className="space-y-1">
-                  <button
-                    onClick={() => setActiveTab('versions')}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                      activeTab === 'versions'
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                    }`}
-                  >
-                    <Icon name="history" className="w-4 h-4" />
-                    Versions
-                  </button>
-                </div>
+            <div>
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">History</h3>
+              <div className="space-y-1">
+                <button
+                  onClick={() => setActiveTab('versions')}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                    activeTab === 'versions'
+                      ? 'bg-purple-600 text-white'
+                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                  }`}
+                >
+                  <Icon name="history" className="w-4 h-4" />
+                  Versions
+                </button>
               </div>
-            </nav>
+            </div>
+          </nav>
+        </div>
+
+        {/* Content Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Desktop Header */}
+          <div className="hidden md:flex items-center justify-between p-6 border-b border-gray-700">
+            <h2 className="text-xl font-semibold text-white">Settings</h2>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+            >
+              <Icon name="x" className="w-5 h-5" />
+            </button>
           </div>
 
-          <div className="flex-1 p-6 bg-gray-900">
+          {/* Content */}
+          <div className="flex-1 p-4 md:p-6 bg-gray-900 overflow-y-auto">
             {activeTab === 'project' && renderProjectTab()}
             {activeTab === 'agents' && renderAgentsTab()}
             {activeTab === 'versions' && renderVersionsTab()}
             {activeTab === 'database' && renderDatabaseTab()}
           </div>
+        </div>
+
+        {/* Mobile Tab Navigation */}
+        <div className="md:hidden flex border-t border-gray-700 bg-gray-800/50">
+          <button
+            onClick={() => setActiveTab('project')}
+            className={`flex-1 py-3 text-xs font-medium transition-colors flex flex-col items-center gap-1 ${
+              activeTab === 'project'
+                ? 'text-purple-400 bg-purple-600/20'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <Icon name="settings" className="w-4 h-4" />
+            General
+          </button>
+          <button
+            onClick={() => setActiveTab('database')}
+            className={`flex-1 py-3 text-xs font-medium transition-colors flex flex-col items-center gap-1 ${
+              activeTab === 'database'
+                ? 'text-purple-400 bg-purple-600/20'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <Icon name="database" className="w-4 h-4" />
+            Database
+          </button>
+          <button
+            onClick={() => setActiveTab('agents')}
+            className={`flex-1 py-3 text-xs font-medium transition-colors flex flex-col items-center gap-1 ${
+              activeTab === 'agents'
+                ? 'text-purple-400 bg-purple-600/20'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <Icon name="bot" className="w-4 h-4" />
+            Agents
+          </button>
+          <button
+            onClick={() => setActiveTab('versions')}
+            className={`flex-1 py-3 text-xs font-medium transition-colors flex flex-col items-center gap-1 ${
+              activeTab === 'versions'
+                ? 'text-purple-400 bg-purple-600/20'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <Icon name="history" className="w-4 h-4" />
+            History
+          </button>
         </div>
       </div>
     </div>

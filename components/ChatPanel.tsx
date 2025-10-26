@@ -139,6 +139,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const [dynamicStatus, setDynamicStatus] = useState<string | null>(aiStatus);
   const [imageModal, setImageModal] = useState<{src: string, alt: string} | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isStatusExpanded, setIsStatusExpanded] = useState(false);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -339,31 +340,44 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
           {aiStatus && (
             <div className="flex items-start gap-3">
               <div className="w-8" /> {/* Spacer */}
-              <div className="max-w-md p-3 rounded-xl bg-white/10 backdrop-blur-xl text-gray-200 rounded-bl-none border border-white/20 shadow-lg">
-                <div className="space-y-3">
+              <div className="max-w-md">
+                <div className="flex items-center gap-2 mb-2">
+                  <button
+                    onClick={() => setIsStatusExpanded(!isStatusExpanded)}
+                    className="flex items-center gap-2 text-gray-200 hover:text-white transition-colors"
+                  >
+                    <Icon name="chevron-down" className={`w-4 h-4 transition-transform ${isStatusExpanded ? 'rotate-180' : ''}`} />
+                    <span className="text-sm font-medium">Reasoning...</span>
+                    <div className="w-4 h-4">
+                      <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  </button>
                   {retryAttempt > 0 && (
-                    <div className="flex items-center space-x-3">
-                      <p className="text-sm text-yellow-400 font-medium">
-                        Retry {retryAttempt}
-                      </p>
-                    </div>
+                    <span className="text-xs text-yellow-400 font-medium">
+                      Retry {retryAttempt}
+                    </span>
                   )}
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs text-gray-400">
-                      <span>Receiving data...</span>
-                      <span>{streamingProgress?.receivedBytes ? formatBytes(streamingProgress.receivedBytes) + ' received' : ''}</span>
-                    </div>
-                    <ProgressBar
-                      progress={streamingProgress?.progress || 0}
-                      receivedBytes={streamingProgress?.receivedBytes}
-                      totalBytes={streamingProgress?.totalBytes}
-                      className="w-full"
-                    />
-                    <div className="text-center text-xs text-gray-400">
-                      {Math.round(streamingProgress?.progress || 0)}% complete
+                </div>
+
+                {isStatusExpanded && (
+                  <div className="p-3 rounded-xl bg-white/10 backdrop-blur-xl text-gray-200 rounded-bl-none border border-white/20 shadow-lg">
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs text-gray-400">
+                        <span>Receiving data...</span>
+                        <span>{streamingProgress?.receivedBytes ? formatBytes(streamingProgress.receivedBytes) + ' received' : ''}</span>
+                      </div>
+                      <ProgressBar
+                        progress={streamingProgress?.progress || 0}
+                        receivedBytes={streamingProgress?.receivedBytes}
+                        totalBytes={streamingProgress?.totalBytes}
+                        className="w-full"
+                      />
+                      <div className="text-center text-xs text-gray-400">
+                        {Math.round(streamingProgress?.progress || 0)}% complete
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           )}

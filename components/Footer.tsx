@@ -2,18 +2,22 @@ import React from 'react';
 import { Logo } from './Logo';
 import { Icon } from './Icon';
 
-const Footer: React.FC = () => {
+interface FooterProps {
+  onNavigate?: (page: string) => void;
+}
+
+const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   const resources = [
-    { name: 'Support', href: '#' },
-    { name: 'Blog', href: '#' },
-    { name: 'Gallery', href: '#' },
-    { name: 'Status', href: '#' },
+    { name: 'Support', href: '/support' },
+    { name: 'Blog', href: '/blog' },
+    { name: 'Gallery', href: '/gallery' },
+    { name: 'Status', href: '/status' },
   ];
 
   const company = [
-    { name: 'Careers', href: '#' },
-    { name: 'Privacy', href: '#' },
-    { name: 'Terms', href: '#' },
+    { name: 'Careers', href: '/careers' },
+    { name: 'Privacy', href: '/privacy' },
+    { name: 'Terms', href: '/terms' },
   ];
 
   const social = [
@@ -41,10 +45,13 @@ const Footer: React.FC = () => {
             <ul className="mt-4 space-y-3">
               {resources.map((item) => (
                 <li key={item.name}>
-                  <a href={item.href} className="text-base text-gray-400 hover:text-white transition-colors flex items-center group">
+                  <button
+                    onClick={() => onNavigate?.(item.href.replace('/', ''))}
+                    className="text-base text-gray-400 hover:text-white transition-colors flex items-center group"
+                  >
                     {item.name}
                     <Icon name="external-link" className="w-4 h-4 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </a>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -55,9 +62,12 @@ const Footer: React.FC = () => {
             <ul className="mt-4 space-y-3">
               {company.map((item) => (
                 <li key={item.name}>
-                  <a href={item.href} className="text-base text-gray-400 hover:text-white transition-colors">
+                  <button
+                    onClick={() => onNavigate?.(item.href.replace('/', ''))}
+                    className="text-base text-gray-400 hover:text-white transition-colors"
+                  >
                     {item.name}
-                  </a>
+                  </button>
                 </li>
               ))}
             </ul>
