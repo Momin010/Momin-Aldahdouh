@@ -379,16 +379,43 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
     }
   }, [addHistoryStateForProject]);
 
+  // Function to detect user intent from message
+  const detectUserIntent = useCallback((message: string): { parts: string[], isSpecific: boolean } => {
+    const lowerMessage = message.toLowerCase();
+    const parts: string[] = [];
+    let isSpecific = false;
+
+    if (lowerMessage.includes('backend') || lowerMessage.includes('api') || lowerMessage.includes('server') || lowerMessage.includes('database')) {
+      parts.push('backend');
+      isSpecific = true;
+    }
+    if (lowerMessage.includes('frontend') || lowerMessage.includes('react') || lowerMessage.includes('ui') || lowerMessage.includes('interface')) {
+      parts.push('frontend');
+      isSpecific = true;
+    }
+    if (lowerMessage.includes('html') || lowerMessage.includes('standalone') || lowerMessage.includes('static')) {
+      parts.push('standalone');
+      isSpecific = true;
+    }
+
+    // If no specific parts mentioned, generate all
+    if (parts.length === 0) {
+      return { parts: ['standalone', 'frontend', 'backend'], isSpecific: false };
+    }
+
+    return { parts, isSpecific };
+  }, []);
+
   const triggerAiResponse = useCallback(async (projectId: string, messagesForAI: Message[], attachments: FileAttachment[] | null = null) => {
     const projectForRequest = workspace.projects.find(p => p.id === projectId);
     if (!projectForRequest) return;
-    
+
     const currentProjectState = projectForRequest.history.versions[projectForRequest.history.currentIndex];
     const { files: projectFiles, hasGeneratedCode: projectHasCode } = currentProjectState;
 
     const lastModelMessage = currentProjectState.chatMessages.slice().reverse().find(m => m.role === 'model' || m.role === 'system');
     const isPlanApproval = lastModelMessage?.action === 'AWAITING_PLAN_APPROVAL';
-    
+
     let status = 'MominAI is working...';
     let filesForContext: Files | null = null;
 
@@ -442,63 +469,43 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
                 setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], aiStatus: null, isCancelling: false } }));
             }
         } else {
-            // Complex request: split backend into 2 simultaneous calls, average progress
-            const agents = ['backend', 'frontend', 'standalone'];
-            const responses: (ApiResponse | null)[] = [];
+            // Detect user intent
+            const userIntent = detectUserIntent(lastUserMessage);
+            const agentsToUse = userIntent.parts;
+
+            // New order: standalone (HTML) first, then frontend, then backend
+            const orderedAgents = ['standalone', 'frontend', 'backend'].filter(agent => agentsToUse.includes(agent));
 
             try {
-                // Split backend into 2 parts
-                const backendParts = ['API endpoints and database schema', 'Services and authentication'];
-                const backendPromises = backendParts.map(async (part, index) => {
-                    const agentMessages = [...messagesForAI];
-                    const lastMessage = agentMessages[agentMessages.length - 1];
-                    lastMessage.content += `\n\nAgent: Backend Agent. Generate the ${part} as specified in the PRD. This is part ${index + 1} of 2.`;
+                for (const agentId of orderedAgents) {
+                    const agent = AVAILABLE_AGENTS.find(a => a.id === agentId);
+                    if (!agent) continue;
 
-                    return await makeAiRequest(projectId, agentMessages, filesForContext, attachments, null, true);
-                });
-
-                // Start backend calls simultaneously
-                setProjectRunStates(prev => ({
-                    ...prev,
-                    [projectId]: {
-                        ...prev[projectId],
-                        aiStatus: 'Generating backend code (2 parts)...'
-                    }
-                }));
-
-                const backendResponses = await Promise.all(backendPromises);
-
-                // Average progress for backend
-                const totalBackendProgress = backendResponses.reduce((sum, response) => {
-                    return sum + (response ? 100 : 0);
-                }, 0) / backendParts.length;
-
-                // Apply backend modifications
-                backendResponses.forEach((response) => {
-                    if (response && response.responseType === 'MODIFY_CODE') {
-                        applyModification(projectId, response.modification);
-                    }
-                });
-
-                // Continue with frontend and standalone sequentially
-                for (const agentId of ['frontend', 'standalone']) {
-                    const agentMessages = [...messagesForAI];
-                    const lastMessage = agentMessages[agentMessages.length - 1];
-                    lastMessage.content += `\n\nAgent: ${agentId.charAt(0).toUpperCase() + agentId.slice(1)} Agent. Generate the ${agentId} code as specified in the PRD.`;
+                    const taskId = aiAgentService.createTask(agent.id, 'code_generation', `Generate ${agent.name} code for the project`);
 
                     setProjectRunStates(prev => ({
                         ...prev,
                         [projectId]: {
                             ...prev[projectId],
-                            aiStatus: `Generating ${agentId} code...`
+                            aiStatus: `Generating ${agent.name} code...`
                         }
                     }));
 
-                    const response = await makeAiRequest(projectId, agentMessages, filesForContext, attachments, null, true);
-                    responses.push(response);
+                    try {
+                        const response = await aiAgentService.executeTask(taskId, messagesForAI, filesForContext, attachments);
 
-                    if (response && response.responseType === 'MODIFY_CODE') {
-                        applyModification(projectId, response.modification);
+                        if (response && response.responseType === 'MODIFY_CODE') {
+                            applyModification(projectId, response.modification);
+                        }
+                    } catch (error) {
+                        console.error(`Error in ${agent.name} generation:`, error);
+                        setProjectRunStates(prev => ({
+                            ...prev,
+                            [projectId]: {
+                                ...prev[projectId],
+                                aiStatus: `Error in ${agent.name} generation`
+                            }
+                        }));
                     }
                 }
 
@@ -568,7 +575,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
                 break;
         }
     }
-  }, [workspace.projects, addHistoryStateForProject, makeAiRequest, applyModification, contextManager]);
+  }, [workspace.projects, addHistoryStateForProject, makeAiRequest, applyModification, contextManager, detectUserIntent, aiAgentService]);
   
   const handleSendMessage = useCallback(async (message: string, attachments?: FileAttachment[]) => {
     if (!activeProject || !currentState) return;

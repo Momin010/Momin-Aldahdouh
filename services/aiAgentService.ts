@@ -1,4 +1,5 @@
 import type { Message, Files, FileAttachment, ApiResponse } from '../types';
+import { sendAiChatRequest } from './geminiService';
 
 export interface AIAgent {
   id: string;
@@ -30,7 +31,7 @@ export const AVAILABLE_AGENTS: AIAgent[] = [
     description: 'Fast agent for simple projects like basic portfolios or landing pages. Generates all code in one response.',
     capabilities: ['Quick Generation', 'Simple Projects', 'All-in-One', 'Fast Delivery'],
     model: 'fast',
-    systemPrompt: 'You are a universal developer for simple projects. Generate complete React applications with backend and standalone HTML in one response. Focus on speed and simplicity for basic requests like portfolios or landing pages.',
+    systemPrompt: 'You are a universal developer for simple projects. Generate complete React applications with backend and standalone HTML in one response. Focus on speed and simplicity for basic requests like portfolios or landing pages. Always respect the user\'s specific requests - if they only want backend, only generate backend code.',
     icon: '🚀',
     color: 'orange'
   },
@@ -40,7 +41,7 @@ export const AVAILABLE_AGENTS: AIAgent[] = [
     description: 'Specialized in building complex React frontend applications with multiple components, state management, and modern UI',
     capabilities: ['React Components', 'State Management', 'UI/UX Design', 'Routing', 'Custom Hooks'],
     model: 'quality',
-    systemPrompt: 'You are a senior React frontend developer. Focus on creating complex, multi-component React applications with proper state management, custom hooks, routing, and responsive design. Ensure all components are fully functional and follow best practices.',
+    systemPrompt: 'You are a senior React frontend developer. Focus on creating complex, multi-component React applications with proper state management, custom hooks, routing, and responsive design. Ensure all components are fully functional and follow best practices. Always respect the user\'s specific requests - if they only want frontend, only generate frontend code.',
     icon: '⚛️',
     color: 'blue'
   },
@@ -50,17 +51,17 @@ export const AVAILABLE_AGENTS: AIAgent[] = [
     description: 'Expert in building robust backend APIs, services, database schemas, and server-side logic',
     capabilities: ['API Endpoints', 'Database Design', 'Authentication', 'Services', 'Server Logic'],
     model: 'quality',
-    systemPrompt: 'You are a senior backend developer. Specialize in creating API endpoints, database schemas, authentication systems, services, and server-side logic. Ensure secure, scalable, and efficient backend code with proper error handling.',
+    systemPrompt: 'You are a senior backend developer. Specialize in creating API endpoints, database schemas, authentication systems, services, and server-side logic. Ensure secure, scalable, and efficient backend code with proper error handling. Always respect the user\'s specific requests - if they only want backend, only generate backend code.',
     icon: '🔧',
     color: 'green'
   },
   {
     id: 'standalone',
     name: 'Standalone Agent',
-    description: 'Master at converting React apps to high-quality standalone HTML with vanilla JavaScript',
-    capabilities: ['HTML Conversion', 'Vanilla JS', 'State Management', 'CSS Integration', 'Full Functionality'],
+    description: 'Master at creating high-quality standalone HTML with vanilla JavaScript from scratch',
+    capabilities: ['HTML Creation', 'Vanilla JS', 'State Management', 'CSS Integration', 'Full Functionality'],
     model: 'quality',
-    systemPrompt: 'You are a vanilla JavaScript expert specializing in converting React applications to standalone HTML. Create pixel-perfect, fully functional conversions with advanced state management, component systems, and butter-smooth interactions. Ensure every feature works identically to the original React app.',
+    systemPrompt: 'You are a vanilla JavaScript expert specializing in creating standalone HTML applications from scratch. Generate complete, pixel-perfect, fully functional HTML pages with advanced state management, component systems, and butter-smooth interactions. Focus on creating the initial HTML structure and functionality. Always respect the user\'s specific requests - if they only want HTML, only generate HTML code.',
     icon: '🌐',
     color: 'purple'
   }
@@ -162,9 +163,8 @@ export class AIAgentService {
         lastMessage.content = `[${agent.name}] ${lastMessage.content}\n\nAgent Capabilities: ${agent.capabilities.join(', ')}\nTask: ${task.description}`;
       }
 
-      // Here you would call the actual AI service with the agent-specific instructions
-      // For now, we'll simulate the response
-      const response = await this.simulateAgentResponse(agent, modifiedMessages, files, attachments);
+      // Call the actual AI service with the agent-specific instructions
+      const response = await sendAiChatRequest(modifiedMessages, files, attachments);
 
       // Update task as completed
       task.status = 'completed';
@@ -192,6 +192,13 @@ Core Capabilities: ${agent.capabilities.join(', ')}
 
 Focus on: ${agent.systemPrompt}
 
+IMPORTANT: Always respect the user's specific requests. If they mention specific parts (e.g., "only backend", "just HTML", "frontend only"), generate ONLY that part. Do not generate other parts unless explicitly requested.
+
+Generation Order (when generating multiple parts):
+1. Standalone HTML first (complete, functional HTML page)
+2. Frontend React components second (build upon HTML structure)
+3. Backend API last (support the frontend functionality)
+
 Always respond with a valid JSON object in the exact format specified by the RESPONSE_SCHEMA.
 
 When generating code, ensure it follows these principles:
@@ -207,105 +214,6 @@ Response Format: Always return a single, valid JSON object with no additional te
     return baseInstruction;
   }
 
-  // Simulate agent response (replace with actual AI service call)
-  private async simulateAgentResponse(
-    agent: AIAgent,
-    messages: Message[],
-    files?: Files,
-    attachments?: FileAttachment[]
-  ): Promise<ApiResponse> {
-    // Simulate different response times based on agent model
-    const delay = agent.model === 'fast' ? 1000 : agent.model === 'quality' ? 2000 : 1500;
-    await new Promise(resolve => setTimeout(resolve, delay));
-
-    // Simulate different response types based on agent
-    switch (agent.id) {
-      case 'universal':
-        return {
-          responseType: 'MODIFY_CODE',
-          modification: {
-            projectName: 'Universal Implementation',
-            reason: `${agent.name} has generated the complete application with React frontend, backend API, and standalone HTML conversion in one response.`,
-            changes: [
-              {
-                filePath: 'src/App.tsx',
-                action: 'create',
-                content: `// Generated by ${agent.name}\nimport React from 'react';\n\n// Main App component\nconst App: React.FC = () => {\n  return (\n    <div className="app">\n      <h1>Universal Application</h1>\n      {/* Complete implementation */}\n    </div>\n  );\n};\n\nexport default App;`
-              },
-              {
-                filePath: 'api/index.ts',
-                action: 'create',
-                content: `// Generated by ${agent.name}\nimport express from 'express';\n\nconst app = express();\n\n// API endpoints\napp.get('/api/data', (req, res) => {\n  res.json({ message: 'Universal API' });\n});\n\nexport default app;`
-              }
-            ],
-            standaloneHtml: `<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>Universal Application</title>\n    <script src="https://cdn.tailwindcss.com"></script>\n</head>\n<body class="bg-gray-900 text-white">\n    <div id="app"></div>\n    <script>\n        // Generated by ${agent.name}\n        // Complete vanilla JavaScript implementation\n        let state = {};\n        \n        function render() {\n            document.getElementById('app').innerHTML = \`\n                <div class="container mx-auto p-4">\n                    <h1 class="text-3xl font-bold">Universal Application</h1>\n                    <p>Full functionality implemented in vanilla JS</p>\n                </div>\n            \`;\n        }\n        \n        function init() {\n            render();\n        }\n        \n        init();\n    </script>\n</body>\n</html>`
-          }
-        };
-
-      case 'frontend':
-        return {
-          responseType: 'MODIFY_CODE',
-          modification: {
-            projectName: 'Frontend Implementation',
-            reason: `${agent.name} has generated the complete React frontend application with multiple components, state management, and modern UI.`,
-            changes: [
-              {
-                filePath: 'src/App.tsx',
-                action: 'create',
-                content: `// Generated by ${agent.name}\nimport React from 'react';\n\n// Main App component with routing and state management\nconst App: React.FC = () => {\n  return (\n    <div className="app">\n      <h1>Frontend Application</h1>\n      {/* Add your components here */}\n    </div>\n  );\n};\n\nexport default App;`
-              },
-              {
-                filePath: 'src/components/Header.tsx',
-                action: 'create',
-                content: `// Generated by ${agent.name}\nimport React from 'react';\n\n// Header component\nconst Header: React.FC = () => {\n  return (\n    <header className="header">\n      <h2>Header Component</h2>\n    </header>\n  );\n};\n\nexport default Header;`
-              }
-              // Add more components as needed
-            ],
-            standaloneHtml: '' // Frontend agent focuses only on React code
-          }
-        };
-
-      case 'backend':
-        return {
-          responseType: 'MODIFY_CODE',
-          modification: {
-            projectName: 'Backend Implementation',
-            reason: `${agent.name} has generated the complete backend API, services, and database schema.`,
-            changes: [
-              {
-                filePath: 'api/users.ts',
-                action: 'create',
-                content: `// Generated by ${agent.name}\nimport express from 'express';\n\nconst router = express.Router();\n\n// User API endpoints\nrouter.get('/users', (req, res) => {\n  // Get all users logic\n  res.json({ users: [] });\n});\n\nrouter.post('/users', (req, res) => {\n  // Create user logic\n  res.json({ message: 'User created' });\n});\n\nexport default router;`
-              },
-              {
-                filePath: 'services/userService.ts',
-                action: 'create',
-                content: `// Generated by ${agent.name}\n// User service logic\n\nexport const getUsers = async () => {\n  // Database query logic\n  return [];\n};\n\nexport const createUser = async (userData: any) => {\n  // Create user logic\n  return { id: 1, ...userData };\n};`
-              }
-              // Add more backend files as needed
-            ],
-            standaloneHtml: '' // Backend agent focuses only on server-side code
-          }
-        };
-
-      case 'standalone':
-        return {
-          responseType: 'MODIFY_CODE',
-          modification: {
-            projectName: 'Standalone HTML Conversion',
-            reason: `${agent.name} has created a high-quality standalone HTML conversion with full vanilla JavaScript functionality.`,
-            changes: [], // No file changes, only standalone HTML
-            standaloneHtml: `<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>Standalone Application</title>\n    <script src="https://cdn.tailwindcss.com"></script>\n</head>\n<body class="bg-gray-900 text-white">\n    <div id="app"></div>\n    <script>\n        // Generated by ${agent.name}\n        // Complete vanilla JavaScript implementation\n        let state = {};\n        \n        function render() {\n            document.getElementById('app').innerHTML = \`\n                <div class="container mx-auto p-4">\n                    <h1 class="text-3xl font-bold">Standalone Application</h1>\n                    <p>Full functionality implemented in vanilla JS</p>\n                    <!-- Add more UI elements here -->\n                </div>\n            \`;\n        }\n        \n        function init() {\n            render();\n            // Add event listeners and functionality\n        }\n        \n        init();\n    </script>\n</body>\n</html>`
-          }
-        };
-
-      default:
-        return {
-          responseType: 'CHAT',
-          message: `${agent.name} has completed the task. Here's what I accomplished...`
-        };
-    }
-  }
 
   // Get task status
   getTaskStatus(taskId: string): AgentTask | undefined {
