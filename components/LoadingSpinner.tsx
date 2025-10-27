@@ -34,37 +34,37 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
       case 0:
         return {
           icon: 'brain',
-          characters: ['🧠', '💭', '🔍'],
+          characters: ['search', 'lightbulb', 'target'],
           color: 'text-blue-400',
-          text: '🧠 Analyzing your brilliant ideas...'
+          text: 'Analyzing requirements...'
         };
       case 1:
         return {
           icon: 'code',
-          characters: ['⚛️', '🔧', '📱'],
+          characters: ['code', 'wrench', 'smartphone'],
           color: 'text-green-400',
-          text: '⚡ Crafting magical components...'
+          text: 'Crafting components...'
         };
       case 2:
         return {
-          icon: 'lightning',
-          characters: ['⚡', '🚀', '🎯'],
+          icon: 'zap',
+          characters: ['zap', 'rocket', 'target'],
           color: 'text-yellow-400',
-          text: '🚀 Optimizing for stellar performance...'
+          text: 'Optimizing performance...'
         };
       case 3:
         return {
           icon: 'sparkles',
-          characters: ['✨', '🎨', '🏆'],
+          characters: ['sparkles', 'palette', 'trophy'],
           color: 'text-purple-400',
-          text: '🏆 Finalizing your masterpiece...'
+          text: 'Finalizing masterpiece...'
         };
       default:
         return {
           icon: 'brain',
-          characters: ['🤖', '💻', '🌟'],
+          characters: ['bot', 'laptop', 'star'],
           color: 'text-gray-400',
-          text: '🌟 Working on something amazing...'
+          text: 'Working...'
         };
     }
   };
@@ -77,11 +77,11 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         {/* Background circle */}
         <div className={`absolute inset-0 ${sizeClasses[size]} rounded-full bg-gradient-to-br from-white/10 to-white/5 border border-white/20`}></div>
 
-        {/* Floating characters */}
-        {phaseContent.characters.map((char, index) => (
+        {/* Floating icons */}
+        {phaseContent.characters.map((iconName, index) => (
           <motion.div
             key={index}
-            className="absolute text-2xl"
+            className="absolute"
             initial={{ scale: 0, rotate: 0 }}
             animate={{
               scale: [0, 1.2, 1],
@@ -101,7 +101,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
               transform: 'translate(-50%, -50%)'
             }}
           >
-            {char}
+            <Icon name={iconName} className="w-5 h-5 text-white/80" />
           </motion.div>
         ))}
 

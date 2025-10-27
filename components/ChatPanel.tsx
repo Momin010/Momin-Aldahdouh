@@ -36,35 +36,35 @@ const InteractiveLoadingAnimation: React.FC<{
         return {
           icon: 'brain',
           text: 'Analyzing requirements...',
-          characters: ['🧠', '💭', '🔍'],
+          characters: ['search', 'lightbulb', 'target'],
           color: 'text-blue-400'
         };
       case 1:
         return {
           icon: 'code',
           text: 'Crafting components...',
-          characters: ['⚛️', '🔧', '📱'],
+          characters: ['code', 'wrench', 'smartphone'],
           color: 'text-green-400'
         };
       case 2:
         return {
-          icon: 'lightning',
+          icon: 'zap',
           text: 'Optimizing performance...',
-          characters: ['⚡', '🚀', '🎯'],
+          characters: ['zap', 'rocket', 'target'],
           color: 'text-yellow-400'
         };
       case 3:
         return {
           icon: 'sparkles',
           text: 'Finalizing masterpiece...',
-          characters: ['✨', '🎨', '🏆'],
+          characters: ['sparkles', 'palette', 'trophy'],
           color: 'text-purple-400'
         };
       default:
         return {
           icon: 'brain',
           text: 'Working...',
-          characters: ['🤖', '💻', '🌟'],
+          characters: ['bot', 'laptop', 'star'],
           color: 'text-gray-400'
         };
     }
@@ -79,11 +79,11 @@ const InteractiveLoadingAnimation: React.FC<{
         {/* Background circle */}
         <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/10 to-white/5 border border-white/20"></div>
 
-        {/* Floating characters */}
-        {phaseContent.characters.map((char, index) => (
+        {/* Floating icons */}
+        {phaseContent.characters.map((iconName, index) => (
           <motion.div
             key={index}
-            className="absolute text-2xl"
+            className="absolute"
             initial={{ scale: 0, rotate: 0 }}
             animate={{
               scale: [0, 1.2, 1],
@@ -103,7 +103,7 @@ const InteractiveLoadingAnimation: React.FC<{
               transform: 'translate(-50%, -50%)'
             }}
           >
-            {char}
+            <Icon name={iconName.toLowerCase()} className="w-4 h-4 text-white/80" />
           </motion.div>
         ))}
 
@@ -239,31 +239,31 @@ interface ChatPanelProps {
 
 const LOADING_TEXTS: Record<string, string[]> = {
   'MominAI is working...': [
-    '🧠 Analyzing your brilliant ideas...',
-    '🎯 Designing the perfect architecture...',
-    '⚡ Crafting magical components...',
-    '🚀 Optimizing for stellar performance...',
+    'Analyzing requirements...',
+    'Designing architecture...',
+    'Crafting components...',
+    'Optimizing performance...',
   ],
   'Generating application...': [
-    '🏗️ Building React components with love...',
-    '🎨 Creating sophisticated architecture...',
-    '✨ Implementing advanced features...',
-    '🏆 Finalizing your masterpiece...',
+    'Building React components...',
+    'Creating sophisticated architecture...',
+    'Implementing advanced features...',
+    'Finalizing masterpiece...',
   ],
   'Applying changes...': [
-    '🔄 Integrating new features seamlessly...',
-    '🛠️ Updating complex architecture...',
-    '✅ Ensuring perfect consistency...',
+    'Integrating new features...',
+    'Updating complex architecture...',
+    'Ensuring consistency...',
   ],
   'Verifying generated code...': [
-    '🧪 Running comprehensive tests...',
-    '🔍 Validating all interactions...',
-    '💎 Ensuring absolute perfection...',
+    'Running comprehensive tests...',
+    'Validating all interactions...',
+    'Ensuring perfection...',
   ],
     'Errors detected. Attempting to fix...': [
-      '🔧 Engaging advanced debugging...',
-      '🧠 Applying intelligent fixes...',
-      '🌟 Restoring full functionality...',
+      'Engaging advanced debugging...',
+      'Applying intelligent fixes...',
+      'Restoring functionality...',
     ]
 };
 

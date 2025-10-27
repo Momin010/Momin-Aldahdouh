@@ -548,7 +548,17 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
                 const { plan } = response;
                 const planMessage: Message = { role: 'model', content: `I've drafted a PRD for **${plan.projectName}**. Please review it.`, plan: plan, action: 'AWAITING_PLAN_APPROVAL' };
                 addHistoryStateForProject(projectId, prev => ({ ...prev, projectPlan: plan, chatMessages: [...prev.chatMessages, planMessage] }));
-                setProjectRunStates(prev => ({ ...prev, [projectId]: {...prev[projectId], aiStatus: "Awaiting your approval...", isStopwatchRunning: false, isCancelling: false }}));
+                // Reset progress when showing plan approval
+                setProjectRunStates(prev => ({
+                  ...prev,
+                  [projectId]: {
+                    ...prev[projectId],
+                    aiStatus: "Awaiting your approval...",
+                    isStopwatchRunning: false,
+                    isCancelling: false,
+                    streamingProgress: { receivedBytes: 0, progress: 0 }
+                  }
+                }));
                 break;
             case 'MODIFY_CODE':
                 applyModification(projectId, response.modification);
@@ -589,6 +599,19 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
         return;
       }
     }
+
+    // Reset progress state before starting new request
+    setProjectRunStates(prev => ({
+      ...prev,
+      [projectId]: {
+        ...prev[projectId],
+        streamingProgress: { receivedBytes: 0, progress: 0 },
+        aiStatus: null,
+        isVerifying: false,
+        isStopwatchRunning: false,
+        stopwatchSeconds: 0
+      }
+    }));
 
     const userMessage: Message = {
       role: 'user',

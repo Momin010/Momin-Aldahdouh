@@ -406,11 +406,11 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
               {/* Background circle */}
               <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/10 to-white/5 border border-white/20"></div>
 
-              {/* Floating characters */}
-              {['⚛️', '🎨', '🚀'].map((char, index) => (
+              {/* Floating icons */}
+              {['code', 'palette', 'rocket'].map((iconName, index) => (
                 <motion.div
                   key={index}
-                  className="absolute text-3xl"
+                  className="absolute"
                   initial={{ scale: 0, rotate: 0 }}
                   animate={{
                     scale: [0, 1.3, 1],
@@ -430,7 +430,7 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
                     transform: 'translate(-50%, -50%)'
                   }}
                 >
-                  {char}
+                  <Icon name={iconName} className="w-8 h-8 text-white/80" />
                 </motion.div>
               ))}
 
