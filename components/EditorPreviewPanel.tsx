@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import FileExplorer from './FileExplorer';
 import CodeEditor from './CodeEditor';
 import LivePreview, { Device } from './LivePreview';
@@ -395,15 +396,107 @@ const EditorPreviewPanel: React.FC<EditorPreviewPanelProps> = ({
     }
   };
 
-  // Show placeholder only when there's no content to display in preview mode
+  // Show interactive loading placeholder when there's no content to display in preview mode
   if (!displayHtml && view === 'preview') {
     return (
       <div className="flex flex-col h-full bg-black/20 backdrop-blur-lg md:border border-white/10 md:rounded-2xl overflow-hidden">
         <div className="flex-grow flex items-center justify-center text-white">
           <div className="text-center">
-            <Icon name="eye" className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-2">Live Preview</h3>
-            <p className="text-gray-400">Your generated project preview will appear here.</p>
+            <div className="relative w-32 h-32 mx-auto mb-6">
+              {/* Background circle */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/10 to-white/5 border border-white/20"></div>
+
+              {/* Floating characters */}
+              {['⚛️', '🎨', '🚀'].map((char, index) => (
+                <motion.div
+                  key={index}
+                  className="absolute text-3xl"
+                  initial={{ scale: 0, rotate: 0 }}
+                  animate={{
+                    scale: [0, 1.3, 1],
+                    rotate: [0, 180, 360],
+                    x: [0, Math.sin(index * 120) * 40, 0],
+                    y: [0, Math.cos(index * 120) * 40, 0]
+                  }}
+                  transition={{
+                    duration: 4,
+                    repeat: Infinity,
+                    delay: index * 0.7,
+                    ease: "easeInOut"
+                  }}
+                  style={{
+                    left: '50%',
+                    top: '50%',
+                    transform: 'translate(-50%, -50%)'
+                  }}
+                >
+                  {char}
+                </motion.div>
+              ))}
+
+              {/* Central icon */}
+              <motion.div
+                className="absolute inset-0 flex items-center justify-center text-4xl text-blue-400"
+                animate={{
+                  scale: [1, 1.1, 1],
+                  rotate: [0, 5, -5, 0]
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              >
+                <Icon name="eye" className="w-12 h-12" />
+              </motion.div>
+            </div>
+
+            <motion.h3
+              className="text-xl font-semibold mb-2"
+              animate={{
+                scale: [1, 1.05, 1],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            >
+              Live Preview
+            </motion.h3>
+
+            <motion.p
+              className="text-gray-400"
+              animate={{
+                opacity: [0.7, 1, 0.7]
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            >
+              Your generated project preview will appear here.
+            </motion.p>
+
+            {/* Pulsing dots */}
+            <div className="flex justify-center gap-2 mt-4">
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  className="w-2 h-2 bg-white/40 rounded-full"
+                  animate={{
+                    scale: [1, 1.5, 1],
+                    opacity: [0.4, 1, 0.4]
+                  }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    delay: i * 0.2
+                  }}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>

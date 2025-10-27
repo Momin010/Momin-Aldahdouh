@@ -5,6 +5,189 @@ import { Icon } from './Icon';
 import { STARTER_PROMPTS, DESIGN_BLUEPRINTS } from '../constants';
 import ProgressBar from './ProgressBar';
 
+// Interactive Loading Animation Component
+const InteractiveLoadingAnimation: React.FC<{
+  status: string;
+  progress?: number;
+  receivedBytes?: number;
+  totalBytes?: number;
+}> = ({ status, progress = 0, receivedBytes, totalBytes }) => {
+  const [animationPhase, setAnimationPhase] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAnimationPhase(prev => (prev + 1) % 4);
+    }, 4000); // 4 second phases instead of 2.5
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  };
+
+  const getPhaseContent = () => {
+    switch (animationPhase) {
+      case 0:
+        return {
+          icon: 'brain',
+          text: 'Analyzing requirements...',
+          characters: ['🧠', '💭', '🔍'],
+          color: 'text-blue-400'
+        };
+      case 1:
+        return {
+          icon: 'code',
+          text: 'Crafting components...',
+          characters: ['⚛️', '🔧', '📱'],
+          color: 'text-green-400'
+        };
+      case 2:
+        return {
+          icon: 'lightning',
+          text: 'Optimizing performance...',
+          characters: ['⚡', '🚀', '🎯'],
+          color: 'text-yellow-400'
+        };
+      case 3:
+        return {
+          icon: 'sparkles',
+          text: 'Finalizing masterpiece...',
+          characters: ['✨', '🎨', '🏆'],
+          color: 'text-purple-400'
+        };
+      default:
+        return {
+          icon: 'brain',
+          text: 'Working...',
+          characters: ['🤖', '💻', '🌟'],
+          color: 'text-gray-400'
+        };
+    }
+  };
+
+  const phaseContent = getPhaseContent();
+
+  return (
+    <div className="flex items-center gap-3 p-4 bg-white/5 backdrop-blur-xl rounded-xl border border-white/10">
+      {/* Animated Characters */}
+      <div className="relative w-16 h-16 flex items-center justify-center">
+        {/* Background circle */}
+        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/10 to-white/5 border border-white/20"></div>
+
+        {/* Floating characters */}
+        {phaseContent.characters.map((char, index) => (
+          <motion.div
+            key={index}
+            className="absolute text-2xl"
+            initial={{ scale: 0, rotate: 0 }}
+            animate={{
+              scale: [0, 1.2, 1],
+              rotate: [0, 180, 360],
+              x: [0, Math.sin(index * 120) * 20, 0],
+              y: [0, Math.cos(index * 120) * 20, 0]
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              delay: index * 0.5,
+              ease: "easeInOut"
+            }}
+            style={{
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)'
+            }}
+          >
+            {char}
+          </motion.div>
+        ))}
+
+        {/* Central icon */}
+        <motion.div
+          className={`text-2xl ${phaseContent.color}`}
+          animate={{
+            scale: [1, 1.1, 1],
+            rotate: [0, 5, -5, 0]
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        >
+          <Icon name={phaseContent.icon} className="w-6 h-6" />
+        </motion.div>
+      </div>
+
+      {/* Status Text */}
+      <div className="flex-1">
+        <motion.h4
+          className="text-sm font-semibold text-white mb-1"
+          key={status}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          {status}
+        </motion.h4>
+
+        <motion.p
+          className={`text-xs ${phaseContent.color}`}
+          key={phaseContent.text}
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          {phaseContent.text}
+        </motion.p>
+
+        {/* Progress info */}
+        {(receivedBytes || progress > 0) && (
+          <div className="mt-2 space-y-1">
+            <div className="flex justify-between text-xs text-gray-400">
+              <span>Receiving data...</span>
+              <span>{receivedBytes ? formatBytes(receivedBytes) + ' received' : ''}</span>
+            </div>
+            <ProgressBar
+              progress={progress}
+              receivedBytes={receivedBytes}
+              totalBytes={totalBytes}
+              className="w-full h-1"
+            />
+            <div className="text-center text-xs text-gray-400">
+              {Math.round(progress)}% complete
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Pulsing dots */}
+      <div className="flex gap-1">
+        {[0, 1, 2].map((i) => (
+          <motion.div
+            key={i}
+            className="w-2 h-2 bg-white/40 rounded-full"
+            animate={{
+              scale: [1, 1.5, 1],
+              opacity: [0.4, 1, 0.4]
+            }}
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              delay: i * 0.2
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // Utility to decode HTML entities
 const decodeHtmlEntities = (text: string): string => {
     if (typeof window === 'undefined' || !text) return text;
@@ -56,32 +239,32 @@ interface ChatPanelProps {
 
 const LOADING_TEXTS: Record<string, string[]> = {
   'MominAI is working...': [
-    'Analyzing requirements...',
-    'Designing architecture...',
-    'Crafting components...',
-    'Optimizing performance...',
+    '🧠 Analyzing your brilliant ideas...',
+    '🎯 Designing the perfect architecture...',
+    '⚡ Crafting magical components...',
+    '🚀 Optimizing for stellar performance...',
   ],
   'Generating application...': [
-    'Building React components...',
-    'Creating sophisticated architecture...',
-    'Implementing advanced features...',
-    'Finalizing masterpiece...',
+    '🏗️ Building React components with love...',
+    '🎨 Creating sophisticated architecture...',
+    '✨ Implementing advanced features...',
+    '🏆 Finalizing your masterpiece...',
   ],
   'Applying changes...': [
-    'Integrating new features...',
-    'Updating complex architecture...',
-    'Ensuring consistency...',
+    '🔄 Integrating new features seamlessly...',
+    '🛠️ Updating complex architecture...',
+    '✅ Ensuring perfect consistency...',
   ],
   'Verifying generated code...': [
-    'Running comprehensive tests...',
-    'Validating all interactions...',
-    'Ensuring perfection...',
+    '🧪 Running comprehensive tests...',
+    '🔍 Validating all interactions...',
+    '💎 Ensuring absolute perfection...',
   ],
     'Errors detected. Attempting to fix...': [
-     'Engaging advanced debugging...',
-     'Applying intelligent fixes...',
-     'Restoring functionality...',
-   ]
+      '🔧 Engaging advanced debugging...',
+      '🧠 Applying intelligent fixes...',
+      '🌟 Restoring full functionality...',
+    ]
 };
 
 const PlanDisplay: React.FC<{ plan: Plan }> = ({ plan }) => (
@@ -168,12 +351,12 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         intervalId = window.setInterval(() => {
           index = (index + 1) % messages.length;
           setDynamicStatus(messages[index]);
-        }, 2500);
+        }, 4000); // Changed from 2500ms to 4000ms for longer animations
       }
     } else {
       setDynamicStatus(aiStatus);
     }
-    
+
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
@@ -341,41 +524,15 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             <div className="flex items-start gap-3">
               <div className="w-8" /> {/* Spacer */}
               <div className="max-w-md">
-                <div className="flex items-center gap-2 mb-2">
-                  <button
-                    onClick={() => setIsStatusExpanded(!isStatusExpanded)}
-                    className="flex items-center gap-2 text-gray-200 hover:text-white transition-colors"
-                  >
-                    <Icon name="chevron-down" className={`w-4 h-4 transition-transform ${isStatusExpanded ? 'rotate-180' : ''}`} />
-                    <span className="text-sm font-medium">Reasoning...</span>
-                    <div className="w-4 h-4">
-                      <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                  </button>
-                  {retryAttempt > 0 && (
-                    <span className="text-xs text-yellow-400 font-medium">
-                      Retry {retryAttempt}
-                    </span>
-                  )}
-                </div>
-
-                {isStatusExpanded && (
-                  <div className="p-3 rounded-xl bg-white/10 backdrop-blur-xl text-gray-200 rounded-bl-none border border-white/20 shadow-lg">
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-xs text-gray-400">
-                        <span>Receiving data...</span>
-                        <span>{streamingProgress?.receivedBytes ? formatBytes(streamingProgress.receivedBytes) + ' received' : ''}</span>
-                      </div>
-                      <ProgressBar
-                        progress={streamingProgress?.progress || 0}
-                        receivedBytes={streamingProgress?.receivedBytes}
-                        totalBytes={streamingProgress?.totalBytes}
-                        className="w-full"
-                      />
-                      <div className="text-center text-xs text-gray-400">
-                        {Math.round(streamingProgress?.progress || 0)}% complete
-                      </div>
-                    </div>
+                <InteractiveLoadingAnimation
+                  status={dynamicStatus || aiStatus}
+                  progress={streamingProgress?.progress || 0}
+                  receivedBytes={streamingProgress?.receivedBytes}
+                  totalBytes={streamingProgress?.totalBytes}
+                />
+                {retryAttempt > 0 && (
+                  <div className="mt-2 text-xs text-yellow-400 font-medium">
+                    Retry {retryAttempt}
                   </div>
                 )}
               </div>
