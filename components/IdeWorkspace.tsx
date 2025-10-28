@@ -19,7 +19,7 @@ import { databaseService } from '../services/databaseService';
 import { ThemeProvider } from '../lib/themeContext';
 import { CreditService } from '../lib/creditService';
 import type { Message, Files, Change, FileAttachment, History, AppState, ConsoleMessage, Plan, Workspace, Project, User, Modification, ApiResponse, PreviewChange } from '../types';
-import { sendAiChatRequest, resetChat } from '../services/geminiService';
+import { sendAiChatRequest } from '../services/geminiService';
 import { downloadProjectAsZip } from '../services/zipService';
 import * as projectService from '../services/projectService';
 import { validateJavaScriptCode, validateHtmlContent, validatePreviewHtml, validationErrorsToConsoleMessages } from '../lib/codeValidation';
@@ -49,19 +49,19 @@ interface ContextMenuState {
 }
 
 interface ProjectRunState {
-  aiStatus: string | null;
-  isVerifying: boolean;
-  abortController: AbortController | null;
-  isCancelling: boolean;
-  stopwatchSeconds: number;
-  isStopwatchRunning: boolean;
-  streamingProgress: {
-    receivedBytes: number;
-    totalBytes?: number;
-    progress: number;
-  } | null;
-  retryAttempt: number;
-}
+   aiStatus: string | null;
+   isVerifying: boolean;
+   abortController: AbortController | null;
+   isCancelling: boolean;
+   stopwatchSeconds: number;
+   isStopwatchRunning: boolean;
+   streamingProgress: {
+     receivedBytes: number;
+     totalBytes?: number;
+     progress: number;
+   } | null;
+   retryAttempt: number;
+ }
 
 const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspaceChange, onSignOut, onSignUpClick, initialPrompt, clearInitialPrompt, initialAttachment, clearInitialAttachment }) => {
   const isGuest = !user;
@@ -163,7 +163,7 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
   const canRedo = activeProject ? activeProject.history.currentIndex < activeProject.history.versions.length - 1 : false;
 
   useEffect(() => {
-    resetChat();
+    // Chat reset handled by state management
   }, [workspace.activeProjectId]);
   
   useEffect(() => {
@@ -304,41 +304,45 @@ const IdeWorkspace: React.FC<IdeWorkspaceProps> = ({ user, workspace, onWorkspac
         lastMessage.content += `\n\n### Approved Prototype HTML Context:\n\`\`\`html\n${prototypeContext}\n\`\`\``;
     }
 
-    const progressCallback = (receivedBytes: number, totalBytes?: number, isRetry: boolean = false) => {
-      setProjectRunStates(prev => {
-        const currentState = prev[projectId] || {
-          aiStatus: null,
-          isVerifying: false,
-          abortController: null,
-          isCancelling: false,
-          stopwatchSeconds: 0,
-          isStopwatchRunning: false,
-          streamingProgress: null,
-          retryAttempt: 0
-        };
-
-        if (isRetry) {
-          return {
-            ...prev,
-            [projectId]: {
-              ...currentState,
-              retryAttempt: currentState.retryAttempt + 1,
-              streamingProgress: { receivedBytes: 0, progress: 0 }, // Reset progress on retry
-              isCancelling: false
-            }
-          };
-        }
-
-        const progress = totalBytes ? (receivedBytes / totalBytes) * 100 : Math.min((receivedBytes / 67000) * 100, 95); // Estimate progress if no total
-        return {
-          ...prev,
-          [projectId]: {
-            ...currentState,
-            streamingProgress: { receivedBytes, totalBytes, progress }
-          }
-        };
-      });
+const progressCallback = (receivedBytes: number, totalBytes?: number, isRetry: boolean = false) => {
+  setProjectRunStates(prev => {
+    const currentState = prev[projectId] || {
+      aiStatus: null,
+      isVerifying: false,
+      abortController: null,
+      isCancelling: false,
+      stopwatchSeconds: 0,
+      isStopwatchRunning: false,
+      streamingProgress: null,
+      retryAttempt: 0
     };
+
+    if (isRetry) {
+      return {
+        ...prev,
+        [projectId]: {
+          ...currentState,
+          retryAttempt: currentState.retryAttempt + 1,
+          streamingProgress: { receivedBytes: 0, progress: 0 }, // Reset progress on retry
+          isCancelling: false
+        }
+      };
+    }
+
+    // Update status based on progress
+    let statusText = 'MominAI is working...';
+
+    const progress = totalBytes ? (receivedBytes / totalBytes) * 100 : Math.min((receivedBytes / 67000) * 100, 95); // Estimate progress if no total
+    return {
+      ...prev,
+      [projectId]: {
+        ...currentState,
+        aiStatus: statusText,
+        streamingProgress: { receivedBytes, totalBytes, progress }
+      }
+    };
+  });
+};
 
     try {
         const result = await sendAiChatRequest(messagesForAI, filesForContext, attachments, controller.signal, progressCallback);

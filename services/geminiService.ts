@@ -1,8 +1,6 @@
 import type { Message, Files, FileAttachment, ApiResponse } from '../types';
 import { contextManager } from './contextManager';
 
-// Progress callback type
-type ProgressCallback = (receivedBytes: number, totalBytes?: number, isRetry?: boolean) => void;
 
 // This function now handles a streaming response from the backend to avoid payload size limits.
 export const sendAiChatRequest = async (

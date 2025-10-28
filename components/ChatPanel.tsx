@@ -1,192 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import type { Message, FileAttachment, Plan } from '../types';
 import { Icon } from './Icon';
 import { STARTER_PROMPTS, DESIGN_BLUEPRINTS } from '../constants';
 import ProgressBar from './ProgressBar';
-
-// Interactive Loading Animation Component
-const InteractiveLoadingAnimation: React.FC<{
-  status: string;
-  progress?: number;
-  receivedBytes?: number;
-  totalBytes?: number;
-}> = ({ status, progress = 0, receivedBytes, totalBytes }) => {
-  const [animationPhase, setAnimationPhase] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setAnimationPhase(prev => (prev + 1) % 4);
-    }, 4000); // 4 second phases instead of 2.5
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-  };
-
-  const getPhaseContent = () => {
-    switch (animationPhase) {
-      case 0:
-        return {
-          icon: 'brain',
-          text: 'Analyzing requirements...',
-          characters: ['search', 'lightbulb', 'target'],
-          color: 'text-blue-400'
-        };
-      case 1:
-        return {
-          icon: 'code',
-          text: 'Crafting components...',
-          characters: ['code', 'wrench', 'smartphone'],
-          color: 'text-green-400'
-        };
-      case 2:
-        return {
-          icon: 'zap',
-          text: 'Optimizing performance...',
-          characters: ['zap', 'rocket', 'target'],
-          color: 'text-yellow-400'
-        };
-      case 3:
-        return {
-          icon: 'sparkles',
-          text: 'Finalizing masterpiece...',
-          characters: ['sparkles', 'palette', 'trophy'],
-          color: 'text-purple-400'
-        };
-      default:
-        return {
-          icon: 'brain',
-          text: 'Working...',
-          characters: ['bot', 'laptop', 'star'],
-          color: 'text-gray-400'
-        };
-    }
-  };
-
-  const phaseContent = getPhaseContent();
-
-  return (
-    <div className="flex items-center gap-3 p-4 bg-white/5 backdrop-blur-xl rounded-xl border border-white/10">
-      {/* Animated Characters */}
-      <div className="relative w-16 h-16 flex items-center justify-center">
-        {/* Background circle */}
-        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/10 to-white/5 border border-white/20"></div>
-
-        {/* Floating icons */}
-        {phaseContent.characters.map((iconName, index) => (
-          <motion.div
-            key={index}
-            className="absolute"
-            initial={{ scale: 0, rotate: 0 }}
-            animate={{
-              scale: [0, 1.2, 1],
-              rotate: [0, 180, 360],
-              x: [0, Math.sin(index * 120) * 20, 0],
-              y: [0, Math.cos(index * 120) * 20, 0]
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              delay: index * 0.5,
-              ease: "easeInOut"
-            }}
-            style={{
-              left: '50%',
-              top: '50%',
-              transform: 'translate(-50%, -50%)'
-            }}
-          >
-            <Icon name={iconName.toLowerCase()} className="w-4 h-4 text-white/80" />
-          </motion.div>
-        ))}
-
-        {/* Central icon */}
-        <motion.div
-          className={`text-2xl ${phaseContent.color}`}
-          animate={{
-            scale: [1, 1.1, 1],
-            rotate: [0, 5, -5, 0]
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        >
-          <Icon name={phaseContent.icon} className="w-6 h-6" />
-        </motion.div>
-      </div>
-
-      {/* Status Text */}
-      <div className="flex-1">
-        <motion.h4
-          className="text-sm font-semibold text-white mb-1"
-          key={status}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          {status}
-        </motion.h4>
-
-        <motion.p
-          className={`text-xs ${phaseContent.color}`}
-          key={phaseContent.text}
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          {phaseContent.text}
-        </motion.p>
-
-        {/* Progress info */}
-        {(receivedBytes || progress > 0) && (
-          <div className="mt-2 space-y-1">
-            <div className="flex justify-between text-xs text-gray-400">
-              <span>Receiving data...</span>
-              <span>{receivedBytes ? formatBytes(receivedBytes) + ' received' : ''}</span>
-            </div>
-            <ProgressBar
-              progress={progress}
-              receivedBytes={receivedBytes}
-              totalBytes={totalBytes}
-              className="w-full h-1"
-            />
-            <div className="text-center text-xs text-gray-400">
-              {Math.round(progress)}% complete
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Pulsing dots */}
-      <div className="flex gap-1">
-        {[0, 1, 2].map((i) => (
-          <motion.div
-            key={i}
-            className="w-2 h-2 bg-white/40 rounded-full"
-            animate={{
-              scale: [1, 1.5, 1],
-              opacity: [0.4, 1, 0.4]
-            }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              delay: i * 0.2
-            }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
 
 // Utility to decode HTML entities
 const decodeHtmlEntities = (text: string): string => {
@@ -214,41 +30,59 @@ const ModelMessageContent: React.FC<{
 
 
 interface ChatPanelProps {
-  messages: Message[];
-  onSendMessage: (message: string, attachments?: FileAttachment[]) => void;
-  aiStatus: string | null;
-  onStreamingComplete: (index: number) => void;
-  hasGeneratedCode: boolean;
-  onNavigateToPreview: () => void;
-  onCancelRequest: () => void;
-  isCancelling: boolean;
-  onContextMenu: (event: React.MouseEvent, index: number) => void;
-  onDeleteMessage: (index: number) => void;
-  onResubmitMessage: (index: number, newContent: string) => void;
-  editingIndex: number | null;
-  onCancelEditing: () => void;
-  stopwatchSeconds: number;
-  isStopwatchRunning: boolean;
-  streamingProgress?: {
-    receivedBytes: number;
-    totalBytes?: number;
-    progress: number;
-  } | null;
-  retryAttempt?: number;
-}
+   messages: Message[];
+   onSendMessage: (message: string, attachments?: FileAttachment[]) => void;
+   aiStatus: string | null;
+   onStreamingComplete: (index: number) => void;
+   hasGeneratedCode: boolean;
+   onNavigateToPreview: () => void;
+   onCancelRequest: () => void;
+   isCancelling: boolean;
+   onContextMenu: (event: React.MouseEvent, index: number) => void;
+   onDeleteMessage: (index: number) => void;
+   onResubmitMessage: (index: number, newContent: string) => void;
+   editingIndex: number | null;
+   onCancelEditing: () => void;
+   stopwatchSeconds: number;
+   isStopwatchRunning: boolean;
+   streamingProgress?: {
+     receivedBytes: number;
+     totalBytes?: number;
+     progress: number;
+   } | null;
+   retryAttempt?: number;
+   aiReasoning?: string;
+   aiTasks?: Array<{
+     id: string;
+     description: string;
+     status: 'pending' | 'in_progress' | 'completed';
+   }>;
+ }
 
 const LOADING_TEXTS: Record<string, string[]> = {
   'MominAI is working...': [
     'Analyzing requirements...',
     'Designing architecture...',
-    'Crafting components...',
-    'Optimizing performance...',
+    'Planning file structure...',
+    'Preparing generation sequence...',
+  ],
+  'Planning project...': [
+    'Analyzing requirements...',
+    'Designing file structure...',
+    'Planning component hierarchy...',
+    'Preparing build sequence...',
   ],
   'Generating application...': [
-    'Building React components...',
-    'Creating sophisticated architecture...',
-    'Implementing advanced features...',
-    'Finalizing masterpiece...',
+    'Setting up project structure...',
+    'Creating core files...',
+    'Building components...',
+    'Implementing features...',
+  ],
+  'Working on file...': [
+    'Analyzing file requirements...',
+    'Writing code structure...',
+    'Implementing functionality...',
+    'Finalizing file...',
   ],
   'Applying changes...': [
     'Integrating new features...',
@@ -314,7 +148,7 @@ const PlanDisplay: React.FC<{ plan: Plan }> = ({ plan }) => (
 const ChatPanel: React.FC<ChatPanelProps> = ({
   messages, onSendMessage, aiStatus, onStreamingComplete, hasGeneratedCode, onNavigateToPreview,
   onCancelRequest, isCancelling, onContextMenu, onResubmitMessage, editingIndex, onCancelEditing,
-  stopwatchSeconds, isStopwatchRunning, streamingProgress, retryAttempt = 0
+  stopwatchSeconds, isStopwatchRunning, streamingProgress, retryAttempt = 0, aiReasoning, aiTasks
 }) => {
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
@@ -524,12 +358,74 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             <div className="flex items-start gap-3">
               <div className="w-8" /> {/* Spacer */}
               <div className="max-w-md">
-                <InteractiveLoadingAnimation
-                  status={dynamicStatus || aiStatus}
-                  progress={streamingProgress?.progress || 0}
-                  receivedBytes={streamingProgress?.receivedBytes}
-                  totalBytes={streamingProgress?.totalBytes}
-                />
+                <div className="flex items-center gap-3 p-4 bg-white/5 backdrop-blur-xl rounded-xl border border-white/10">
+                  <div className="flex-1">
+                    <h4 className="text-sm font-semibold text-white mb-1">{dynamicStatus || aiStatus}</h4>
+                    {streamingProgress && (
+                      <div className="mt-2 space-y-1">
+                        <div className="flex justify-between text-xs text-gray-400">
+                          <span>Receiving data...</span>
+                          <span>{streamingProgress.receivedBytes ? formatBytes(streamingProgress.receivedBytes) + ' received' : ''}</span>
+                        </div>
+                        <ProgressBar
+                          progress={streamingProgress.progress}
+                          receivedBytes={streamingProgress.receivedBytes}
+                          totalBytes={streamingProgress.totalBytes}
+                          className="w-full h-1"
+                        />
+                        <div className="text-center text-xs text-gray-400">
+                          {Math.round(streamingProgress.progress)}% complete
+                        </div>
+                      </div>
+                    )}
+                    {/* AI Reasoning Display */}
+                    {aiReasoning && (
+                      <div className="mt-3 p-3 bg-purple-900/20 rounded-lg border border-purple-500/20">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Icon name="brain" className="w-4 h-4 text-purple-400" />
+                          <span className="text-xs font-semibold text-purple-300">AI Reasoning</span>
+                        </div>
+                        <p className="text-xs text-gray-300 leading-relaxed">{aiReasoning}</p>
+                      </div>
+                    )}
+                    {/* AI Tasks Display */}
+                    {aiTasks && aiTasks.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Icon name="checklist" className="w-4 h-4 text-blue-400" />
+                          <span className="text-xs font-semibold text-blue-300">Tasks</span>
+                        </div>
+                        <div className="space-y-1">
+                          {aiTasks.map((task) => (
+                            <div key={task.id} className="flex items-center gap-2 text-xs">
+                              <div className={`w-2 h-2 rounded-full ${
+                                task.status === 'completed' ? 'bg-green-400' :
+                                task.status === 'in_progress' ? 'bg-blue-400 animate-pulse' :
+                                'bg-gray-500'
+                              }`} />
+                              <span className={`${
+                                task.status === 'completed' ? 'text-green-300 line-through' :
+                                task.status === 'in_progress' ? 'text-blue-300' :
+                                'text-gray-400'
+                              }`}>
+                                {task.description}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {streamingProgress && (
+                    <button
+                      onClick={() => setIsStatusExpanded(!isStatusExpanded)}
+                      className="p-2 text-gray-400 hover:text-white transition-colors"
+                      aria-label="Toggle status details"
+                    >
+                      <Icon name="chevron-right" className={`w-4 h-4 transition-transform ${isStatusExpanded ? 'rotate-90' : ''}`} />
+                    </button>
+                  )}
+                </div>
                 {retryAttempt > 0 && (
                   <div className="mt-2 text-xs text-yellow-400 font-medium">
                     Retry {retryAttempt}
